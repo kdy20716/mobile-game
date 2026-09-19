@@ -7,18 +7,10 @@ namespace MobileRacing
     public class AICarController : MonoBehaviour
     {
         [Header("AI Performance")]
-        [SerializeField] private float accelerationPower = 30f;
-        [SerializeField] private float maxSpeed = 36f; // Slightly tuned per car
-        [SerializeField] private float turnSpeed = 90f;
-        [SerializeField] private float brakePower = 40f;
-        [SerializeField] private float reachThreshold = 12f;
-        [SerializeField] private float downforce = 50f;
-        [SerializeField] private float driftFriction = 0.90f;
-
-        [Header("Waypoints")]
-        [SerializeField] private List<Transform> waypoints = new List<Transform>();
-        public int CurrentWaypointIndex { get; private set; } = 0;
-        public int LapsCompleted { get; private set; } = 0;
+        [SerializeField] private float accelerationPower = 32f;
+        [SerializeField] private float maxSpeed = 38f;
+        [SerializeField] private float targetLaneX = 0f;
+        [SerializeField] private float laneChangeSpeed = 4f;
 
         [Header("Wheel Visuals")]
         [SerializeField] private Transform frontLeftWheel;
@@ -27,11 +19,12 @@ namespace MobileRacing
         [SerializeField] private Transform rearRightWheel;
 
         private Rigidbody _rb;
-        private bool _isGrounded;
         private bool _canRace = false;
+        private float _laneChangeTimer = 0f;
+        private float _laneInterval = 3.5f;
 
         public float CurrentSpeedKmh => _rb != null ? _rb.linearVelocity.magnitude * 3.6f : 0f;
-        public Rigidbody Rb => _rb;
+        public float DistanceTraveled => transform.position.z;
 
         private void Awake()
         {
@@ -41,112 +34,51 @@ namespace MobileRacing
 
         public void SetCanRace(bool canRace) => _canRace = canRace;
 
-        public void SetWaypoints(List<Transform> list, float speed = 36f, float accel = 30f)
+        public void SetPerformance(float speed, float accel, float initialLaneX)
         {
-            waypoints = list;
             maxSpeed = speed;
             accelerationPower = accel;
+            targetLaneX = initialLaneX;
+            _laneInterval = Random.Range(3f, 6f);
         }
 
         private void FixedUpdate()
         {
-            CheckGround();
+            if (!_canRace) return;
 
-            if (!_canRace || waypoints == null || waypoints.Count == 0) return;
-
-            Transform targetWp = waypoints[CurrentWaypointIndex];
-            Vector3 toTarget = targetWp.position - transform.position;
-            toTarget.y = 0f;
-
-            // Check if reached waypoint
-            if (toTarget.magnitude < reachThreshold)
+            // 1. Forward Acceleration
+            if (_rb.linearVelocity.magnitude < maxSpeed)
             {
-                CurrentWaypointIndex++;
-                if (CurrentWaypointIndex >= waypoints.Count)
-                {
-                    CurrentWaypointIndex = 0;
-                    LapsCompleted++;
-                }
-                targetWp = waypoints[CurrentWaypointIndex];
-                toTarget = targetWp.position - transform.position;
-                toTarget.y = 0f;
+                _rb.AddForce(Vector3.forward * accelerationPower, ForceMode.Acceleration);
             }
 
-            Vector3 localTarget = transform.InverseTransformPoint(targetWp.position);
-            float steer = Mathf.Clamp(localTarget.x / 10f, -1f, 1f);
-
-            // Cornering speed regulation
-            float targetSpeed = maxSpeed;
-            if (Mathf.Abs(steer) > 0.4f)
+            // 2. Lane Keeping & Smooth Lane Changing (5-lane highway: -14, -7, 0, 7, 14)
+            _laneChangeTimer += Time.fixedDeltaTime;
+            if (_laneChangeTimer >= _laneInterval)
             {
-                targetSpeed *= 0.65f; // Slow down in sharp turns
+                _laneChangeTimer = 0f;
+                _laneInterval = Random.Range(4f, 8f);
+                // Pick a lane: -14, -7, 0, 7, 14
+                int[] lanes = new int[] { -14, -7, 0, 7, 14 };
+                targetLaneX = lanes[Random.Range(0, lanes.Length)];
             }
 
-            // Obstacle / Car avoidance with front raycasts
-            steer = ApplyObstacleAvoidance(steer);
+            // Move towards target lane
+            float currentX = transform.position.x;
+            float newX = Mathf.MoveTowards(currentX, targetLaneX, laneChangeSpeed * Time.fixedDeltaTime);
+            Vector3 pos = transform.position;
+            pos.x = newX;
+            transform.position = pos;
 
-            if (_isGrounded)
-            {
-                // Acceleration & Braking
-                float currentSpeed = _rb.linearVelocity.magnitude;
-                if (currentSpeed < targetSpeed)
-                {
-                    _rb.AddForce(transform.forward * accelerationPower, ForceMode.Acceleration);
-                }
-                else if (currentSpeed > targetSpeed + 2f)
-                {
-                    _rb.AddForce(-transform.forward * brakePower, ForceMode.Acceleration);
-                }
+            // Keep facing forward
+            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
 
-                // Steering
-                float speedRatio = Mathf.Clamp01(currentSpeed / 10f);
-                float turn = steer * turnSpeed * speedRatio * Time.fixedDeltaTime;
-                Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
-                _rb.MoveRotation(_rb.rotation * turnRotation);
-
-                // Side friction
-                Vector3 localVel = transform.InverseTransformDirection(_rb.linearVelocity);
-                localVel.x *= (1f - (1f - driftFriction) * 0.5f);
-                _rb.linearVelocity = transform.TransformDirection(localVel);
-
-                // Downforce
-                _rb.AddForce(-transform.up * (downforce * (_rb.linearVelocity.magnitude / 20f)), ForceMode.Acceleration);
-            }
-            else
-            {
-                _rb.AddForce(Vector3.down * 30f, ForceMode.Acceleration);
-            }
-        }
-
-        private float ApplyObstacleAvoidance(float currentSteer)
-        {
-            RaycastHit hit;
-            Vector3 origin = transform.position + Vector3.up * 0.4f;
-
-            // Check straight ahead
-            if (Physics.Raycast(origin, transform.forward, out hit, 12f))
-            {
-                if (hit.collider.gameObject != gameObject)
-                {
-                    // Steer away
-                    Vector3 normal = hit.normal;
-                    float cross = Vector3.Cross(transform.forward, normal).y;
-                    return cross > 0 ? 0.9f : -0.9f;
-                }
-            }
-
-            return currentSteer;
-        }
-
-        private void CheckGround()
-        {
-            RaycastHit hit;
-            _isGrounded = Physics.Raycast(transform.position + Vector3.up * 0.2f, -transform.up, out hit, 1.2f);
+            // Downforce
+            _rb.AddForce(Vector3.down * 40f, ForceMode.Acceleration);
         }
 
         private void Update()
         {
-            // Wheel visual rotation
             float rotationAmount = CurrentSpeedKmh * Time.deltaTime * 20f;
             if (frontLeftWheel != null) frontLeftWheel.Rotate(Vector3.right, rotationAmount, Space.Self);
             if (frontRightWheel != null) frontRightWheel.Rotate(Vector3.right, rotationAmount, Space.Self);

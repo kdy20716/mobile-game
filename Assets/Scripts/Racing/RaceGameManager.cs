@@ -16,14 +16,15 @@ namespace MobileRacing
         [SerializeField] private ArcadeCarController playerCar;
         [SerializeField] private List<AICarController> aiCars = new List<AICarController>();
 
-        [Header("Race Info")]
+        [Header("Highway Track Specs")]
+        public float FinishLineZ = 1200f; // 1.2km Straight Drag Race
         public int PlayerRank { get; private set; } = 1;
         public float CountdownTimer { get; private set; } = 3f;
         public float RaceTime { get; private set; } = 0f;
 
         public event Action<int> OnCountdownTick; // 3, 2, 1, 0 (GO)
         public event Action OnRaceStarted;
-        public event Action<int> OnPlayerRankChanged; // rank 1..4
+        public event Action<int> OnPlayerRankChanged;
         public event Action<int, float> OnRaceFinishedWithResults; // rank, finishTime
 
         private void Awake()
@@ -34,7 +35,6 @@ namespace MobileRacing
 
         private IEnumerator Start()
         {
-            // Lock controls during countdown
             if (playerCar != null) playerCar.enabled = false;
             foreach (var ai in aiCars) if (ai != null) ai.SetCanRace(false);
 
@@ -54,11 +54,6 @@ namespace MobileRacing
             if (playerCar != null) playerCar.enabled = true;
             foreach (var ai in aiCars) if (ai != null) ai.SetCanRace(true);
             OnRaceStarted?.Invoke();
-
-            if (CheckpointTrackManager.Instance != null)
-            {
-                CheckpointTrackManager.Instance.OnRaceCompleted += HandlePlayerRaceFinish;
-            }
         }
 
         private void Update()
@@ -67,21 +62,21 @@ namespace MobileRacing
             {
                 RaceTime += Time.deltaTime;
                 CalculateRanks();
+                CheckFinishLine();
             }
         }
 
         private void CalculateRanks()
         {
-            if (playerCar == null || CheckpointTrackManager.Instance == null) return;
+            if (playerCar == null) return;
 
             int rank = 1;
-            float playerProgress = GetPlayerProgress();
+            float playerZ = playerCar.transform.position.z;
 
             foreach (var ai in aiCars)
             {
                 if (ai == null) continue;
-                float aiProgress = ai.LapsCompleted * 1000f + ai.CurrentWaypointIndex * 50f;
-                if (aiProgress > playerProgress)
+                if (ai.transform.position.z > playerZ)
                 {
                     rank++;
                 }
@@ -94,22 +89,20 @@ namespace MobileRacing
             }
         }
 
-        private float GetPlayerProgress()
+        private void CheckFinishLine()
         {
-            if (CheckpointTrackManager.Instance == null) return 0f;
-            return (CheckpointTrackManager.Instance.CurrentLap - 1) * 1000f;
+            if (playerCar != null && playerCar.transform.position.z >= FinishLineZ)
+            {
+                CurrentState = RaceState.Finished;
+                OnRaceFinishedWithResults?.Invoke(PlayerRank, RaceTime);
+            }
         }
 
-        private void HandlePlayerRaceFinish()
-        {
-            CurrentState = RaceState.Finished;
-            OnRaceFinishedWithResults?.Invoke(PlayerRank, RaceTime);
-        }
-
-        public void SetupParticipants(ArcadeCarController player, List<AICarController> rivals)
+        public void SetupParticipants(ArcadeCarController player, List<AICarController> rivals, float finishZ = 1200f)
         {
             playerCar = player;
             aiCars = rivals;
+            FinishLineZ = finishZ;
         }
     }
 }

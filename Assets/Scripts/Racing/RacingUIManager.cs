@@ -11,9 +11,8 @@ namespace MobileRacing
 
         [Header("HUD Displays")]
         [SerializeField] private Text speedText;
-        [SerializeField] private Text lapText;
-        [SerializeField] private Text lapTimeText;
-        [SerializeField] private Text bestLapText;
+        [SerializeField] private Text distanceText;
+        [SerializeField] private Text raceTimeText;
         [SerializeField] private Text rankText;
 
         [Header("Countdown UI")]
@@ -26,12 +25,6 @@ namespace MobileRacing
 
         private void Start()
         {
-            if (CheckpointTrackManager.Instance != null)
-            {
-                CheckpointTrackManager.Instance.OnLapChanged += UpdateLapDisplay;
-                CheckpointTrackManager.Instance.OnLapCompleted += UpdateBestLapDisplay;
-            }
-
             if (RaceGameManager.Instance != null)
             {
                 RaceGameManager.Instance.OnCountdownTick += HandleCountdown;
@@ -47,12 +40,6 @@ namespace MobileRacing
 
         private void OnDestroy()
         {
-            if (CheckpointTrackManager.Instance != null)
-            {
-                CheckpointTrackManager.Instance.OnLapChanged -= UpdateLapDisplay;
-                CheckpointTrackManager.Instance.OnLapCompleted -= UpdateBestLapDisplay;
-            }
-
             if (RaceGameManager.Instance != null)
             {
                 RaceGameManager.Instance.OnCountdownTick -= HandleCountdown;
@@ -63,15 +50,24 @@ namespace MobileRacing
 
         private void Update()
         {
-            if (car != null && speedText != null)
+            if (car != null)
             {
-                int speed = Mathf.RoundToInt(car.CurrentSpeedKmh);
-                speedText.text = $"{speed} <size=18>KM/H</size>";
+                if (speedText != null)
+                {
+                    int speed = Mathf.RoundToInt(car.CurrentSpeedKmh);
+                    speedText.text = $"{speed} <size=18>KM/H</size>";
+                }
+
+                if (distanceText != null && RaceGameManager.Instance != null)
+                {
+                    float distRemaining = Mathf.Max(0f, RaceGameManager.Instance.FinishLineZ - car.transform.position.z);
+                    distanceText.text = $"FINISH: {Mathf.RoundToInt(distRemaining)}m";
+                }
             }
 
-            if (CheckpointTrackManager.Instance != null && lapTimeText != null)
+            if (RaceGameManager.Instance != null && raceTimeText != null)
             {
-                lapTimeText.text = FormatTime(CheckpointTrackManager.Instance.CurrentLapTime);
+                raceTimeText.text = FormatTime(RaceGameManager.Instance.RaceTime);
             }
         }
 
@@ -110,22 +106,6 @@ namespace MobileRacing
             }
         }
 
-        private void UpdateLapDisplay(int currentLap, int totalLaps)
-        {
-            if (lapText != null)
-            {
-                lapText.text = $"LAP {currentLap}/{totalLaps}";
-            }
-        }
-
-        private void UpdateBestLapDisplay(float lapTime)
-        {
-            if (bestLapText != null && CheckpointTrackManager.Instance != null)
-            {
-                bestLapText.text = $"BEST: {FormatTime(CheckpointTrackManager.Instance.BestLapTime)}";
-            }
-        }
-
         private void ShowRaceResults(int rank, float totalTime)
         {
             if (raceFinishedPanel != null)
@@ -133,20 +113,19 @@ namespace MobileRacing
                 raceFinishedPanel.SetActive(true);
                 if (resultRankText != null)
                 {
-                    string trophy = rank == 1 ? "🏆 1ST PLACE!" : (rank == 2 ? "🥈 2ND PLACE" : (rank == 3 ? "🥉 3RD PLACE" : "4TH PLACE"));
+                    string trophy = rank == 1 ? "🏆 1ST PLACE WINNER!" : (rank == 2 ? "🥈 2ND PLACE" : (rank == 3 ? "🥉 3RD PLACE" : "4TH PLACE"));
                     resultRankText.text = trophy;
                     resultRankText.color = rank == 1 ? Color.yellow : Color.white;
                 }
                 if (resultTimeText != null)
                 {
-                    resultTimeText.text = $"TOTAL TIME: {FormatTime(totalTime)}";
+                    resultTimeText.text = $"TIME: {FormatTime(totalTime)}";
                 }
             }
         }
 
         private string FormatTime(float timeInSeconds)
         {
-            if (timeInSeconds >= 9999f) return "--:--.--";
             int minutes = Mathf.FloorToInt(timeInSeconds / 60f);
             int seconds = Mathf.FloorToInt(timeInSeconds % 60f);
             int fraction = Mathf.FloorToInt((timeInSeconds * 100f) % 100f);

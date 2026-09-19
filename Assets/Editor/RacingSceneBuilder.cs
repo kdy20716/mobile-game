@@ -20,11 +20,11 @@ namespace MobileRacing.Editor
 
             // 2. Materials
             Material roadMat = GetOrCreateMaterial("Assets/Materials/M_Road.mat", new Color(0.12f, 0.12f, 0.14f));
-            Material lineMat = GetOrCreateMaterial("Assets/Materials/M_RoadLine.mat", new Color(1f, 0.9f, 0.2f));
-            Material grassMat = GetOrCreateMaterial("Assets/Materials/M_Grass.mat", new Color(0.22f, 0.52f, 0.24f));
-            Material curbRed = GetOrCreateMaterial("Assets/Materials/M_CurbRed.mat", new Color(0.85f, 0.15f, 0.15f));
-            Material curbWhite = GetOrCreateMaterial("Assets/Materials/M_CurbWhite.mat", new Color(0.95f, 0.95f, 0.95f));
-            Material barrierMat = GetOrCreateMaterial("Assets/Materials/M_Barrier.mat", new Color(0.6f, 0.65f, 0.7f));
+            Material whiteLineMat = GetOrCreateMaterial("Assets/Materials/M_WhiteLine.mat", new Color(0.95f, 0.95f, 0.95f));
+            Material yellowLineMat = GetOrCreateMaterial("Assets/Materials/M_YellowLine.mat", new Color(1f, 0.85f, 0.1f));
+            Material grassMat = GetOrCreateMaterial("Assets/Materials/M_Grass.mat", new Color(0.2f, 0.45f, 0.2f));
+            Material barrierMat = GetOrCreateMaterial("Assets/Materials/M_Barrier.mat", new Color(0.5f, 0.55f, 0.6f));
+            Material lampMat = GetOrCreateMaterial("Assets/Materials/M_StreetLamp.mat", new Color(1f, 0.95f, 0.7f));
 
             // Car Materials
             Material playerCarMat = GetOrCreateMaterial("Assets/Materials/M_PlayerCar.mat", new Color(0.95f, 0.15f, 0.15f)); // Red
@@ -37,44 +37,90 @@ namespace MobileRacing.Editor
             // 3. Ground Plane
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground_Grass";
-            ground.transform.position = Vector3.zero;
-            ground.transform.localScale = new Vector3(120f, 1f, 120f);
+            ground.transform.position = new Vector3(0, -0.05f, 750f);
+            ground.transform.localScale = new Vector3(25f, 1f, 160f); // 250m wide x 1600m long
             ground.GetComponent<MeshRenderer>().material = grassMat;
 
-            // 4. Track & Waypoints
-            GameObject trackRoot = new GameObject("Track_Circuit");
-            GameObject checkpointRoot = new GameObject("Track_Checkpoints");
-            var trackManager = checkpointRoot.AddComponent<CheckpointTrackManager>();
+            // 4. Build 5-Lane Highway (Total Length: 1300m)
+            // Lanes: 5 lanes, lane width = 7m, total width = 35m
+            // Lane Centers: -14m, -7m, 0m, +7m, +14m
+            float highwayLength = 1300f;
+            float finishZ = 1200f;
+            float totalRoadWidth = 35f;
 
-            List<Transform> waypoints = BuildCircuitTrack(trackRoot, checkpointRoot, roadMat, lineMat, curbRed, curbWhite, barrierMat);
-            trackManager.SetCheckpoints(waypoints, 3);
+            GameObject roadRoot = new GameObject("Track_5LaneHighway");
 
-            // 5. Spawn Player Car (Grid 4 - 4th position or Pole)
-            Vector3 startPos = new Vector3(3f, 0.4f, 0f);
-            GameObject playerCar = BuildCar("PlayerCar", startPos, playerCarMat, glassMat, wheelMat, true);
+            // Main Road Surface
+            GameObject mainRoad = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            mainRoad.name = "Highway_Surface";
+            mainRoad.transform.SetParent(roadRoot.transform);
+            mainRoad.transform.position = new Vector3(0f, 0f, highwayLength * 0.5f);
+            mainRoad.transform.localScale = new Vector3(totalRoadWidth, 0.1f, highwayLength);
+            mainRoad.GetComponent<MeshRenderer>().material = roadMat;
 
-            // 6. Spawn AI Rival Cars
+            // Side Barriers (Left & Right)
+            CreateSideBarrier(roadRoot.transform, -totalRoadWidth * 0.5f - 0.3f, highwayLength, barrierMat, "Barrier_Left");
+            CreateSideBarrier(roadRoot.transform, totalRoadWidth * 0.5f + 0.3f, highwayLength, barrierMat, "Barrier_Right");
+
+            // Lane Divider Lines
+            // 4 internal dividers at X = -10.5, -3.5, +3.5, +10.5
+            float[] dividerX = new float[] { -10.5f, -3.5f, 3.5f, 10.5f };
+            for (int d = 0; d < dividerX.Length; d++)
+            {
+                // Dashed lines along highway
+                for (float z = 10f; z < highwayLength; z += 20f)
+                {
+                    GameObject dash = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    dash.name = $"DashLine_{d}_{z}";
+                    dash.transform.SetParent(roadRoot.transform);
+                    dash.transform.position = new Vector3(dividerX[d], 0.06f, z);
+                    dash.transform.localScale = new Vector3(0.25f, 0.05f, 10f);
+                    dash.GetComponent<MeshRenderer>().material = whiteLineMat;
+                    Object.DestroyImmediate(dash.GetComponent<Collider>());
+                }
+            }
+
+            // Road Edge Solid Lines
+            CreateSolidLine(roadRoot.transform, -totalRoadWidth * 0.5f + 0.3f, highwayLength, yellowLineMat, "EdgeLine_Left");
+            CreateSolidLine(roadRoot.transform, totalRoadWidth * 0.5f - 0.3f, highwayLength, yellowLineMat, "EdgeLine_Right");
+
+            // Street Lamps every 60m along highway
+            for (float z = 30f; z < highwayLength; z += 60f)
+            {
+                CreateStreetLamp(roadRoot.transform, -totalRoadWidth * 0.5f - 1.5f, z, barrierMat, lampMat);
+                CreateStreetLamp(roadRoot.transform, totalRoadWidth * 0.5f + 1.5f, z, barrierMat, lampMat);
+            }
+
+            // Start & Finish Gantries
+            BuildGantry(roadRoot.transform, 0f, totalRoadWidth, "START", roadMat, yellowLineMat);
+            BuildGantry(roadRoot.transform, finishZ, totalRoadWidth, "FINISH", roadMat, whiteLineMat);
+
+            // 5. Spawn Player Car (Middle Lane: X = 0)
+            Vector3 playerStartPos = new Vector3(0f, 0.4f, 5f);
+            GameObject playerCar = BuildCar("PlayerCar", playerStartPos, playerCarMat, glassMat, wheelMat, true);
+
+            // 6. Spawn AI Rival Cars (Lanes: -14, -7, +7, +14)
             List<AICarController> rivals = new List<AICarController>();
 
-            // AI 1 (Pole position)
-            GameObject ai1 = BuildCar("Rival_PhantomBlue", new Vector3(-3f, 0.4f, 8f), aiCar1Mat, glassMat, wheelMat, false);
+            // AI 1 (Lane 1: X = -14)
+            GameObject ai1 = BuildCar("Rival_BlueBolt", new Vector3(-14f, 0.4f, 5f), aiCar1Mat, glassMat, wheelMat, false);
             var aiCtrl1 = ai1.AddComponent<AICarController>();
             SetupAIWheels(ai1, aiCtrl1);
-            aiCtrl1.SetWaypoints(waypoints, 34f, 28f);
+            aiCtrl1.SetPerformance(42f, 32f, -14f);
             rivals.Add(aiCtrl1);
 
-            // AI 2 (Grid 2)
-            GameObject ai2 = BuildCar("Rival_ViperYellow", new Vector3(3f, 0.4f, 14f), aiCar2Mat, glassMat, wheelMat, false);
+            // AI 2 (Lane 2: X = -7)
+            GameObject ai2 = BuildCar("Rival_YellowFury", new Vector3(-7f, 0.4f, 8f), aiCar2Mat, glassMat, wheelMat, false);
             var aiCtrl2 = ai2.AddComponent<AICarController>();
             SetupAIWheels(ai2, aiCtrl2);
-            aiCtrl2.SetWaypoints(waypoints, 33f, 26f);
+            aiCtrl2.SetPerformance(40f, 34f, -7f);
             rivals.Add(aiCtrl2);
 
-            // AI 3 (Grid 3)
-            GameObject ai3 = BuildCar("Rival_ApexGreen", new Vector3(-3f, 0.4f, 20f), aiCar3Mat, glassMat, wheelMat, false);
+            // AI 3 (Lane 4: X = +7)
+            GameObject ai3 = BuildCar("Rival_GreenApex", new Vector3(7f, 0.4f, 6f), aiCar3Mat, glassMat, wheelMat, false);
             var aiCtrl3 = ai3.AddComponent<AICarController>();
             SetupAIWheels(ai3, aiCtrl3);
-            aiCtrl3.SetWaypoints(waypoints, 35f, 30f);
+            aiCtrl3.SetPerformance(41f, 30f, 7f);
             rivals.Add(aiCtrl3);
 
             // 7. Chase Camera
@@ -84,7 +130,7 @@ namespace MobileRacing.Editor
             camObj.AddComponent<AudioListener>();
             var chaseCam = camObj.AddComponent<ChaseCamera>();
             chaseCam.SetTarget(playerCar.transform);
-            camObj.transform.position = startPos + new Vector3(0f, 3f, -6f);
+            camObj.transform.position = playerStartPos + new Vector3(0f, 2.5f, -5.5f);
 
             // 8. EventSystem
             if (Object.FindFirstObjectByType<EventSystem>() == null)
@@ -102,7 +148,7 @@ namespace MobileRacing.Editor
             GameObject gameMgrObj = new GameObject("GameManager");
             gameMgrObj.AddComponent<MobileInputManager>();
             var raceMgr = gameMgrObj.AddComponent<RaceGameManager>();
-            raceMgr.SetupParticipants(playerCar.GetComponent<ArcadeCarController>(), rivals);
+            raceMgr.SetupParticipants(playerCar.GetComponent<ArcadeCarController>(), rivals, finishZ);
 
             // 10. UI Canvas
             BuildUI(playerCar.GetComponent<ArcadeCarController>());
@@ -113,7 +159,7 @@ namespace MobileRacing.Editor
             AssetDatabase.Refresh();
 
             Selection.activeGameObject = playerCar;
-            Debug.Log("<color=green><b>[Racing Game]</b> 업그레이드된 모바일 레이싱 씬이 성공적으로 빌드되었습니다!</color>");
+            Debug.Log("<color=green><b>[Racing Game]</b> 5차선 고속도로 직선 드래그 레이싱 씬이 빌드되었습니다!</color>");
         }
 
         private static void SetupEnvironment()
@@ -123,8 +169,8 @@ namespace MobileRacing.Editor
             light.type = LightType.Directional;
             light.color = new Color(1f, 0.96f, 0.88f);
             light.intensity = 1.3f;
-            lightObj.transform.rotation = Quaternion.Euler(50f, -40f, 0f);
-            RenderSettings.ambientLight = new Color(0.38f, 0.4f, 0.45f);
+            lightObj.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
+            RenderSettings.ambientLight = new Color(0.4f, 0.42f, 0.46f);
         }
 
         private static Material GetOrCreateMaterial(string path, Color color)
@@ -145,128 +191,85 @@ namespace MobileRacing.Editor
             return mat;
         }
 
-        private static List<Transform> BuildCircuitTrack(GameObject trackRoot, GameObject cpRoot, Material roadMat, Material lineMat, Material curbRed, Material curbWhite, Material barrierMat)
-        {
-            List<Transform> checkpoints = new List<Transform>();
-
-            // Professional Grand Prix Circuit Waypoints
-            Vector3[] waypoints = new Vector3[]
-            {
-                new Vector3(0, 0, 0),        // Start/Finish
-                new Vector3(0, 0, 90),       // Main Straight
-                new Vector3(15, 0, 130),     // Turn 1 Entry
-                new Vector3(50, 0, 155),     // Turn 1 Apex
-                new Vector3(90, 0, 140),     // Turn 2
-                new Vector3(120, 0, 90),     // East Straight
-                new Vector3(115, 0, 20),     // Chicane Entry
-                new Vector3(80, 0, -10),     // Chicane Apex
-                new Vector3(90, 0, -60),     // South Bend
-                new Vector3(60, 0, -110),    // Hairpin Entry
-                new Vector3(20, 0, -110),    // Hairpin Apex
-                new Vector3(-10, 0, -70),    // Final Curve
-                new Vector3(-5, 0, -25)      // Heading to Grid
-            };
-
-            float roadWidth = 15f;
-
-            for (int i = 0; i < waypoints.Length; i++)
-            {
-                Vector3 p1 = waypoints[i];
-                Vector3 p2 = waypoints[(i + 1) % waypoints.Length];
-                Vector3 midPoint = (p1 + p2) * 0.5f;
-                Vector3 forward = (p2 - p1).normalized;
-                float segLength = Vector3.Distance(p1, p2);
-                Quaternion rot = Quaternion.LookRotation(forward, Vector3.up);
-
-                // Road Segment
-                GameObject seg = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                seg.name = $"Road_Segment_{i}";
-                seg.transform.SetParent(trackRoot.transform);
-                seg.transform.position = midPoint + Vector3.up * 0.05f;
-                seg.transform.rotation = rot;
-                seg.transform.localScale = new Vector3(roadWidth, 0.1f, segLength);
-                seg.GetComponent<MeshRenderer>().material = roadMat;
-
-                // Center Dashed Line
-                GameObject line = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                line.name = "CenterLine";
-                line.transform.SetParent(seg.transform);
-                line.transform.localPosition = new Vector3(0f, 0.52f, 0f);
-                line.transform.localScale = new Vector3(0.04f, 0.1f, 0.85f);
-                line.GetComponent<MeshRenderer>().material = lineMat;
-                Object.DestroyImmediate(line.GetComponent<Collider>());
-
-                // Curbs (Red & White Alternating)
-                Material curbColor = (i % 2 == 0) ? curbRed : curbWhite;
-                CreateCurb(seg.transform, -0.52f, curbColor, "Curb_L");
-                CreateCurb(seg.transform, 0.52f, curbColor, "Curb_R");
-
-                // Guardrails / Barriers
-                CreateBarrier(seg.transform, -0.56f, barrierMat, "Barrier_L");
-                CreateBarrier(seg.transform, 0.56f, barrierMat, "Barrier_R");
-
-                // Checkpoint
-                GameObject cp = new GameObject($"Checkpoint_{i}");
-                cp.transform.SetParent(cpRoot.transform);
-                cp.transform.position = midPoint + Vector3.up * 1f;
-                cp.transform.rotation = rot;
-                BoxCollider box = cp.AddComponent<BoxCollider>();
-                box.isTrigger = true;
-                box.size = new Vector3(roadWidth + 4f, 6f, 5f);
-                var cpTrigger = cp.AddComponent<CheckpointTrigger>();
-                cpTrigger.CheckpointIndex = i;
-                checkpoints.Add(cp.transform);
-            }
-
-            // Gantry Arch
-            BuildStartGantry(trackRoot.transform, roadWidth, curbRed, roadMat);
-
-            return checkpoints;
-        }
-
-        private static void CreateCurb(Transform parent, float localXRatio, Material mat, string name)
-        {
-            GameObject curb = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            curb.name = name;
-            curb.transform.SetParent(parent);
-            curb.transform.localPosition = new Vector3(localXRatio, 0.55f, 0f);
-            curb.transform.localScale = new Vector3(0.05f, 0.25f, 1f);
-            curb.GetComponent<MeshRenderer>().material = mat;
-        }
-
-        private static void CreateBarrier(Transform parent, float localXRatio, Material mat, string name)
+        private static void CreateSideBarrier(Transform parent, float xPos, float length, Material mat, string name)
         {
             GameObject barrier = GameObject.CreatePrimitive(PrimitiveType.Cube);
             barrier.name = name;
             barrier.transform.SetParent(parent);
-            barrier.transform.localPosition = new Vector3(localXRatio, 1.2f, 0f);
-            barrier.transform.localScale = new Vector3(0.04f, 1.2f, 1f);
+            barrier.transform.position = new Vector3(xPos, 0.6f, length * 0.5f);
+            barrier.transform.localScale = new Vector3(0.6f, 1.2f, length);
             barrier.GetComponent<MeshRenderer>().material = mat;
         }
 
-        private static void BuildStartGantry(Transform parent, float roadWidth, Material redMat, Material darkMat)
+        private static void CreateSolidLine(Transform parent, float xPos, float length, Material mat, string name)
         {
-            GameObject arch = new GameObject("StartFinish_Gantry");
-            arch.transform.SetParent(parent);
-            arch.transform.position = new Vector3(0, 0, 0);
+            GameObject line = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            line.name = name;
+            line.transform.SetParent(parent);
+            line.transform.position = new Vector3(xPos, 0.06f, length * 0.5f);
+            line.transform.localScale = new Vector3(0.3f, 0.05f, length);
+            line.GetComponent<MeshRenderer>().material = mat;
+            Object.DestroyImmediate(line.GetComponent<Collider>());
+        }
 
+        private static void CreateStreetLamp(Transform parent, float xPos, float zPos, Material poleMat, Material lightMat)
+        {
+            GameObject lamp = new GameObject("StreetLamp");
+            lamp.transform.SetParent(parent);
+            lamp.transform.position = new Vector3(xPos, 0, zPos);
+
+            // Pole
+            GameObject pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pole.transform.SetParent(lamp.transform);
+            pole.transform.localPosition = new Vector3(0, 4f, 0);
+            pole.transform.localScale = new Vector3(0.3f, 4f, 0.3f);
+            pole.GetComponent<MeshRenderer>().material = poleMat;
+            Object.DestroyImmediate(pole.GetComponent<Collider>());
+
+            // Arm
+            float armDir = xPos < 0 ? 1f : -1f;
+            GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arm.transform.SetParent(lamp.transform);
+            arm.transform.localPosition = new Vector3(armDir * 1.5f, 7.8f, 0);
+            arm.transform.localScale = new Vector3(3f, 0.2f, 0.3f);
+            arm.GetComponent<MeshRenderer>().material = poleMat;
+            Object.DestroyImmediate(arm.GetComponent<Collider>());
+
+            // Light Head
+            GameObject head = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            head.transform.SetParent(lamp.transform);
+            head.transform.localPosition = new Vector3(armDir * 3f, 7.6f, 0);
+            head.transform.localScale = new Vector3(0.8f, 0.3f, 0.6f);
+            head.GetComponent<MeshRenderer>().material = lightMat;
+            Object.DestroyImmediate(head.GetComponent<Collider>());
+        }
+
+        private static void BuildGantry(Transform parent, float zPos, float roadWidth, string label, Material frameMat, Material textMat)
+        {
+            GameObject gantry = new GameObject($"Gantry_{label}");
+            gantry.transform.SetParent(parent);
+            gantry.transform.position = new Vector3(0, 0, zPos);
+
+            // Left Post
             GameObject postL = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            postL.transform.SetParent(arch.transform);
-            postL.transform.position = new Vector3(-roadWidth * 0.55f, 3.5f, 0);
-            postL.transform.localScale = new Vector3(0.6f, 3.5f, 0.6f);
-            postL.GetComponent<MeshRenderer>().material = darkMat;
+            postL.transform.SetParent(gantry.transform);
+            postL.transform.localPosition = new Vector3(-roadWidth * 0.55f, 4f, 0);
+            postL.transform.localScale = new Vector3(0.8f, 4f, 0.8f);
+            postL.GetComponent<MeshRenderer>().material = frameMat;
 
+            // Right Post
             GameObject postR = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            postR.transform.SetParent(arch.transform);
-            postR.transform.position = new Vector3(roadWidth * 0.55f, 3.5f, 0);
-            postR.transform.localScale = new Vector3(0.6f, 3.5f, 0.6f);
-            postR.GetComponent<MeshRenderer>().material = darkMat;
+            postR.transform.SetParent(gantry.transform);
+            postR.transform.localPosition = new Vector3(roadWidth * 0.55f, 4f, 0);
+            postR.transform.localScale = new Vector3(0.8f, 4f, 0.8f);
+            postR.GetComponent<MeshRenderer>().material = frameMat;
 
+            // Beam
             GameObject beam = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            beam.transform.SetParent(arch.transform);
-            beam.transform.position = new Vector3(0, 7f, 0);
-            beam.transform.localScale = new Vector3(roadWidth * 1.2f, 1.2f, 0.8f);
-            beam.GetComponent<MeshRenderer>().material = redMat;
+            beam.transform.SetParent(gantry.transform);
+            beam.transform.localPosition = new Vector3(0, 8f, 0);
+            beam.transform.localScale = new Vector3(roadWidth * 1.15f, 1.4f, 1f);
+            beam.GetComponent<MeshRenderer>().material = textMat;
         }
 
         private static GameObject BuildCar(string name, Vector3 position, Material bodyMat, Material glassMat, Material wheelMat, bool isPlayer)
@@ -366,25 +369,20 @@ namespace MobileRacing.Editor
             SetRectTransform(speedObj, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-120, -50), new Vector2(200, 60));
             speedObj.GetComponent<Text>().color = Color.white;
 
-            // Lap Text (Top Left)
-            GameObject lapObj = CreateUIText(canvasObj.transform, "LapText", "LAP 1/3", 26, TextAnchor.UpperLeft, defaultFont);
-            SetRectTransform(lapObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(120, -40), new Vector2(180, 50));
-            lapObj.GetComponent<Text>().color = Color.yellow;
+            // Distance Remaining (Top Center)
+            GameObject distObj = CreateUIText(canvasObj.transform, "DistanceText", "FINISH: 1200m", 30, TextAnchor.UpperCenter, defaultFont);
+            SetRectTransform(distObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(300, 50));
+            distObj.GetComponent<Text>().color = Color.yellow;
 
-            // Real-time Rank Text (Top Left below Lap)
-            GameObject rankObj = CreateUIText(canvasObj.transform, "RankText", "1ST", 36, TextAnchor.UpperLeft, defaultFont);
-            SetRectTransform(rankObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(120, -90), new Vector2(180, 55));
-            rankObj.GetComponent<Text>().color = new Color(1f, 0.85f, 0.1f);
-
-            // Lap Time Text (Top Center)
-            GameObject timeObj = CreateUIText(canvasObj.transform, "LapTimeText", "00:00.00", 30, TextAnchor.UpperCenter, defaultFont);
-            SetRectTransform(timeObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(250, 50));
+            // Race Time (Top Center below Distance)
+            GameObject timeObj = CreateUIText(canvasObj.transform, "RaceTimeText", "TIME: 00:00.00", 20, TextAnchor.UpperCenter, defaultFont);
+            SetRectTransform(timeObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(250, 30));
             timeObj.GetComponent<Text>().color = Color.white;
 
-            // Best Time Text
-            GameObject bestObj = CreateUIText(canvasObj.transform, "BestLapText", "BEST: --:--.--", 18, TextAnchor.UpperCenter, defaultFont);
-            SetRectTransform(bestObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(250, 30));
-            bestObj.GetComponent<Text>().color = new Color(0.8f, 0.8f, 0.8f);
+            // Real-time Rank Text (Top Left)
+            GameObject rankObj = CreateUIText(canvasObj.transform, "RankText", "1ST", 40, TextAnchor.UpperLeft, defaultFont);
+            SetRectTransform(rankObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(120, -50), new Vector2(180, 65));
+            rankObj.GetComponent<Text>().color = new Color(1f, 0.85f, 0.1f);
 
             // Center Giant Countdown Text
             GameObject countdownObj = CreateUIText(canvasObj.transform, "CountdownText", "3", 80, TextAnchor.MiddleCenter, defaultFont);
@@ -395,14 +393,14 @@ namespace MobileRacing.Editor
             GameObject finishPanel = new GameObject("FinishPanel");
             finishPanel.transform.SetParent(canvasObj.transform);
             Image finishBg = finishPanel.AddComponent<Image>();
-            finishBg.color = new Color(0, 0, 0, 0.82f);
-            SetRectTransform(finishPanel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(440, 220));
+            finishBg.color = new Color(0, 0, 0, 0.85f);
+            SetRectTransform(finishPanel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(460, 230));
 
-            GameObject resultRank = CreateUIText(finishPanel.transform, "ResultRank", "🏆 1ST PLACE!", 36, TextAnchor.MiddleCenter, defaultFont);
-            SetRectTransform(resultRank, new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, new Vector2(400, 60));
+            GameObject resultRank = CreateUIText(finishPanel.transform, "ResultRank", "🏆 1ST PLACE WINNER!", 36, TextAnchor.MiddleCenter, defaultFont);
+            SetRectTransform(resultRank, new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, new Vector2(420, 60));
             resultRank.GetComponent<Text>().color = Color.yellow;
 
-            GameObject resultTime = CreateUIText(finishPanel.transform, "ResultTime", "TOTAL TIME: 01:23.45", 22, TextAnchor.MiddleCenter, defaultFont);
+            GameObject resultTime = CreateUIText(finishPanel.transform, "ResultTime", "TIME: 00:25.45", 22, TextAnchor.MiddleCenter, defaultFont);
             SetRectTransform(resultTime, new Vector2(0.5f, 0.45f), new Vector2(0.5f, 0.45f), Vector2.zero, new Vector2(380, 40));
             resultTime.GetComponent<Text>().color = Color.white;
 
@@ -412,9 +410,8 @@ namespace MobileRacing.Editor
             // Connect UI References via SerializedObject
             SerializedObject so = new SerializedObject(uiMgr);
             so.FindProperty("speedText").objectReferenceValue = speedObj.GetComponent<Text>();
-            so.FindProperty("lapText").objectReferenceValue = lapObj.GetComponent<Text>();
-            so.FindProperty("lapTimeText").objectReferenceValue = timeObj.GetComponent<Text>();
-            so.FindProperty("bestLapText").objectReferenceValue = bestObj.GetComponent<Text>();
+            so.FindProperty("distanceText").objectReferenceValue = distObj.GetComponent<Text>();
+            so.FindProperty("raceTimeText").objectReferenceValue = timeObj.GetComponent<Text>();
             so.FindProperty("rankText").objectReferenceValue = rankObj.GetComponent<Text>();
             so.FindProperty("countdownText").objectReferenceValue = countdownObj.GetComponent<Text>();
             so.FindProperty("raceFinishedPanel").objectReferenceValue = finishPanel;
