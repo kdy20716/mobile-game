@@ -283,25 +283,25 @@ namespace Survivor2D.Editor
 
         private static GameObject CreateSlider(Transform parent, string name, Color fillCol, Vector2 anchorMin, Vector2 anchorMax, Vector2 pos, Vector2 size)
         {
-            GameObject sliderObj = new GameObject(name);
+            GameObject sliderObj = new GameObject(name, typeof(RectTransform));
             sliderObj.transform.SetParent(parent);
             Slider slider = sliderObj.AddComponent<Slider>();
 
             SetRect(sliderObj, anchorMin, anchorMax, pos, size);
 
             // Background
-            GameObject bgObj = new GameObject("Background");
+            GameObject bgObj = new GameObject("Background", typeof(RectTransform));
             bgObj.transform.SetParent(sliderObj.transform);
             Image bg = bgObj.AddComponent<Image>();
             bg.color = new Color(0.1f, 0.1f, 0.1f, 0.6f);
             SetRect(bgObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             // Fill Area
-            GameObject fillArea = new GameObject("Fill Area");
+            GameObject fillArea = new GameObject("Fill Area", typeof(RectTransform));
             fillArea.transform.SetParent(sliderObj.transform);
             SetRect(fillArea, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-            GameObject fill = new GameObject("Fill");
+            GameObject fill = new GameObject("Fill", typeof(RectTransform));
             fill.transform.SetParent(fillArea.transform);
             Image fillImg = fill.AddComponent<Image>();
             fillImg.color = fillCol;
@@ -314,7 +314,7 @@ namespace Survivor2D.Editor
 
         private static GameObject CreateText(Transform parent, string name, string text, int fontSize, TextAnchor alignment, Font font)
         {
-            GameObject obj = new GameObject(name);
+            GameObject obj = new GameObject(name, typeof(RectTransform));
             obj.transform.SetParent(parent);
             Text t = obj.AddComponent<Text>();
             t.text = text;
@@ -326,7 +326,8 @@ namespace Survivor2D.Editor
 
         private static void SetRect(GameObject obj, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Vector2 sizeDelta)
         {
-            RectTransform rt = obj.GetComponent<RectTransform>() ?? obj.AddComponent<RectTransform>();
+            RectTransform rt = obj.GetComponent<RectTransform>();
+            if (rt == null) rt = obj.AddComponent<RectTransform>();
             rt.anchorMin = anchorMin;
             rt.anchorMax = anchorMax;
             rt.anchoredPosition = anchoredPosition;

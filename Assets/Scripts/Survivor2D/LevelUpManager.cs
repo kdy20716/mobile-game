@@ -55,7 +55,7 @@ namespace Survivor2D
                 if (panelTransform == null)
                 {
                     // Search in parent or active canvas
-                    var canvas = GetComponentInParent<Canvas>() ?? Object.FindFirstObjectByType<Canvas>();
+                    var canvas = GetComponentInParent<Canvas>() ?? UnityEngine.Object.FindFirstObjectByType<Canvas>();
                     if (canvas != null) panelTransform = canvas.transform.Find("LevelUpModal");
                 }
                 if (panelTransform != null) levelUpPanel = panelTransform.gameObject;
