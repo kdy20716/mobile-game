@@ -161,24 +161,27 @@ namespace BlockBlast
         {
             comboPopupText.gameObject.SetActive(true);
 
-            string title = $"COMBO x{combo}!";
-            Color col = new Color(1f, 0.8f, 0.2f);
+            string title = $"💖 COMBO x{combo}!";
+            Color col = new Color(1f, 0.55f, 0.7f); // Sweet Pink
 
-            if (combo >= 3) { title = $"AMAZING! x{combo}"; col = new Color(1f, 0.4f, 0.5f); }
-            if (combo >= 5) { title = $"UNBELIEVABLE! x{combo}"; col = new Color(0.2f, 0.9f, 1f); }
+            if (combo == 2) { title = $"✨ SWEET! x2"; col = new Color(1f, 0.8f, 0.25f); } // Mango Yellow
+            else if (combo == 3) { title = $"🍓 DELICIOUS! x3"; col = new Color(1f, 0.45f, 0.6f); } // Strawberry
+            else if (combo == 4) { title = $"🌟 MARVELOUS! x4"; col = new Color(0.4f, 0.88f, 0.75f); } // Mint
+            else if (combo >= 5) { title = $"🎉 UNBELIEVABLE! x{combo}"; col = new Color(0.7f, 0.55f, 1f); } // Lavender
 
-            comboPopupText.text = $"{title}\n<size=28>+{totalLines} LINES</size>";
+            comboPopupText.text = $"{title}\n<size=30>+{totalLines} LINES</size>";
             comboPopupText.color = col;
 
             float elapsed = 0f;
             float dur = 0.8f;
-            Vector3 startScale = Vector3.one * 0.5f;
+            Vector3 startScale = Vector3.one * 0.4f;
 
             while (elapsed < dur)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / dur;
-                float s = Mathf.Sin(t * Mathf.PI) * 0.6f + 0.9f;
+                // Bouncy elastic curve
+                float s = Mathf.Sin(t * Mathf.PI) * 0.75f + 0.85f;
                 comboPopupText.transform.localScale = startScale * s;
                 yield return null;
             }

@@ -41,17 +41,18 @@ namespace BlockBlast
 
     public static class BlockShapeData
     {
+        // 🍬 Sweet Macaron & Pastel Jelly Color Palette
         public static readonly Color[] Palette = new Color[]
         {
-            new Color(0.22f, 0.74f, 0.97f), // Cyan
-            new Color(0.96f, 0.62f, 0.04f), // Amber
-            new Color(0.06f, 0.73f, 0.51f), // Emerald
-            new Color(0.93f, 0.28f, 0.60f), // Pink
-            new Color(0.55f, 0.36f, 0.96f), // Purple
-            new Color(0.98f, 0.45f, 0.09f), // Orange
+            new Color(0.36f, 0.77f, 1.0f),   // Sky Milk Blue (#5CC4FF)
+            new Color(1.0f, 0.75f, 0.26f),   // Mango Sorbet Yellow (#FFC043)
+            new Color(0.31f, 0.88f, 0.71f),  // Apple Soda Mint (#4EE0B5)
+            new Color(1.0f, 0.48f, 0.64f),   // Strawberry Milk Pink (#FF7AA2)
+            new Color(0.65f, 0.49f, 1.0f),   // Berry Lavender Purple (#A67CFF)
+            new Color(1.0f, 0.56f, 0.42f),   // Peach Coral Orange (#FF8F6B)
         };
 
-        public static readonly Color BombColor = new Color(0.94f, 0.27f, 0.27f); // Red Bomb
+        public static readonly Color BombColor = new Color(1.0f, 0.30f, 0.41f); // Sweet Cherry Red (#FF4D69)
 
         // 18 Standard Block Shapes
         public static readonly int[][,] ShapeTemplates = new int[][,]

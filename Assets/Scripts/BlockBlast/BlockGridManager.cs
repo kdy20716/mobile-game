@@ -219,6 +219,12 @@ namespace BlockBlast
                     }
                 }
 
+                if (BlockAudioManager.Instance != null)
+                {
+                    BlockAudioManager.Instance.PlayClear(CurrentCombo);
+                    if (bombExploded) BlockAudioManager.Instance.PlayBomb();
+                }
+
                 int points = Mathf.RoundToInt((cellsToClear.Count * 20) * (CurrentCombo * 1.5f));
                 OnScoreAdded?.Invoke(points);
                 OnLinesCleared?.Invoke(CurrentCombo, totalLines);
@@ -237,6 +243,10 @@ namespace BlockBlast
                 if (_cells[r, c] != null && _cells[r, c].IsOccupied)
                 {
                     _cells[r, c].PlayClearAnim(0f);
+                    if (BlockAudioManager.Instance != null)
+                    {
+                        BlockAudioManager.Instance.PlayHammer();
+                    }
                     OnBombExploded?.Invoke();
                     BlockBlastUIManager.Instance.ConsumeHammer();
                 }
