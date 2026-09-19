@@ -60,7 +60,11 @@ namespace MobileRacing.Editor
             {
                 GameObject es = new GameObject("EventSystem");
                 es.AddComponent<EventSystem>();
+#if ENABLE_INPUT_SYSTEM
+                es.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+#else
                 es.AddComponent<StandaloneInputModule>();
+#endif
             }
 
             // 9. Mobile Input Manager & UI

@@ -1,4 +1,7 @@
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace MobileRacing
 {
@@ -25,11 +28,29 @@ namespace MobileRacing
 
         private void Update()
         {
-            // 1. Keyboard Input (PC / Editor Testing)
-            float keySteer = Input.GetAxisRaw("Horizontal");
-            float keyThrottle = Input.GetAxisRaw("Vertical");
-            bool keyHandbrake = Input.GetKey(KeyCode.Space);
-            bool keyBoost = Input.GetKey(KeyCode.LeftShift);
+            float keySteer = 0f;
+            float keyThrottle = 0f;
+            bool keyHandbrake = false;
+            bool keyBoost = false;
+
+            // 1. New Input System Support
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) keySteer -= 1f;
+                if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) keySteer += 1f;
+                if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) keyThrottle += 1f;
+                if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) keyThrottle -= 1f;
+                keyHandbrake = keyboard.spaceKey.isPressed;
+                keyBoost = keyboard.leftShiftKey.isPressed;
+            }
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            keySteer = Input.GetAxisRaw("Horizontal");
+            keyThrottle = Input.GetAxisRaw("Vertical");
+            keyHandbrake = Input.GetKey(KeyCode.Space);
+            keyBoost = Input.GetKey(KeyCode.LeftShift);
+#endif
 
             // 2. Mobile Touch Buttons
             float touchSteer = 0f;
