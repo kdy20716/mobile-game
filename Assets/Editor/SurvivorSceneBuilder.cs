@@ -253,11 +253,13 @@ namespace Survivor2D.Editor
             SetRect(tObj, new Vector2(0, 1), new Vector2(1, 1), new Vector2(15, -25), new Vector2(-30, 30));
             title = tObj.GetComponent<Text>();
             title.color = Color.white;
+            title.raycastTarget = false; // Prevent blocking parent button click
 
             GameObject dObj = CreateText(obj.transform, "Desc", "Upgrade description text...", 15, TextAnchor.UpperLeft, font);
             SetRect(dObj, new Vector2(0, 0), new Vector2(1, 1), new Vector2(15, -5), new Vector2(-30, -45));
             desc = dObj.GetComponent<Text>();
             desc.color = new Color(0.75f, 0.85f, 0.95f);
+            desc.raycastTarget = false; // Prevent blocking parent button click
 
             return obj;
         }

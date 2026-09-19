@@ -52,6 +52,12 @@ namespace Survivor2D
             if (levelUpPanel == null)
             {
                 var panelTransform = transform.Find("LevelUpModal");
+                if (panelTransform == null)
+                {
+                    // Search in parent or active canvas
+                    var canvas = GetComponentInParent<Canvas>() ?? Object.FindFirstObjectByType<Canvas>();
+                    if (canvas != null) panelTransform = canvas.transform.Find("LevelUpModal");
+                }
                 if (panelTransform != null) levelUpPanel = panelTransform.gameObject;
             }
 
@@ -92,8 +98,18 @@ namespace Survivor2D
 
         public void TriggerLevelUp(int newLevel)
         {
+            AutoFindUIReferences();
+
             Time.timeScale = 0f; // Pause game
-            if (levelUpPanel != null) levelUpPanel.SetActive(true);
+            if (levelUpPanel != null)
+            {
+                levelUpPanel.SetActive(true);
+                levelUpPanel.transform.SetAsLastSibling(); // Ensure it is rendered on top of everything
+            }
+            else
+            {
+                Debug.LogError("[LevelUpManager] levelUpPanel is NULL! Check hierarchy.");
+            }
 
             // Roll 3 distinct upgrades
             List<UpgradeType> all = new List<UpgradeType>
