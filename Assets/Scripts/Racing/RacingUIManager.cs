@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,12 +9,20 @@ namespace MobileRacing
         [Header("Car Reference")]
         [SerializeField] private ArcadeCarController car;
 
-        [Header("UI Text Displays")]
+        [Header("HUD Displays")]
         [SerializeField] private Text speedText;
         [SerializeField] private Text lapText;
         [SerializeField] private Text lapTimeText;
         [SerializeField] private Text bestLapText;
+        [SerializeField] private Text rankText;
+
+        [Header("Countdown UI")]
+        [SerializeField] private Text countdownText;
+
+        [Header("Race Finished UI")]
         [SerializeField] private GameObject raceFinishedPanel;
+        [SerializeField] private Text resultRankText;
+        [SerializeField] private Text resultTimeText;
 
         private void Start()
         {
@@ -21,11 +30,19 @@ namespace MobileRacing
             {
                 CheckpointTrackManager.Instance.OnLapChanged += UpdateLapDisplay;
                 CheckpointTrackManager.Instance.OnLapCompleted += UpdateBestLapDisplay;
-                CheckpointTrackManager.Instance.OnRaceCompleted += ShowRaceFinished;
+            }
+
+            if (RaceGameManager.Instance != null)
+            {
+                RaceGameManager.Instance.OnCountdownTick += HandleCountdown;
+                RaceGameManager.Instance.OnPlayerRankChanged += UpdateRankDisplay;
+                RaceGameManager.Instance.OnRaceFinishedWithResults += ShowRaceResults;
             }
 
             if (raceFinishedPanel != null)
                 raceFinishedPanel.SetActive(false);
+
+            UpdateRankDisplay(1);
         }
 
         private void OnDestroy()
@@ -34,7 +51,13 @@ namespace MobileRacing
             {
                 CheckpointTrackManager.Instance.OnLapChanged -= UpdateLapDisplay;
                 CheckpointTrackManager.Instance.OnLapCompleted -= UpdateBestLapDisplay;
-                CheckpointTrackManager.Instance.OnRaceCompleted -= ShowRaceFinished;
+            }
+
+            if (RaceGameManager.Instance != null)
+            {
+                RaceGameManager.Instance.OnCountdownTick -= HandleCountdown;
+                RaceGameManager.Instance.OnPlayerRankChanged -= UpdateRankDisplay;
+                RaceGameManager.Instance.OnRaceFinishedWithResults -= ShowRaceResults;
             }
         }
 
@@ -49,6 +72,41 @@ namespace MobileRacing
             if (CheckpointTrackManager.Instance != null && lapTimeText != null)
             {
                 lapTimeText.text = FormatTime(CheckpointTrackManager.Instance.CurrentLapTime);
+            }
+        }
+
+        private void HandleCountdown(int sec)
+        {
+            if (countdownText == null) return;
+
+            if (sec > 0)
+            {
+                countdownText.gameObject.SetActive(true);
+                countdownText.text = sec.ToString();
+                countdownText.color = Color.yellow;
+            }
+            else
+            {
+                countdownText.text = "GO!";
+                countdownText.color = Color.green;
+                StartCoroutine(HideCountdownAfterDelay());
+            }
+        }
+
+        private IEnumerator HideCountdownAfterDelay()
+        {
+            yield return new WaitForSeconds(1.2f);
+            if (countdownText != null)
+                countdownText.gameObject.SetActive(false);
+        }
+
+        private void UpdateRankDisplay(int rank)
+        {
+            if (rankText != null)
+            {
+                string suffix = rank == 1 ? "ST" : (rank == 2 ? "ND" : (rank == 3 ? "RD" : "TH"));
+                rankText.text = $"{rank}<size=22>{suffix}</size>";
+                rankText.color = rank == 1 ? new Color(1f, 0.85f, 0.1f) : Color.white;
             }
         }
 
@@ -68,11 +126,21 @@ namespace MobileRacing
             }
         }
 
-        private void ShowRaceFinished()
+        private void ShowRaceResults(int rank, float totalTime)
         {
             if (raceFinishedPanel != null)
             {
                 raceFinishedPanel.SetActive(true);
+                if (resultRankText != null)
+                {
+                    string trophy = rank == 1 ? "🏆 1ST PLACE!" : (rank == 2 ? "🥈 2ND PLACE" : (rank == 3 ? "🥉 3RD PLACE" : "4TH PLACE"));
+                    resultRankText.text = trophy;
+                    resultRankText.color = rank == 1 ? Color.yellow : Color.white;
+                }
+                if (resultTimeText != null)
+                {
+                    resultTimeText.text = $"TOTAL TIME: {FormatTime(totalTime)}";
+                }
             }
         }
 
