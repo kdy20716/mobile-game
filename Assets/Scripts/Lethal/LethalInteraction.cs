@@ -22,8 +22,11 @@ namespace LethalCompany
         private float _lastScanTime = -10f;
 
         public ScrapItem HighlightedScrap { get; private set; }
+        public FacilityDoor HighlightedDoor { get; private set; }
+        public ShipLever HighlightedLever { get; private set; }
 
         public event Action<ScrapItem> OnFocusScrapChanged; // null if not looking at scrap
+        public event Action<string> OnFocusPromptChanged; // General prompt text (e.g. "[E] Enter Facility")
         public event Action<List<ScrapItem>> OnScannedScraps; // list of detected scraps
 
         private void Awake()
@@ -35,8 +38,8 @@ namespace LethalCompany
         {
             CheckFocusItem();
 
-            // E key: Grab
-            // G key: Drop
+            // E key: Grab scrap or Interact with Door/Lever
+            // G key: Drop scrap
             // Right Click: Scan
 #if ENABLE_INPUT_SYSTEM
             var kb = Keyboard.current;
@@ -44,7 +47,7 @@ namespace LethalCompany
 
             if (kb != null)
             {
-                if (kb.eKey.wasPressedThisFrame) GrabFocusedItem();
+                if (kb.eKey.wasPressedThisFrame) PerformPrimaryInteraction();
                 if (kb.gKey.wasPressedThisFrame) DropCurrentItem();
             }
 
@@ -63,15 +66,57 @@ namespace LethalCompany
             RaycastHit hit;
 
             ScrapItem foundScrap = null;
+            FacilityDoor foundDoor = null;
+            ShipLever foundLever = null;
+
             if (Physics.Raycast(ray, out hit, reachDistance, interactLayer))
             {
                 foundScrap = hit.collider.GetComponentInParent<ScrapItem>();
+                foundDoor = hit.collider.GetComponentInParent<FacilityDoor>();
+                foundLever = hit.collider.GetComponentInParent<ShipLever>();
             }
 
             if (foundScrap != HighlightedScrap)
             {
                 HighlightedScrap = foundScrap;
                 OnFocusScrapChanged?.Invoke(HighlightedScrap);
+            }
+
+            HighlightedDoor = foundDoor;
+            HighlightedLever = foundLever;
+
+            // Update prompt text
+            if (foundScrap != null)
+            {
+                OnFocusPromptChanged?.Invoke($"[E] Grab {foundScrap.itemName} (${foundScrap.scrapValue})");
+            }
+            else if (foundDoor != null)
+            {
+                OnFocusPromptChanged?.Invoke(foundDoor.PromptText);
+            }
+            else if (foundLever != null)
+            {
+                OnFocusPromptChanged?.Invoke(foundLever.PromptText);
+            }
+            else
+            {
+                OnFocusPromptChanged?.Invoke(null);
+            }
+        }
+
+        public void PerformPrimaryInteraction()
+        {
+            if (HighlightedScrap != null)
+            {
+                GrabFocusedItem();
+            }
+            else if (HighlightedDoor != null)
+            {
+                HighlightedDoor.Interact(gameObject);
+            }
+            else if (HighlightedLever != null)
+            {
+                HighlightedLever.PullLever();
             }
         }
 
@@ -83,6 +128,7 @@ namespace LethalCompany
                 {
                     HighlightedScrap = null;
                     OnFocusScrapChanged?.Invoke(null);
+                    OnFocusPromptChanged?.Invoke(null);
                 }
             }
         }
