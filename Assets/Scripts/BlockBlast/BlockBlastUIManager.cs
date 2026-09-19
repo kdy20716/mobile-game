@@ -31,7 +31,9 @@ namespace BlockBlast
         private int _score = 0;
         private int _bestScore = 0;
         private float _fever = 0f;
-        private int _skipCount = 1;
+        private bool _isSkipReady = true;
+        private int _skipRequiredLines = 10;
+        private int _skipCurrentLines = 0;
 
         private void Awake()
         {
@@ -103,8 +105,8 @@ namespace BlockBlast
             if (_fever >= 100f)
             {
                 _fever = 0f;
-                _skipCount++;
-                UpdateSkipUI();
+                // Fever bonus: instantly add score or small bonus
+                AddScore(500);
             }
             UpdateFeverUI();
         }
@@ -119,9 +121,10 @@ namespace BlockBlast
 
         private void OnSkipClicked()
         {
-            if (_skipCount <= 0) return;
+            if (!_isSkipReady) return;
 
-            _skipCount--;
+            _isSkipReady = false;
+            _skipCurrentLines = 0;
             UpdateSkipUI();
 
             if (BlockSpawner.Instance != null)
@@ -132,16 +135,46 @@ namespace BlockBlast
 
         private void UpdateSkipUI()
         {
-            if (skipBadgeText != null) skipBadgeText.text = _skipCount.ToString();
             if (btnSkip != null)
             {
-                btnSkip.interactable = _skipCount > 0;
+                btnSkip.interactable = _isSkipReady;
+                // Slight alpha/color difference when not interactable
+                var colors = btnSkip.colors;
+                btnSkip.colors = colors;
+            }
+
+            if (skipBadgeText != null)
+            {
+                if (_isSkipReady)
+                {
+                    skipBadgeText.text = "READY";
+                    skipBadgeText.color = new Color(0.1f, 0.4f, 0.1f);
+                }
+                else
+                {
+                    skipBadgeText.text = $"{_skipCurrentLines}/{_skipRequiredLines}";
+                    skipBadgeText.color = new Color(0.4f, 0.1f, 0.1f);
+                }
             }
         }
 
         private void HandleLinesCleared(int combo, int totalLines)
         {
             TriggerShake();
+
+            // Progressive Skip Cooldown
+            if (!_isSkipReady)
+            {
+                _skipCurrentLines += totalLines;
+                if (_skipCurrentLines >= _skipRequiredLines)
+                {
+                    _isSkipReady = true;
+                    _skipCurrentLines = 0;
+                    _skipRequiredLines += 10; // 10 -> 20 -> 30...
+                }
+                UpdateSkipUI();
+            }
+
             if (comboPopupText != null)
             {
                 StopCoroutine("ShowComboAnim");
@@ -221,7 +254,9 @@ namespace BlockBlast
         {
             _score = 0;
             _fever = 0f;
-            _skipCount = 1;
+            _isSkipReady = true;
+            _skipRequiredLines = 10;
+            _skipCurrentLines = 0;
 
             UpdateScoreUI();
             UpdateFeverUI();

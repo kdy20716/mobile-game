@@ -15,6 +15,13 @@ namespace BlockBlast
         [SerializeField] private Sprite gemTileSprite;
         [SerializeField] private Sprite bombIconSprite;
 
+        [Header("Board Metrics")]
+        public RectTransform BoardRect { get; private set; }
+        public float CellSize { get; private set; } = 108f;
+        public float CellSpacing { get; private set; } = 10f;
+        public float StartGridX { get; private set; }
+        public float StartGridY { get; private set; }
+
         public int CurrentCombo { get; private set; } = 0;
 
         public event Action<int, int> OnLinesCleared; // (combo, totalLines)
@@ -26,6 +33,34 @@ namespace BlockBlast
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
+        }
+
+        public void SetupBoardMetrics(RectTransform bRect, float cSize, float cSpacing, float startX, float startY)
+        {
+            BoardRect = bRect;
+            CellSize = cSize;
+            CellSpacing = cSpacing;
+            StartGridX = startX;
+            StartGridY = startY;
+        }
+
+        public Vector2Int? GetGridCoordFromLocalPoint(Vector2 localPoint)
+        {
+            float step = CellSize + CellSpacing;
+            // Calculate column and row relative to startGridX and startGridY
+            float relX = localPoint.x - (StartGridX - CellSize * 0.5f);
+            float relY = (StartGridY + CellSize * 0.5f) - localPoint.y;
+
+            if (relX < 0 || relY < 0) return null;
+
+            int col = Mathf.FloorToInt(relX / step);
+            int row = Mathf.FloorToInt(relY / step);
+
+            if (row >= 0 && row < GridSize && col >= 0 && col < GridSize)
+            {
+                return new Vector2Int(row, col);
+            }
+            return null;
         }
 
         public void RegisterCell(int r, int c, BlockCellUI cell)

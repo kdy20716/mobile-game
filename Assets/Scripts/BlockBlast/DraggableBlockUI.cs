@@ -14,7 +14,7 @@ namespace BlockBlast
         [Header("Drag Settings")]
         [Tooltip("Y-offset in screen pixels so finger doesn't cover the block on mobile")]
         [SerializeField] private float fingerOffsetY = 110f;
-        [SerializeField] private float dragScale = 1.12f;
+        [SerializeField] private float dragScale = 1.15f;
 
         private RectTransform _rectTransform;
         private Canvas _parentCanvas;
@@ -53,8 +53,8 @@ namespace BlockBlast
 
         private void BuildVisuals(Sprite gemSprite, Sprite bombSprite)
         {
-            float cellSize = 36f;
-            float spacing = 3f;
+            float cellSize = 38f;
+            float spacing = 3.5f;
 
             float totalWidth = Shape.Cols * cellSize + (Shape.Cols - 1) * spacing;
             float totalHeight = Shape.Rows * cellSize + (Shape.Rows - 1) * spacing;
@@ -86,7 +86,7 @@ namespace BlockBlast
                             GameObject bObj = new GameObject("BombIcon", typeof(RectTransform), typeof(Image));
                             bObj.transform.SetParent(cellObj.transform, false);
                             RectTransform bRt = bObj.GetComponent<RectTransform>();
-                            bRt.sizeDelta = new Vector2(cellSize * 0.8f, cellSize * 0.8f);
+                            bRt.sizeDelta = new Vector2(cellSize * 0.85f, cellSize * 0.85f);
                             bRt.anchoredPosition = Vector2.zero;
                             Image bImg = bObj.GetComponent<Image>();
                             bImg.sprite = bombSprite;
@@ -95,6 +95,8 @@ namespace BlockBlast
                 }
             }
         }
+
+        private float ActiveOffsetY => (Application.isMobilePlatform || Input.touchCount > 0) ? fingerOffsetY : 20f;
 
         public void OnBeginDrag(PointerEventData eventData)
         {
@@ -107,9 +109,33 @@ namespace BlockBlast
 
             transform.SetParent(_parentCanvas.transform, true);
             transform.SetAsLastSibling();
-            _rectTransform.localScale = _originalScale * dragScale;
+
+            // Smooth bouncy scale up on pickup
+            StopAllCoroutines();
+            StartCoroutine(PickupBounceAnim());
 
             UpdateDragPosition(eventData);
+        }
+
+        private IEnumerator PickupBounceAnim()
+        {
+            float elapsed = 0f;
+            float dur = 0.18f;
+            Vector3 targetScale = _originalScale * dragScale;
+
+            while (elapsed < dur)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / dur;
+                // Squash and stretch jelly bounce: Y stretches, X compresses, then settles
+                float squashX = 1f - 0.12f * Mathf.Sin(t * Mathf.PI);
+                float stretchY = 1f + 0.18f * Mathf.Sin(t * Mathf.PI);
+                Vector3 curScale = Vector3.Lerp(_originalScale, targetScale, Mathf.SmoothStep(0f, 1f, t));
+                _rectTransform.localScale = new Vector3(curScale.x * squashX, curScale.y * stretchY, curScale.z);
+                yield return null;
+            }
+
+            _rectTransform.localScale = targetScale;
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -161,7 +187,7 @@ namespace BlockBlast
             Vector2 localPoint;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _parentCanvas.transform as RectTransform,
-                eventData.position + new Vector2(0f, fingerOffsetY),
+                eventData.position + new Vector2(0f, ActiveOffsetY),
                 _parentCanvas.worldCamera,
                 out localPoint
             );
@@ -184,40 +210,30 @@ namespace BlockBlast
             }
         }
 
+        // 100% Mathematically Precise Grid Snapping via Board Local Coordinates
         private Vector2Int? GetTargetGridPosition(PointerEventData eventData)
         {
-            if (BlockGridManager.Instance == null) return null;
+            if (BlockGridManager.Instance == null || BlockGridManager.Instance.BoardRect == null) return null;
 
-            Vector2 dragWorldPos = _rectTransform.position;
-            float minDistance = float.MaxValue;
-            Vector2Int closest = Vector2Int.zero;
-            bool foundAny = false;
+            Vector2 targetScreenPoint = eventData.position + new Vector2(0f, ActiveOffsetY);
+            Vector2 localInBoard;
 
-            for (int r = 0; r < BlockGridManager.GridSize; r++)
+            // Map screen point directly into Board RectTransform local space
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                BlockGridManager.Instance.BoardRect,
+                targetScreenPoint,
+                _parentCanvas.worldCamera,
+                out localInBoard
+            ))
             {
-                for (int c = 0; c < BlockGridManager.GridSize; c++)
+                Vector2Int? hitCoord = BlockGridManager.Instance.GetGridCoordFromLocalPoint(localInBoard);
+                if (hitCoord.HasValue)
                 {
-                    BlockCellUI cell = BlockGridManager.Instance.GetCell(r, c);
-                    if (cell != null)
-                    {
-                        float d = Vector2.Distance(dragWorldPos, cell.transform.position);
-                        if (d < minDistance)
-                        {
-                            minDistance = d;
-                            closest = new Vector2Int(r, c);
-                            foundAny = true;
-                        }
-                    }
+                    // Center the shape around the pointed cell
+                    int startR = hitCoord.Value.x - Mathf.FloorToInt(Shape.Rows / 2f);
+                    int startC = hitCoord.Value.y - Mathf.FloorToInt(Shape.Cols / 2f);
+                    return new Vector2Int(startR, startC);
                 }
-            }
-
-            // Cell spacing threshold (about 65 pixels in screen space)
-            if (foundAny && minDistance < 120f)
-            {
-                // Align shape center with closest cell
-                int startR = closest.x - Mathf.FloorToInt(Shape.Rows / 2f);
-                int startC = closest.y - Mathf.FloorToInt(Shape.Cols / 2f);
-                return new Vector2Int(startR, startC);
             }
 
             return null;
