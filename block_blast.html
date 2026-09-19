@@ -54,58 +54,58 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-between p-3 select-none">
+<body class="bg-[#1C1E33] text-slate-100 min-h-screen flex flex-col items-center justify-between p-3 select-none">
 
   <!-- Header: Score & Best Score & Skills -->
   <header class="w-full max-w-md flex flex-col gap-2 pt-2">
     <div class="flex items-center justify-between px-2">
       <div class="flex flex-col">
-        <span class="text-xs font-semibold text-slate-400 tracking-wider">SCORE</span>
-        <span id="currentScore" class="text-3xl font-black text-amber-400 drop-shadow">0</span>
+        <span class="text-xs font-semibold text-slate-300 tracking-wider">SCORE</span>
+        <span id="currentScore" class="text-3xl font-black text-amber-300 drop-shadow">0</span>
       </div>
       
       <!-- Logo -->
       <div class="text-center">
-        <h1 class="text-lg font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-amber-400">
+        <h1 class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-300 to-amber-300">
           BLOCK BLAST
         </h1>
-        <span class="text-[10px] uppercase font-bold tracking-widest text-cyan-400">ELEMENTAL</span>
+        <span class="text-[11px] font-bold tracking-widest text-pink-300">✨ E L E M E N T A L ✨</span>
       </div>
 
       <div class="flex flex-col items-end">
-        <span class="text-xs font-semibold text-slate-400 tracking-wider">BEST</span>
-        <span id="bestScore" class="text-3xl font-black text-slate-200">0</span>
+        <span class="text-xs font-semibold text-slate-300 tracking-wider">BEST</span>
+        <span id="bestScore" class="text-3xl font-black text-slate-100">0</span>
       </div>
     </div>
 
-    <!-- Skills Bar (Differentiators!) -->
-    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2 mt-1">
+    <!-- Skills Bar (Cute Pastel Capsule Buttons) -->
+    <div class="flex items-center justify-between bg-[#24263F]/90 border border-slate-700/60 rounded-2xl px-4 py-2 mt-1 shadow-lg">
       <div class="flex items-center gap-2">
-        <span class="text-xs font-bold text-slate-300">FEVER</span>
-        <div class="w-28 h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
-          <div id="feverBar" class="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-purple-500 rounded-full w-0 transition-all duration-300"></div>
+        <span class="text-xs font-bold text-amber-300">FEVER</span>
+        <div class="w-28 h-3.5 bg-[#171829] rounded-full overflow-hidden p-0.5 border border-slate-700">
+          <div id="feverBar" class="h-full bg-gradient-to-r from-pink-400 to-amber-400 rounded-full w-0 transition-all duration-300"></div>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <!-- Hammer Skill -->
-        <button id="btnHammer" class="relative px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 flex items-center gap-1.5 transition-all">
+        <button id="btnHammer" class="relative px-3.5 py-1.5 rounded-xl bg-pink-500 hover:bg-pink-400 active:scale-95 text-white font-bold flex items-center gap-1.5 transition-all shadow-md">
           <span class="text-base">🔨</span>
-          <span class="text-xs font-bold text-amber-300">SMASH</span>
-          <span id="hammerBadge" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 text-[10px] font-black rounded-full flex items-center justify-center border border-slate-900">1</span>
+          <span class="text-xs font-bold">뿅망치</span>
+          <span id="hammerBadge" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-400 text-slate-900 text-[10px] font-black rounded-full flex items-center justify-center border border-white">1</span>
         </button>
         <!-- Rotate Skill -->
-        <button id="btnRotate" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 flex items-center gap-1.5 transition-all">
+        <button id="btnRotate" class="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white font-bold flex items-center gap-1.5 transition-all shadow-md">
           <span class="text-base">🔄</span>
-          <span class="text-xs font-bold text-cyan-300">TURN</span>
+          <span class="text-xs font-bold">돌리기</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Game Board Container -->
-  <main id="boardContainer" class="relative w-full max-w-md aspect-square p-2 bg-slate-900/80 rounded-2xl border-2 border-slate-800/80 shadow-2xl flex items-center justify-center my-auto">
-    <div id="gridBoard" class="w-full h-full grid grid-cols-8 grid-rows-8 gap-1.5 p-1 bg-slate-950/70 rounded-xl">
+  <!-- Main Game Board Container (Cute Macaron Tray) -->
+  <main id="boardContainer" class="relative w-full max-w-md aspect-square p-2.5 bg-[#252742] rounded-3xl border-2 border-slate-700/60 shadow-2xl flex items-center justify-center my-auto">
+    <div id="gridBoard" class="w-full h-full grid grid-cols-8 grid-rows-8 gap-1.5 p-1.5 bg-[#18192C] rounded-2xl">
       <!-- 64 cells generated by JS -->
     </div>
 
@@ -115,11 +115,11 @@
 
   <!-- Bottom: 3 Hand Blocks -->
   <footer class="w-full max-w-md pb-4 pt-1">
-    <div id="handSlots" class="grid grid-cols-3 gap-3 h-28 items-center justify-items-center bg-slate-900/60 border border-slate-800/60 rounded-2xl p-2">
+    <div id="handSlots" class="grid grid-cols-3 gap-3 h-28 items-center justify-items-center bg-[#252742]/80 border border-slate-700/60 rounded-2xl p-2 shadow-lg">
       <!-- 3 Draggable Blocks will be rendered here -->
     </div>
     <div class="text-center mt-2">
-      <span class="text-[11px] font-medium text-slate-500">블록을 보드로 드래그해 가로/세로 라인을 터뜨리세요! 🧨폭탄 연쇄 폭발</span>
+      <span class="text-xs font-semibold text-slate-400">✨ 블록을 쏙! 넣어 라인을 팡팡 터뜨려요 💖 (🧨폭탄 3x3 연쇄 폭발)</span>
     </div>
   </footer>
 
@@ -151,10 +151,11 @@
 
   <!-- Audio Synthesis & Game Logic Script -->
   <script>
-    // --- Procedural Web Audio Engine (No external sound files needed!) ---
+    // --- Procedural ASMR Web Audio Engine ---
     class SoundEngine {
       constructor() {
         this.ctx = null;
+        this.kalimbaNotes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
       }
       init() {
         if (!this.ctx) {
@@ -162,66 +163,121 @@
           this.ctx = new AudioContext();
         }
       }
-      playTone(freq, type = 'sine', duration = 0.12, gainVal = 0.15) {
+      // 🫧 ASMR: Water Bubble Pop
+      playPickup() {
+        this.init();
         if (!this.ctx) return;
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + duration);
+          osc.stop(this.ctx.currentTime + 0.08);
         } catch (e) {}
       }
-      playPickup() {
-        this.init();
-        this.playTone(320, 'sine', 0.08, 0.1);
-      }
+      // 🪵 ASMR: Soft Jelly Tap
       playPlace() {
         this.init();
-        this.playTone(220, 'triangle', 0.1, 0.2);
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(260, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch (e) {}
       }
+      // 🔔 ASMR: Kalimba Melodic Chimes
       playClear(comboCount = 1) {
         this.init();
-        const baseFreqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99]; // C Pentatonic Scale
-        const note = baseFreqs[Math.min(comboCount - 1, baseFreqs.length - 1)];
-        this.playTone(note, 'triangle', 0.25, 0.3);
-        setTimeout(() => this.playTone(note * 1.5, 'sine', 0.3, 0.2), 60);
+        if (!this.ctx) return;
+        try {
+          const note = this.kalimbaNotes[Math.min(comboCount - 1, this.kalimbaNotes.length - 1)];
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(note, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.35);
+
+          // Harmonic chime overtone
+          const osc2 = this.ctx.createOscillator();
+          const gain2 = this.ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(note * 2.76, this.ctx.currentTime);
+          gain2.gain.setValueAtTime(0.1, this.ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+          osc2.connect(gain2);
+          gain2.connect(this.ctx.destination);
+          osc2.start();
+          osc2.stop(this.ctx.currentTime + 0.25);
+        } catch (e) {}
       }
+      // 🎉 ASMR: Party Popper & Bubble Burst
       playBomb() {
         this.init();
         if (!this.ctx) return;
         try {
-          // Low boom noise simulation
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.4);
-          gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(380, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.45);
+          osc.stop(this.ctx.currentTime + 0.28);
+        } catch (e) {}
+      }
+      // 🔨 ASMR: Squeaky Toy Hammer "뾱!"
+      playHammer() {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(850, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(1350, this.ctx.currentTime + 0.07);
+          osc.frequency.linearRampToValueAtTime(900, this.ctx.currentTime + 0.14);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.14);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.14);
         } catch (e) {}
       }
     }
 
     const sound = new SoundEngine();
 
-    // --- Block Shapes & Color Palette ---
+    // --- Sweet Macaron & Pastel Jelly Color Palette ---
     const COLORS = [
-      { bg: '#38bdf8', border: '#0284c7' }, // Cyan
-      { bg: '#f59e0b', border: '#d97706' }, // Amber
-      { bg: '#ec4899', border: '#db2777' }, // Pink
-      { bg: '#10b981', border: '#059669' }, // Emerald
-      { bg: '#8b5cf6', border: '#7c3aed' }, // Purple
-      { bg: '#ef4444', border: '#dc2626' }, // Red (Bomb)
+      { bg: '#5CC4FF', border: '#38A7E8' }, // Sky Milk Blue
+      { bg: '#FFC043', border: '#EAA522' }, // Mango Sorbet Yellow
+      { bg: '#4EE0B5', border: '#2DC295' }, // Apple Soda Mint
+      { bg: '#FF7AA2', border: '#E85B85' }, // Strawberry Milk Pink
+      { bg: '#A67CFF', border: '#8A59EE' }, // Berry Lavender Purple
+      { bg: '#FF8F6B', border: '#E86E47' }, // Peach Coral Orange
+      { bg: '#FF4D69', border: '#E02A48' }, // Sweet Cherry Red (Bomb)
     ];
 
     const SHAPES = [
@@ -656,10 +712,12 @@
       const banner = document.createElement('div');
       banner.className = 'combo-banner absolute font-black tracking-tight text-center pointer-events-none drop-shadow-xl z-20';
       
-      let title = `COMBO x${comboCount}!`;
-      let colorClass = 'text-amber-400 text-3xl';
-      if (comboCount >= 3) { title = `AMAZING! x${comboCount}`; colorClass = 'text-rose-400 text-4xl'; }
-      if (comboCount >= 5) { title = `UNBELIEVABLE! x${comboCount}`; colorClass = 'text-cyan-400 text-5xl'; }
+      let title = `💖 COMBO x${comboCount}!`;
+      let colorClass = 'text-pink-300 text-3xl';
+      if (comboCount === 2) { title = `✨ SWEET! x2`; colorClass = 'text-amber-300 text-4xl'; }
+      else if (comboCount === 3) { title = `🍓 DELICIOUS! x3`; colorClass = 'text-rose-300 text-4xl'; }
+      else if (comboCount === 4) { title = `🌟 MARVELOUS! x4`; colorClass = 'text-emerald-300 text-5xl'; }
+      else if (comboCount >= 5) { title = `🎉 UNBELIEVABLE! x${comboCount}`; colorClass = 'text-purple-300 text-5xl'; }
 
       banner.innerHTML = `<span class="${colorClass} block">${title}</span><span class="text-xs text-slate-300 font-bold uppercase tracking-widest">+${lines} LINES CLEARED</span>`;
       banner.style.left = '50%';
