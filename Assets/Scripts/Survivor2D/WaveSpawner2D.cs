@@ -7,6 +7,7 @@ namespace Survivor2D
         [Header("Spawn Settings")]
         [SerializeField] private float baseSpawnInterval = 1.2f;
         [SerializeField] private float spawnRadius = 11f;
+        public Sprite enemySprite;
 
         private float _timer = 0f;
         private float _elapsedGameTime = 0f;
@@ -47,8 +48,8 @@ namespace Survivor2D
             enemy.transform.position = spawnPos;
 
             SpriteRenderer sr = enemy.AddComponent<SpriteRenderer>();
-            sr.sprite = CreateEnemySprite();
-            sr.color = new Color(0.9f, 0.2f, 0.25f); // Red Bat/Goblin
+            sr.sprite = enemySprite != null ? enemySprite : CreateEnemySprite();
+            sr.color = Color.white;
             sr.sortingOrder = 2;
 
             CircleCollider2D col = enemy.AddComponent<CircleCollider2D>();

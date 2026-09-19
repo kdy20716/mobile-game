@@ -35,13 +35,16 @@ namespace Survivor2D.Editor
             bgSr.sortingOrder = -10;
             bg.transform.position = Vector3.zero;
 
-            // 3. Player Character
+            // 3. Player Character (Ramen Mage Hero)
             GameObject player = new GameObject("SurvivorPlayer");
             player.transform.position = Vector3.zero;
 
+            string heroSpritePath = "Assets/Sprites/Survivor/Hero_RamenMage.jpg";
+            Sprite heroSprite = SpriteTextureUtility.LoadSpriteWithChromaKey(heroSpritePath, Color.white, 0.45f, 400f);
+
             SpriteRenderer playerSr = player.AddComponent<SpriteRenderer>();
-            playerSr.sprite = CreatePlayerSprite();
-            playerSr.color = new Color(0.95f, 0.85f, 0.2f); // Golden Hero
+            playerSr.sprite = heroSprite != null ? heroSprite : CreatePlayerSprite();
+            playerSr.color = Color.white;
             playerSr.sortingOrder = 4;
 
             CircleCollider2D playerCol = player.AddComponent<CircleCollider2D>();
@@ -63,7 +66,11 @@ namespace Survivor2D.Editor
 
             // 4. Wave Spawner & Damage Number Manager
             GameObject spawnerObj = new GameObject("WaveSpawner");
-            spawnerObj.AddComponent<WaveSpawner2D>();
+            var spawner = spawnerObj.AddComponent<WaveSpawner2D>();
+
+            string enemySpritePath = "Assets/Sprites/Survivor/Enemy_ChiliBat.jpg";
+            Sprite enemySprite = SpriteTextureUtility.LoadSpriteWithChromaKey(enemySpritePath, Color.white, 0.45f, 450f);
+            spawner.enemySprite = enemySprite;
 
             GameObject dmgMgr = new GameObject("DamageNumberManager");
             dmgMgr.AddComponent<DamageNumberManager>();
