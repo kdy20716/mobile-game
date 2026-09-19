@@ -14,60 +14,69 @@ namespace LethalCompany.Editor
         {
             var newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // 1. Materials
-            Material shipMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_ShipHull.mat", new Color(0.2f, 0.22f, 0.25f));
-            Material shipFloorMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_ShipFloor.mat", new Color(0.3f, 0.28f, 0.26f));
-            Material terrainMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_PlanetSurface.mat", new Color(0.18f, 0.16f, 0.14f));
-            Material facilityWallMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_IndustrialWall.mat", new Color(0.35f, 0.38f, 0.4f));
-            Material facilityFloorMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_ConcreteFloor.mat", new Color(0.25f, 0.26f, 0.28f));
-            Material metalMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_MetalScrap.mat", new Color(0.6f, 0.55f, 0.45f));
-            Material engineMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_HeavyEngine.mat", new Color(0.2f, 0.22f, 0.24f));
-            Material goldMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_BrassBell.mat", new Color(0.9f, 0.75f, 0.2f));
-            Material doorMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_HeavyDoor.mat", new Color(0.8f, 0.2f, 0.2f));
+            // 1. Generate & Load Procedural Textures
+            Texture2D texDiamond = LethalTextureGenerator.GetOrCreateTexture("Tex_DiamondPlate.png", () => LethalTextureGenerator.GenerateDiamondPlate(512));
+            Texture2D texRusty = LethalTextureGenerator.GetOrCreateTexture("Tex_RustyMetal.png", () => LethalTextureGenerator.GenerateRustyMetal(512));
+            Texture2D texHazard = LethalTextureGenerator.GetOrCreateTexture("Tex_HazardStripe.png", () => LethalTextureGenerator.GenerateHazardStripe(512));
+            Texture2D texConcrete = LethalTextureGenerator.GetOrCreateTexture("Tex_GrungyConcrete.png", () => LethalTextureGenerator.GenerateGrungyConcrete(512));
+            Texture2D texTerrain = LethalTextureGenerator.GetOrCreateTexture("Tex_AlienTerrain.png", () => LethalTextureGenerator.GenerateAlienTerrain(512));
+            Texture2D texCeiling = LethalTextureGenerator.GetOrCreateTexture("Tex_CeilingGrid.png", () => LethalTextureGenerator.GenerateCeilingGrid(512));
 
-            // Ambient & Fog (Dark Moody Atmosphere)
+            // 2. Materials with Textures & Tiling
+            Material shipWallMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_ShipWall.mat", texRusty, new Vector2(4f, 2f), new Color(0.35f, 0.38f, 0.42f));
+            Material shipFloorMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_ShipFloor.mat", texDiamond, new Vector2(8f, 10f), new Color(0.45f, 0.45f, 0.48f));
+            Material cargoMarkerMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_CargoMarker.mat", texHazard, new Vector2(4f, 4f), Color.white);
+
+            Material terrainMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_PlanetSurface.mat", texTerrain, new Vector2(25f, 25f), new Color(0.35f, 0.32f, 0.30f));
+            Material cliffMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_CanyonCliff.mat", texTerrain, new Vector2(10f, 6f), new Color(0.25f, 0.22f, 0.20f));
+
+            Material facilityWallMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_FacilityWall.mat", texRusty, new Vector2(6f, 3f), new Color(0.32f, 0.34f, 0.36f));
+            Material facilityFloorMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_FacilityFloor.mat", texConcrete, new Vector2(16f, 16f), new Color(0.38f, 0.39f, 0.40f));
+            Material facilityCeilingMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_FacilityCeiling.mat", texCeiling, new Vector2(12f, 12f), new Color(0.22f, 0.23f, 0.25f));
+            Material catwalkMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_Catwalk.mat", texDiamond, new Vector2(4f, 12f), new Color(0.5f, 0.5f, 0.52f));
+
+            Material metalScrapMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_MetalScrap.mat", texRusty, new Vector2(2f, 2f), new Color(0.65f, 0.60f, 0.50f));
+            Material engineMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_HeavyEngine.mat", texRusty, new Vector2(1f, 1f), new Color(0.25f, 0.26f, 0.28f));
+            Material goldMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_BrassBell.mat", texDiamond, new Vector2(1f, 1f), new Color(0.95f, 0.80f, 0.20f));
+            Material doorMat = CreateMaterialWithTexture("Assets/Materials/Lethal/M_HeavyDoor.mat", texHazard, new Vector2(1f, 2f), new Color(0.85f, 0.25f, 0.20f));
+
+            // Pitch Black Horror Atmosphere & Heavy Fog
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.08f, 0.09f, 0.12f);
+            RenderSettings.ambientLight = new Color(0.008f, 0.008f, 0.012f); // Pitch black
             RenderSettings.fog = true;
-            RenderSettings.fogColor = new Color(0.05f, 0.06f, 0.08f);
-            RenderSettings.fogDensity = 0.015f;
+            RenderSettings.fogColor = new Color(0.02f, 0.025f, 0.035f);
+            RenderSettings.fogDensity = 0.025f;
 
-            // 2. Build Ship at (0, 0, 0)
+            // 3. Build Large Ship at (0, 0, 0)
             GameObject shipRoot = new GameObject("Ship_LandingCraft");
-            Transform playerSpawn = BuildShip(shipRoot.transform, shipMat, shipFloorMat);
+            Transform playerSpawn = BuildSpaciousShip(shipRoot.transform, shipWallMat, shipFloorMat, cargoMarkerMat);
 
-            // 3. Build Planet Terrain (60m x 60m)
-            GameObject terrain = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            terrain.name = "PlanetSurface";
-            terrain.transform.position = new Vector3(0f, -0.05f, 15f);
-            terrain.transform.localScale = new Vector3(8f, 1f, 8f);
-            terrain.GetComponent<MeshRenderer>().material = terrainMat;
+            // 4. Build Expansive Planet Exterior (200m x 200m Valley with Cliffs)
+            GameObject exteriorRoot = new GameObject("Planet_Exterior");
+            BuildVastPlanetExterior(exteriorRoot.transform, terrainMat, cliffMat, facilityWallMat);
 
-            // Some rocks / pathway markers to facility
-            CreatePathwayRocks(terrain.transform, terrainMat);
-
-            // 4. Build Facility Entrance on Planet Surface at (0, 0, 32)
-            GameObject exteriorDoorObj = CreateDoorObject(new Vector3(0f, 1.5f, 32f), Quaternion.identity, "Door_FacilityEntrance", doorMat);
+            // 5. Build Facility Exterior Entrance at (0, 0, 85)
+            GameObject exteriorDoorObj = CreateDoorObject(new Vector3(0f, 1.6f, 85f), Quaternion.identity, "Door_FacilityEntrance", doorMat);
             var exteriorDoor = exteriorDoorObj.AddComponent<FacilityDoor>();
 
-            // 5. Build Facility Interior Far Away at (100, 0, 100)
-            Vector3 facilityOrigin = new Vector3(100f, 0f, 100f);
+            // 6. Build Giant Facility Interior (Multi-Room + 2nd Floor Catwalk) at (200, 0, 200)
+            Vector3 facilityOrigin = new Vector3(200f, 0f, 200f);
             GameObject facilityRoot = new GameObject("Facility_Interior");
             facilityRoot.transform.position = facilityOrigin;
-            BuildFacilityInterior(facilityRoot.transform, facilityFloorMat, facilityWallMat);
+            BuildGiantFacilityInterior(facilityRoot.transform, facilityFloorMat, facilityWallMat, facilityCeilingMat, catwalkMat);
 
             // Facility Interior Exit Door
-            GameObject interiorDoorObj = CreateDoorObject(facilityOrigin + new Vector3(0f, 1.5f, -9.5f), Quaternion.Euler(0f, 180f, 0f), "Door_FacilityExit", doorMat);
+            GameObject interiorDoorObj = CreateDoorObject(facilityOrigin + new Vector3(0f, 1.6f, -17.5f), Quaternion.Euler(0f, 180f, 0f), "Door_FacilityExit", doorMat);
             var interiorDoor = interiorDoorObj.AddComponent<FacilityDoor>();
 
             // Link doors
             exteriorDoor.SetDestination(interiorDoor.transform, false);
             interiorDoor.SetDestination(exteriorDoor.transform, true);
 
-            // 6. Spawn Diverse Scraps inside Facility
-            SpawnScrapItems(facilityOrigin, metalMat, engineMat, goldMat);
+            // 7. Spawn Diverse Scraps inside Giant Facility
+            SpawnAbundantScraps(facilityOrigin, metalScrapMat, engineMat, goldMat);
 
-            // 7. Player Character Setup (Spawns in Ship)
+            // 8. Player Character Setup (Spawns in Ship)
             GameObject player = new GameObject("LethalScavenger");
             player.transform.position = playerSpawn.position;
             player.transform.rotation = playerSpawn.rotation;
@@ -90,6 +99,8 @@ namespace LethalCompany.Editor
             Camera cam = camObj.AddComponent<Camera>();
             cam.nearClipPlane = 0.1f;
             cam.fieldOfView = 68f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.01f, 0.012f, 0.015f);
             camObj.AddComponent<AudioListener>();
 
             // Hand Holder for Holding Scrap
@@ -101,19 +112,19 @@ namespace LethalCompany.Editor
             inventory.SetHandHolder(handHolder.transform);
             interaction.SetCamera(camObj.transform);
 
-            // Headlight
+            // Strong Atmospheric Headlight (Flashlight)
             GameObject headLight = new GameObject("Headlight");
             headLight.transform.SetParent(camObj.transform);
             headLight.transform.localPosition = Vector3.forward * 0.1f;
             Light hl = headLight.AddComponent<Light>();
             hl.type = LightType.Spot;
-            hl.range = 25f;
-            hl.spotAngle = 55f;
-            hl.intensity = 2.0f;
-            hl.color = new Color(1f, 0.95f, 0.85f);
+            hl.range = 32f;
+            hl.spotAngle = 52f;
+            hl.intensity = 2.4f;
+            hl.color = new Color(1f, 0.96f, 0.88f);
             hl.shadows = LightShadows.Hard;
 
-            // 8. Game Managers
+            // 9. Game Managers
             GameObject gmObj = new GameObject("GameManager");
             var gameMgr = gmObj.AddComponent<LethalGameManager>();
 
@@ -122,7 +133,7 @@ namespace LethalCompany.Editor
             soGM.FindProperty("playerObj").objectReferenceValue = player;
             soGM.ApplyModifiedProperties();
 
-            // 9. EventSystem
+            // 10. EventSystem
             if (UnityEngine.Object.FindFirstObjectByType<EventSystem>() == null)
             {
                 GameObject es = new GameObject("EventSystem");
@@ -134,135 +145,330 @@ namespace LethalCompany.Editor
 #endif
             }
 
-            // 10. UI Canvas
+            // 11. UI Canvas
             BuildLethalUI(inventory, interaction);
 
-            // 11. Save Scene
+            // 12. Save Scene
             string scenePath = "Assets/Scenes/LethalScrapScene.unity";
             EditorSceneManager.SaveScene(newScene, scenePath);
             AssetDatabase.Refresh();
 
             Selection.activeGameObject = player;
-            Debug.Log("<color=green><b>[Lethal Company]</b> Phase 2 우주선 탐사 루프 및 할당량 씬이 완성되었습니다! (Assets/Scenes/LethalScrapScene.unity)</color>");
+            Debug.Log("<color=green><b>[Lethal Company]</b> 리썰 컴퍼니 스케일 확장 및 절차적 텍스처/완전 밀폐 천장 씬이 완성되었습니다! (Assets/Scenes/LethalScrapScene.unity)</color>");
         }
 
-        private static Transform BuildShip(Transform parent, Material hullMat, Material floorMat)
+        private static Transform BuildSpaciousShip(Transform parent, Material wallMat, Material floorMat, Material cargoMarkerMat)
         {
-            // Ship Hull (Room size: 6m x 8m, Height 3m)
+            // Spacious Ship: 12m Wide x 16m Long x 4.5m High
             // Floor
             GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             floor.name = "Ship_Floor";
             floor.transform.SetParent(parent);
             floor.transform.position = new Vector3(0f, 0.1f, 0f);
-            floor.transform.localScale = new Vector3(6f, 0.2f, 8f);
+            floor.transform.localScale = new Vector3(12f, 0.3f, 16f);
             floor.GetComponent<MeshRenderer>().material = floorMat;
 
-            // Ceiling
+            // Solid Ceiling (No light leaks!)
             GameObject ceiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
             ceiling.name = "Ship_Ceiling";
             ceiling.transform.SetParent(parent);
-            ceiling.transform.position = new Vector3(0f, 3.1f, 0f);
-            ceiling.transform.localScale = new Vector3(6f, 0.2f, 8f);
-            ceiling.GetComponent<MeshRenderer>().material = hullMat;
+            ceiling.transform.position = new Vector3(0f, 4.6f, 0f);
+            ceiling.transform.localScale = new Vector3(12.4f, 0.4f, 16.4f);
+            ceiling.GetComponent<MeshRenderer>().material = wallMat;
 
-            // Left Wall (West)
-            CreateWall(parent, new Vector3(-3f, 1.6f, 0f), new Vector3(0.3f, 3f, 8f), hullMat, "Ship_Wall_Left");
-            // Right Wall (East)
-            CreateWall(parent, new Vector3(3f, 1.6f, 0f), new Vector3(0.3f, 3f, 8f), hullMat, "Ship_Wall_Right");
-            // Back Wall (South)
-            CreateWall(parent, new Vector3(0f, 1.6f, -4f), new Vector3(6f, 3f, 0.3f), hullMat, "Ship_Wall_Back");
+            // Outer Walls
+            CreateWall(parent, new Vector3(-6f, 2.3f, 0f), new Vector3(0.4f, 4.4f, 16f), wallMat, "Ship_Wall_West");
+            CreateWall(parent, new Vector3(6f, 2.3f, 0f), new Vector3(0.4f, 4.4f, 16f), wallMat, "Ship_Wall_East");
+            CreateWall(parent, new Vector3(0f, 2.3f, -8f), new Vector3(12f, 4.4f, 0.4f), wallMat, "Ship_Wall_South");
 
             // Front Wall with Door Opening (North)
-            CreateWall(parent, new Vector3(-2f, 1.6f, 4f), new Vector3(2f, 3f, 0.3f), hullMat, "Ship_Wall_FrontL");
-            CreateWall(parent, new Vector3(2f, 1.6f, 4f), new Vector3(2f, 3f, 0.3f), hullMat, "Ship_Wall_FrontR");
-            CreateWall(parent, new Vector3(0f, 2.7f, 4f), new Vector3(2f, 0.8f, 0.3f), hullMat, "Ship_Wall_FrontTop");
+            CreateWall(parent, new Vector3(-4.5f, 2.3f, 8f), new Vector3(3f, 4.4f, 0.4f), wallMat, "Ship_Wall_NorthL");
+            CreateWall(parent, new Vector3(4.5f, 2.3f, 8f), new Vector3(3f, 4.4f, 0.4f), wallMat, "Ship_Wall_NorthR");
+            CreateWall(parent, new Vector3(0f, 3.8f, 8f), new Vector3(6f, 1.4f, 0.4f), wallMat, "Ship_Wall_NorthTop");
 
-            // Ramp leading out of ship
+            // Wide Ramp leading outside
             GameObject ramp = GameObject.CreatePrimitive(PrimitiveType.Cube);
             ramp.name = "Ship_Ramp";
             ramp.transform.SetParent(parent);
-            ramp.transform.position = new Vector3(0f, 0.05f, 5.2f);
-            ramp.transform.rotation = Quaternion.Euler(8f, 0f, 0f);
-            ramp.transform.localScale = new Vector3(2.2f, 0.15f, 2.6f);
-            ramp.GetComponent<MeshRenderer>().material = hullMat;
+            ramp.transform.position = new Vector3(0f, -0.05f, 10.5f);
+            ramp.transform.rotation = Quaternion.Euler(7f, 0f, 0f);
+            ramp.transform.localScale = new Vector3(5.5f, 0.25f, 5.5f);
+            ramp.GetComponent<MeshRenderer>().material = floorMat;
 
-            // Ship Cargo Area Trigger (Drop-off Scrap Zone)
+            // Big Scrap Cargo Zone (Drop-off Zone) on West side of ship
             GameObject cargoZone = new GameObject("ScrapCargoZone");
             cargoZone.transform.SetParent(parent);
-            cargoZone.transform.position = new Vector3(-1.2f, 0.8f, -1.5f);
+            cargoZone.transform.position = new Vector3(-2.8f, 1.0f, -2.5f);
             BoxCollider cargoCol = cargoZone.AddComponent<BoxCollider>();
             cargoCol.isTrigger = true;
-            cargoCol.size = new Vector3(3f, 1.5f, 4f);
+            cargoCol.size = new Vector3(5.5f, 2.0f, 8.0f);
 
-            var shipMgr = cargoZone.AddComponent<LethalShipManager>();
+            cargoZone.AddComponent<LethalShipManager>();
 
-            // Visual Cargo Floor marking
+            // Hazard Stripe Floor Marker
             GameObject cargoMark = GameObject.CreatePrimitive(PrimitiveType.Quad);
             cargoMark.name = "CargoFloorMarker";
             cargoMark.transform.SetParent(cargoZone.transform);
-            cargoMark.transform.localPosition = new Vector3(0f, -0.68f, 0f);
+            cargoMark.transform.localPosition = new Vector3(0f, -0.83f, 0f);
             cargoMark.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            cargoMark.transform.localScale = new Vector3(2.8f, 3.8f, 1f);
-            Material markMat = GetOrCreateMaterial("Assets/Materials/Lethal/M_CargoMarker.mat", new Color(0.8f, 0.6f, 0.1f, 0.5f));
-            cargoMark.GetComponent<MeshRenderer>().material = markMat;
+            cargoMark.transform.localScale = new Vector3(5.2f, 7.6f, 1f);
+            cargoMark.GetComponent<MeshRenderer>().material = cargoMarkerMat;
             Object.DestroyImmediate(cargoMark.GetComponent<Collider>());
 
-            // Ship Take-off Lever on Console
+            // Interior Storage Shelves (Metal Racks)
+            CreateShelfRack(parent, new Vector3(-5.2f, 1.2f, 3.5f), wallMat);
+            CreateShelfRack(parent, new Vector3(5.2f, 1.2f, -3.5f), wallMat);
+
+            // Control Console & Take-off Lever on East side
             GameObject leverConsole = GameObject.CreatePrimitive(PrimitiveType.Cube);
             leverConsole.name = "ShipControlConsole";
             leverConsole.transform.SetParent(parent);
-            leverConsole.transform.position = new Vector3(2f, 0.8f, 2f);
-            leverConsole.transform.localScale = new Vector3(0.8f, 1.2f, 0.8f);
-            leverConsole.GetComponent<MeshRenderer>().material = hullMat;
+            leverConsole.transform.position = new Vector3(4f, 1.0f, 4f);
+            leverConsole.transform.localScale = new Vector3(1.2f, 1.6f, 1.2f);
+            leverConsole.GetComponent<MeshRenderer>().material = wallMat;
 
             GameObject leverObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             leverObj.name = "TakeoffLever";
             leverObj.transform.SetParent(leverConsole.transform);
-            leverObj.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            leverObj.transform.localPosition = new Vector3(0f, 0.65f, 0f);
             leverObj.transform.localRotation = Quaternion.Euler(-45f, 0f, 0f);
-            leverObj.transform.localScale = new Vector3(0.12f, 0.4f, 0.12f);
-            leverObj.GetComponent<MeshRenderer>().material = GetOrCreateMaterial("Assets/Materials/Lethal/M_LeverRed.mat", Color.red);
+            leverObj.transform.localScale = new Vector3(0.14f, 0.45f, 0.14f);
+            leverObj.GetComponent<MeshRenderer>().material = CreateMaterialWithTexture("Assets/Materials/Lethal/M_LeverRed.mat", null, Vector2.one, Color.red);
             leverObj.AddComponent<ShipLever>();
 
-            // Interior Light
-            GameObject shipLight = new GameObject("ShipLamp");
-            shipLight.transform.SetParent(parent);
-            shipLight.transform.position = new Vector3(0f, 2.7f, 0f);
-            Light sl = shipLight.AddComponent<Light>();
-            sl.type = LightType.Point;
-            sl.range = 10f;
-            sl.intensity = 1.8f;
-            sl.color = new Color(1f, 0.9f, 0.75f);
+            // Ship Interior Atmosphere Lighting (Warm Fluorescent Lamps)
+            CreateShipLight(parent, new Vector3(-2f, 4.0f, -2f), new Color(1f, 0.85f, 0.7f), 1.6f);
+            CreateShipLight(parent, new Vector3(2f, 4.0f, 3f), new Color(1f, 0.9f, 0.75f), 1.6f);
 
             // Player Spawn Transform
             GameObject spawnPoint = new GameObject("ShipPlayerSpawn");
             spawnPoint.transform.SetParent(parent);
-            spawnPoint.transform.position = new Vector3(0f, 0.3f, 0f);
+            spawnPoint.transform.position = new Vector3(1.5f, 0.4f, -1.0f);
             spawnPoint.transform.rotation = Quaternion.identity;
 
             return spawnPoint.transform;
         }
 
-        private static void CreatePathwayRocks(Transform parent, Material mat)
+        private static void BuildVastPlanetExterior(Transform parent, Material terrainMat, Material cliffMat, Material pipeMat)
         {
-            Vector3[] rockPositions = new Vector3[]
-            {
-                new Vector3(-4f, 0.5f, 10f),
-                new Vector3(5f, 0.8f, 16f),
-                new Vector3(-6f, 1.2f, 22f),
-                new Vector3(4f, 0.7f, 26f),
-                new Vector3(-3f, 0.6f, 28f)
-            };
+            // 200m x 200m Planet Ground
+            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            ground.name = "PlanetGround";
+            ground.transform.SetParent(parent);
+            ground.transform.position = new Vector3(0f, -0.05f, 50f);
+            ground.transform.localScale = new Vector3(20f, 1f, 20f);
+            ground.GetComponent<MeshRenderer>().material = terrainMat;
 
-            foreach (var pos in rockPositions)
+            // Massive Canyon Cliff Walls on East and West (15m high)
+            CreateWall(parent, new Vector3(-35f, 7.5f, 50f), new Vector3(12f, 15f, 200f), cliffMat, "Canyon_West");
+            CreateWall(parent, new Vector3(35f, 7.5f, 50f), new Vector3(12f, 15f, 200f), cliffMat, "Canyon_East");
+            CreateWall(parent, new Vector3(0f, 7.5f, -30f), new Vector3(80f, 15f, 15f), cliffMat, "Canyon_South_BehindShip");
+            CreateWall(parent, new Vector3(0f, 7.5f, 120f), new Vector3(80f, 15f, 20f), cliffMat, "Canyon_North_BehindFacility");
+
+            // Industrial Street Lamps / Floodlights along the path to the facility
+            CreateFloodlightPole(parent, new Vector3(-8f, 0f, 25f), pipeMat);
+            CreateFloodlightPole(parent, new Vector3(8f, 0f, 55f), pipeMat);
+
+            // Large Rocks and Terrain Props
+            CreateRockCluster(parent, new Vector3(-14f, 1.5f, 20f), 3.5f, cliffMat);
+            CreateRockCluster(parent, new Vector3(16f, 2.0f, 40f), 4.2f, cliffMat);
+            CreateRockCluster(parent, new Vector3(-12f, 1.8f, 65f), 3.8f, cliffMat);
+            CreateRockCluster(parent, new Vector3(10f, 1.2f, 75f), 3.0f, cliffMat);
+
+            // Industrial Pipeline running along the valley
+            GameObject pipe = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pipe.name = "IndustrialPipeline";
+            pipe.transform.SetParent(parent);
+            pipe.transform.position = new Vector3(-18f, 1.2f, 50f);
+            pipe.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            pipe.transform.localScale = new Vector3(1.2f, 65f, 1.2f);
+            pipe.GetComponent<MeshRenderer>().material = pipeMat;
+        }
+
+        private static void BuildGiantFacilityInterior(Transform parent, Material floorMat, Material wallMat, Material ceilingMat, Material catwalkMat)
+        {
+            Vector3 origin = parent.position;
+
+            // ==========================================
+            // 1. MAIN FACTORY HALL (36m x 32m x 7m)
+            // ==========================================
+            // Floor
+            GameObject mainFloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            mainFloor.name = "MainHall_Floor";
+            mainFloor.transform.SetParent(parent);
+            mainFloor.transform.position = origin + new Vector3(0f, 0f, 0f);
+            mainFloor.transform.localScale = new Vector3(3.6f, 1f, 3.2f);
+            mainFloor.GetComponent<MeshRenderer>().material = floorMat;
+
+            // Complete Solid Ceiling (Pitch Black, No Skybox Leak!)
+            GameObject mainCeiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            mainCeiling.name = "MainHall_Ceiling";
+            mainCeiling.transform.SetParent(parent);
+            mainCeiling.transform.position = origin + new Vector3(0f, 6.8f, 0f);
+            mainCeiling.transform.localScale = new Vector3(36.5f, 0.4f, 32.5f);
+            mainCeiling.GetComponent<MeshRenderer>().material = ceilingMat;
+
+            // Outer Walls of Main Hall
+            CreateWall(parent, origin + new Vector3(0f, 3.4f, 16f), new Vector3(36f, 6.8f, 0.6f), wallMat, "Main_Wall_North");
+            CreateWall(parent, origin + new Vector3(0f, 3.4f, -16f), new Vector3(36f, 6.8f, 0.6f), wallMat, "Main_Wall_South");
+            CreateWall(parent, origin + new Vector3(18f, 3.4f, 0f), new Vector3(0.6f, 6.8f, 32f), wallMat, "Main_Wall_East");
+            CreateWall(parent, origin + new Vector3(-18f, 3.4f, 0f), new Vector3(0.6f, 6.8f, 32f), wallMat, "Main_Wall_West");
+
+            // 2nd Floor Catwalk System (Elevated Walkway: 3.2m high)
+            GameObject catwalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            catwalk.name = "Catwalk_Main";
+            catwalk.transform.SetParent(parent);
+            catwalk.transform.position = origin + new Vector3(0f, 3.2f, 4f);
+            catwalk.transform.localScale = new Vector3(28f, 0.25f, 3.5f);
+            catwalk.GetComponent<MeshRenderer>().material = catwalkMat;
+
+            // Catwalk Stairs
+            GameObject stairs = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            stairs.name = "Catwalk_Stairs";
+            stairs.transform.SetParent(parent);
+            stairs.transform.position = origin + new Vector3(-11f, 1.6f, -1f);
+            stairs.transform.rotation = Quaternion.Euler(-25f, 0f, 0f);
+            stairs.transform.localScale = new Vector3(2.5f, 0.25f, 7.5f);
+            stairs.GetComponent<MeshRenderer>().material = catwalkMat;
+
+            // Heavy Industrial Machinery / Crates in Main Hall
+            CreateCrate(parent, origin + new Vector3(-8f, 1.2f, -8f), new Vector3(3f, 2.4f, 3f), wallMat);
+            CreateCrate(parent, origin + new Vector3(9f, 1.5f, -6f), new Vector3(3.5f, 3f, 3.5f), wallMat);
+            CreateCrate(parent, origin + new Vector3(10f, 0.8f, 8f), new Vector3(2.5f, 1.6f, 4f), wallMat);
+
+            // Spooky Atmospheric Lights (Flickering Industrial Lamps)
+            CreateAtmosphericLight(parent, origin + new Vector3(-8f, 5.8f, 6f), new Color(0.9f, 0.8f, 0.6f), 1.5f, true);
+            CreateAtmosphericLight(parent, origin + new Vector3(8f, 5.8f, -6f), new Color(0.7f, 0.85f, 1f), 1.2f, true);
+            CreateAtmosphericLight(parent, origin + new Vector3(0f, 5.8f, -12f), new Color(1f, 0.3f, 0.2f), 1.4f, false); // Emergency red light near door
+
+            // ==========================================
+            // 2. STORAGE WING (East Wing: 24m x 20m x 5m)
+            // ==========================================
+            Vector3 storageOrigin = origin + new Vector3(30f, 0f, 0f);
+
+            GameObject storFloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            storFloor.name = "Storage_Floor";
+            storFloor.transform.SetParent(parent);
+            storFloor.transform.position = storageOrigin;
+            storFloor.transform.localScale = new Vector3(2.4f, 1f, 2.0f);
+            storFloor.GetComponent<MeshRenderer>().material = floorMat;
+
+            GameObject storCeiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            storCeiling.name = "Storage_Ceiling";
+            storCeiling.transform.SetParent(parent);
+            storCeiling.transform.position = storageOrigin + new Vector3(0f, 5.0f, 0f);
+            storCeiling.transform.localScale = new Vector3(24.5f, 0.4f, 20.5f);
+            storCeiling.GetComponent<MeshRenderer>().material = ceilingMat;
+
+            CreateWall(parent, storageOrigin + new Vector3(0f, 2.5f, 10f), new Vector3(24f, 5.0f, 0.6f), wallMat, "Stor_Wall_North");
+            CreateWall(parent, storageOrigin + new Vector3(0f, 2.5f, -10f), new Vector3(24f, 5.0f, 0.6f), wallMat, "Stor_Wall_South");
+            CreateWall(parent, storageOrigin + new Vector3(12f, 2.5f, 0f), new Vector3(0.6f, 5.0f, 20f), wallMat, "Stor_Wall_East");
+
+            // Storage Shelves and Pillars
+            CreateShelfRack(parent, storageOrigin + new Vector3(-4f, 1.5f, 4f), wallMat);
+            CreateShelfRack(parent, storageOrigin + new Vector3(4f, 1.5f, 4f), wallMat);
+            CreateShelfRack(parent, storageOrigin + new Vector3(-4f, 1.5f, -4f), wallMat);
+            CreateShelfRack(parent, storageOrigin + new Vector3(4f, 1.5f, -4f), wallMat);
+
+            CreateAtmosphericLight(parent, storageOrigin + new Vector3(0f, 4.4f, 0f), new Color(0.85f, 0.75f, 0.5f), 1.3f, true);
+
+            // ==========================================
+            // 3. DARK GENERATOR CORRIDOR (West Wing: 30m x 8m x 5m)
+            // ==========================================
+            Vector3 corrOrigin = origin + new Vector3(-33f, 0f, 0f);
+
+            GameObject corrFloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            corrFloor.name = "Corridor_Floor";
+            corrFloor.transform.SetParent(parent);
+            corrFloor.transform.position = corrOrigin;
+            corrFloor.transform.localScale = new Vector3(3.0f, 1f, 0.8f);
+            corrFloor.GetComponent<MeshRenderer>().material = floorMat;
+
+            GameObject corrCeiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            corrCeiling.name = "Corridor_Ceiling";
+            corrCeiling.transform.SetParent(parent);
+            corrCeiling.transform.position = corrOrigin + new Vector3(0f, 5.0f, 0f);
+            corrCeiling.transform.localScale = new Vector3(30.5f, 0.4f, 8.5f);
+            corrCeiling.GetComponent<MeshRenderer>().material = ceilingMat;
+
+            CreateWall(parent, corrOrigin + new Vector3(0f, 2.5f, 4f), new Vector3(30f, 5.0f, 0.6f), wallMat, "Corr_Wall_North");
+            CreateWall(parent, corrOrigin + new Vector3(0f, 2.5f, -4f), new Vector3(30f, 5.0f, 0.6f), wallMat, "Corr_Wall_South");
+            CreateWall(parent, corrOrigin + new Vector3(-15f, 2.5f, 0f), new Vector3(0.6f, 5.0f, 8f), wallMat, "Corr_Wall_West");
+
+            // Very Dim Flickering Red Lamp at end of corridor
+            CreateAtmosphericLight(parent, corrOrigin + new Vector3(-10f, 4.2f, 0f), new Color(1f, 0.2f, 0.15f), 0.9f, true);
+        }
+
+        private static void CreateShelfRack(Transform parent, Vector3 pos, Material mat)
+        {
+            GameObject rack = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rack.name = "StorageRack";
+            rack.transform.SetParent(parent);
+            rack.transform.position = pos;
+            rack.transform.localScale = new Vector3(1.2f, 2.8f, 4.5f);
+            rack.GetComponent<MeshRenderer>().material = mat;
+        }
+
+        private static void CreateFloodlightPole(Transform parent, Vector3 pos, Material mat)
+        {
+            GameObject pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pole.name = "FloodlightPole";
+            pole.transform.SetParent(parent);
+            pole.transform.position = pos + Vector3.up * 4f;
+            pole.transform.localScale = new Vector3(0.3f, 4f, 0.3f);
+            pole.GetComponent<MeshRenderer>().material = mat;
+
+            GameObject lightObj = new GameObject("Floodlight");
+            lightObj.transform.SetParent(pole.transform);
+            lightObj.transform.localPosition = new Vector3(0f, 1f, 0f);
+
+            Light l = lightObj.AddComponent<Light>();
+            l.type = LightType.Spot;
+            l.range = 28f;
+            l.spotAngle = 65f;
+            l.intensity = 2.2f;
+            l.color = new Color(1f, 0.92f, 0.8f);
+        }
+
+        private static void CreateAtmosphericLight(Transform parent, Vector3 pos, Color color, float intensity, bool flicker)
+        {
+            GameObject lObj = new GameObject("FacilityLamp");
+            lObj.transform.SetParent(parent);
+            lObj.transform.position = pos;
+
+            Light l = lObj.AddComponent<Light>();
+            l.type = LightType.Point;
+            l.range = 16f;
+            l.intensity = intensity;
+            l.color = color;
+
+            if (flicker)
             {
-                GameObject rock = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                rock.name = "PlanetRock";
-                rock.transform.SetParent(parent);
-                rock.transform.position = pos;
-                rock.transform.localScale = new Vector3(1.5f, 1.2f, 1.8f);
-                rock.GetComponent<MeshRenderer>().material = mat;
+                lObj.AddComponent<FlickeringLight>();
             }
+        }
+
+        private static void CreateShipLight(Transform parent, Vector3 pos, Color color, float intensity)
+        {
+            GameObject lObj = new GameObject("ShipLamp");
+            lObj.transform.SetParent(parent);
+            lObj.transform.position = pos;
+
+            Light l = lObj.AddComponent<Light>();
+            l.type = LightType.Point;
+            l.range = 12f;
+            l.intensity = intensity;
+            l.color = color;
+        }
+
+        private static void CreateRockCluster(Transform parent, Vector3 pos, float scale, Material mat)
+        {
+            GameObject rock = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            rock.name = "PlanetRock";
+            rock.transform.SetParent(parent);
+            rock.transform.position = pos;
+            rock.transform.localScale = new Vector3(scale * 1.3f, scale * 0.9f, scale * 1.1f);
+            rock.GetComponent<MeshRenderer>().material = mat;
         }
 
         private static GameObject CreateDoorObject(Vector3 pos, Quaternion rot, string name, Material mat)
@@ -271,71 +477,27 @@ namespace LethalCompany.Editor
             doorFrame.transform.position = pos;
             doorFrame.transform.rotation = rot;
 
-            // Left post
-            CreateWall(doorFrame.transform, new Vector3(-1.1f, 0f, 0f), new Vector3(0.3f, 3f, 0.5f), mat, "Post_L");
-            // Right post
-            CreateWall(doorFrame.transform, new Vector3(1.1f, 0f, 0f), new Vector3(0.3f, 3f, 0.5f), mat, "Post_R");
-            // Top beam
-            CreateWall(doorFrame.transform, new Vector3(0f, 1.5f, 0f), new Vector3(2.5f, 0.3f, 0.5f), mat, "Beam_Top");
+            CreateWall(doorFrame.transform, new Vector3(-1.3f, 0f, 0f), new Vector3(0.4f, 3.2f, 0.6f), mat, "Post_L");
+            CreateWall(doorFrame.transform, new Vector3(1.3f, 0f, 0f), new Vector3(0.4f, 3.2f, 0.6f), mat, "Post_R");
+            CreateWall(doorFrame.transform, new Vector3(0f, 1.6f, 0f), new Vector3(3.0f, 0.4f, 0.6f), mat, "Beam_Top");
 
-            // Door panel (Interactive Collider)
             GameObject panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
             panel.name = "Door_Panel";
             panel.transform.SetParent(doorFrame.transform);
             panel.transform.localPosition = Vector3.zero;
-            panel.transform.localScale = new Vector3(2f, 2.8f, 0.2f);
+            panel.transform.localScale = new Vector3(2.2f, 3.0f, 0.25f);
             panel.GetComponent<MeshRenderer>().material = mat;
 
-            // Warning Light above door
             GameObject lightObj = new GameObject("DoorLight");
             lightObj.transform.SetParent(doorFrame.transform);
-            lightObj.transform.localPosition = new Vector3(0f, 1.6f, 0.4f);
+            lightObj.transform.localPosition = new Vector3(0f, 1.8f, 0.5f);
             Light l = lightObj.AddComponent<Light>();
             l.type = LightType.Point;
-            l.range = 6f;
-            l.intensity = 2f;
+            l.range = 8f;
+            l.intensity = 2.5f;
             l.color = new Color(1f, 0.3f, 0.2f);
 
             return doorFrame;
-        }
-
-        private static void BuildFacilityInterior(Transform parent, Material floorMat, Material wallMat)
-        {
-            // Main Facility Hall (24m x 20m)
-            GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            floor.name = "Interior_Floor";
-            floor.transform.SetParent(parent);
-            floor.transform.localPosition = Vector3.zero;
-            floor.transform.localScale = new Vector3(2.4f, 1f, 2.0f);
-            floor.GetComponent<MeshRenderer>().material = floorMat;
-
-            GameObject ceiling = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ceiling.name = "Interior_Ceiling";
-            ceiling.transform.SetParent(parent);
-            ceiling.transform.localPosition = new Vector3(0f, 4.5f, 0f);
-            ceiling.transform.rotation = Quaternion.Euler(180f, 0f, 0f);
-            ceiling.transform.localScale = new Vector3(2.4f, 1f, 2.0f);
-            ceiling.GetComponent<MeshRenderer>().material = wallMat;
-
-            // Outer Walls
-            CreateWall(parent, parent.position + new Vector3(0f, 2.25f, 10f), new Vector3(24f, 4.5f, 0.5f), wallMat, "Wall_North");
-            CreateWall(parent, parent.position + new Vector3(0f, 2.25f, -10f), new Vector3(24f, 4.5f, 0.5f), wallMat, "Wall_South");
-            CreateWall(parent, parent.position + new Vector3(12f, 2.25f, 0f), new Vector3(0.5f, 4.5f, 20f), wallMat, "Wall_East");
-            CreateWall(parent, parent.position + new Vector3(-12f, 2.25f, 0f), new Vector3(0.5f, 4.5f, 20f), wallMat, "Wall_West");
-
-            // Partition / Inner maze walls
-            CreateWall(parent, parent.position + new Vector3(-4f, 2.25f, 2f), new Vector3(0.5f, 4.5f, 10f), wallMat, "Wall_Partition1");
-            CreateWall(parent, parent.position + new Vector3(4f, 2.25f, -2f), new Vector3(0.5f, 4.5f, 10f), wallMat, "Wall_Partition2");
-
-            // Industrial Crates
-            CreateCrate(parent, parent.position + new Vector3(-8f, 0.75f, 5f), new Vector3(2f, 1.5f, 2f), wallMat);
-            CreateCrate(parent, parent.position + new Vector3(7f, 0.6f, 4f), new Vector3(2f, 1.2f, 3f), wallMat);
-            CreateCrate(parent, parent.position + new Vector3(-6f, 0.5f, -5f), new Vector3(1.5f, 1.0f, 1.5f), wallMat);
-
-            // Flickering Interior Lights
-            CreateRoomLight(parent, parent.position + new Vector3(-6f, 4f, 4f));
-            CreateRoomLight(parent, parent.position + new Vector3(6f, 4f, -4f));
-            CreateRoomLight(parent, parent.position + new Vector3(0f, 4f, 6f));
         }
 
         private static void CreateWall(Transform parent, Vector3 pos, Vector3 size, Material mat, string name)
@@ -358,40 +520,30 @@ namespace LethalCompany.Editor
             crate.GetComponent<MeshRenderer>().material = mat;
         }
 
-        private static void CreateRoomLight(Transform parent, Vector3 pos)
+        private static void SpawnAbundantScraps(Vector3 origin, Material metalMat, Material engineMat, Material goldMat)
         {
-            GameObject lObj = new GameObject("CeilingLamp");
-            lObj.transform.SetParent(parent);
-            lObj.transform.position = pos;
+            // Main Hall Scraps
+            CreateEngineScrap(origin + new Vector3(-8f, 2.8f, -8f), engineMat, "V-Type Engine", 105, 45f);
+            CreateAxleScrap(origin + new Vector3(-4f, 0.3f, 8f), metalMat, "Metal Axle", 58, 24f);
+            CreateBoltScrap(origin + new Vector3(2f, 0.3f, 4f), metalMat, "Big Bolt", 34, 6f);
+            CreateBoltScrap(origin + new Vector3(5f, 0.3f, 9f), metalMat, "Big Bolt", 28, 5f);
+            CreateBellScrap(origin + new Vector3(10f, 1.8f, 8f), goldMat, "Brass Bell", 72, 18f);
 
-            Light l = lObj.AddComponent<Light>();
-            l.type = LightType.Point;
-            l.range = 14f;
-            l.intensity = 1.2f;
-            l.color = new Color(0.9f, 0.85f, 0.7f);
-        }
+            // On the Catwalk
+            CreateCupScrap(origin + new Vector3(2f, 3.6f, 4f), goldMat, "Golden Goblet", 120, 4f);
+            CreateBoltScrap(origin + new Vector3(-6f, 3.4f, 4f), metalMat, "Big Bolt", 32, 6f);
 
-        private static void SpawnScrapItems(Vector3 origin, Material metalMat, Material engineMat, Material goldMat)
-        {
-            // 1. V-Type Engine (Heavy Scrap: 42 lb, $85)
-            CreateEngineScrap(origin + new Vector3(-8f, 1.8f, 5f), engineMat, "V-Type Engine", 95, 45f);
+            // Storage Wing Scraps
+            Vector3 stor = origin + new Vector3(30f, 0f, 0f);
+            CreateGoldBarScrap(stor + new Vector3(-4f, 1.8f, 4f), goldMat, "Gold Bar", 160, 20f);
+            CreateCupScrap(stor + new Vector3(4f, 1.8f, -4f), goldMat, "Golden Goblet", 115, 4f);
+            CreateBellScrap(stor + new Vector3(0f, 0.4f, 6f), goldMat, "Brass Bell", 68, 18f);
+            CreateBoltScrap(stor + new Vector3(6f, 0.3f, 0f), metalMat, "Big Bolt", 30, 5f);
 
-            // 2. Big Bolt (Light Scrap: 6 lb, $28)
-            CreateBoltScrap(origin + new Vector3(2f, 0.3f, 5f), metalMat, "Big Bolt", 32, 6f);
-            CreateBoltScrap(origin + new Vector3(-2f, 0.3f, 7f), metalMat, "Big Bolt", 36, 7f);
-            CreateBoltScrap(origin + new Vector3(8f, 0.3f, -6f), metalMat, "Big Bolt", 28, 5f);
-
-            // 3. Brass Bell (Medium Scrap: 18 lb, $64)
-            CreateBellScrap(origin + new Vector3(7f, 1.5f, 4f), goldMat, "Brass Bell", 68, 18f);
-
-            // 4. Metal Axle (Medium Scrap: 24 lb, $52)
-            CreateAxleScrap(origin + new Vector3(-7f, 0.3f, -4f), metalMat, "Metal Axle", 55, 24f);
-
-            // 5. Golden Goblet (Light Scrap: 4 lb, $110)
-            CreateCupScrap(origin + new Vector3(9f, 0.4f, 6f), goldMat, "Golden Goblet", 110, 4f);
-
-            // 6. Gold Bar (Heavy Scrap: 20 lb, $145)
-            CreateGoldBarScrap(origin + new Vector3(-6f, 1.2f, -5f), goldMat, "Gold Bar", 145, 20f);
+            // Corridor Scraps (Deep Dark)
+            Vector3 corr = origin + new Vector3(-33f, 0f, 0f);
+            CreateEngineScrap(corr + new Vector3(-12f, 0.6f, 0f), engineMat, "V-Type Engine", 110, 48f);
+            CreateAxleScrap(corr + new Vector3(-6f, 0.3f, 1f), metalMat, "Metal Axle", 52, 22f);
         }
 
         private static void CreateEngineScrap(Vector3 pos, Material mat, string name, int val, float weight)
@@ -684,7 +836,7 @@ namespace LethalCompany.Editor
             rt.sizeDelta = sizeDelta;
         }
 
-        private static Material GetOrCreateMaterial(string path, Color color)
+        private static Material CreateMaterialWithTexture(string path, Texture2D texture, Vector2 tiling, Color tint)
         {
             if (!AssetDatabase.IsValidFolder("Assets/Materials/Lethal"))
             {
@@ -698,9 +850,17 @@ namespace LethalCompany.Editor
             {
                 Shader standardShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 mat = new Material(standardShader);
-                mat.color = color;
                 AssetDatabase.CreateAsset(mat, path);
             }
+
+            mat.color = tint;
+            if (texture != null)
+            {
+                mat.mainTexture = texture;
+                mat.mainTextureScale = tiling;
+            }
+
+            EditorUtility.SetDirty(mat);
             return mat;
         }
     }
