@@ -105,7 +105,9 @@ namespace Survivor2D.Editor
 
         private static void BuildSurvivorUI(SurvivorPlayer2D player)
         {
-            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") 
+                ?? Resources.GetBuiltinResource<Font>("Arial.ttf")
+                ?? AssetDatabase.LoadAssetAtPath<Font>("Assets/SharedAssets/TextMeshPro/Fonts/LiberationSans.ttf");
 
             GameObject canvasObj = new GameObject("SurvivorCanvas");
             Canvas canvas = canvasObj.AddComponent<Canvas>();
@@ -113,57 +115,63 @@ namespace Survivor2D.Editor
             canvasObj.AddComponent<CanvasScaler>();
             canvasObj.AddComponent<GraphicRaycaster>();
 
+            // Configure CanvasScaler for Mobile Responsive UI
+            CanvasScaler scaler = canvasObj.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1080, 1920); // Mobile Portrait/Landscape match
+            scaler.matchWidthOrHeight = 0.5f;
+
             var uiMgr = canvasObj.AddComponent<SurvivorUIManager>();
             var levelUpMgr = canvasObj.AddComponent<LevelUpManager>();
 
             // --- Top EXP Bar ---
-            GameObject expBarObj = CreateSlider(canvasObj.transform, "ExpBar", new Color(0.2f, 0.7f, 1f), new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -12), new Vector2(0, 24));
+            GameObject expBarObj = CreateSlider(canvasObj.transform, "ExpBar", new Color(0.2f, 0.7f, 1f), new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -25), new Vector2(0, 36));
             Slider expSlider = expBarObj.GetComponent<Slider>();
 
             // Level Text (Top Left)
-            GameObject lvObj = CreateText(canvasObj.transform, "LevelText", "LV. 1", 24, TextAnchor.MiddleLeft, defaultFont);
-            SetRect(lvObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -45), new Vector2(120, 40));
+            GameObject lvObj = CreateText(canvasObj.transform, "LevelText", "LV. 1", 28, TextAnchor.MiddleLeft, defaultFont);
+            SetRect(lvObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(50, -70), new Vector2(160, 50));
             lvObj.GetComponent<Text>().color = Color.yellow;
 
             // Timer Text (Top Center)
-            GameObject timerObj = CreateText(canvasObj.transform, "TimerText", "00:00", 30, TextAnchor.MiddleCenter, defaultFont);
-            SetRect(timerObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -45), new Vector2(160, 40));
+            GameObject timerObj = CreateText(canvasObj.transform, "TimerText", "00:00", 36, TextAnchor.MiddleCenter, defaultFont);
+            SetRect(timerObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -70), new Vector2(200, 50));
             timerObj.GetComponent<Text>().color = Color.white;
 
             // Kill Count (Top Right)
-            GameObject killObj = CreateText(canvasObj.transform, "KillText", "💀 0", 24, TextAnchor.MiddleRight, defaultFont);
-            SetRect(killObj, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -45), new Vector2(140, 40));
+            GameObject killObj = CreateText(canvasObj.transform, "KillText", "💀 0", 28, TextAnchor.MiddleRight, defaultFont);
+            SetRect(killObj, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-50, -70), new Vector2(160, 50));
             killObj.GetComponent<Text>().color = new Color(1f, 0.4f, 0.4f);
 
-            // --- Player HP Bar (Floating or Top) ---
-            GameObject hpBarObj = CreateSlider(canvasObj.transform, "HpBar", new Color(0.9f, 0.2f, 0.2f), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(240, 16));
+            // --- Player HP Bar ---
+            GameObject hpBarObj = CreateSlider(canvasObj.transform, "HpBar", new Color(0.9f, 0.2f, 0.2f), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -120), new Vector2(320, 24));
             Slider hpSlider = hpBarObj.GetComponent<Slider>();
 
             // --- Virtual Joystick (Bottom Left) ---
             GameObject joyBg = new GameObject("VirtualJoystick");
             joyBg.transform.SetParent(canvasObj.transform);
             Image bgImg = joyBg.AddComponent<Image>();
-            bgImg.color = new Color(1f, 1f, 1f, 0.2f);
-            SetRect(joyBg, new Vector2(0, 0), new Vector2(0, 0), new Vector2(140, 140), new Vector2(160, 160));
+            bgImg.color = new Color(1f, 1f, 1f, 0.25f);
+            SetRect(joyBg, new Vector2(0, 0), new Vector2(0, 0), new Vector2(180, 180), new Vector2(220, 220));
 
             GameObject joyHandle = new GameObject("Handle");
             joyHandle.transform.SetParent(joyBg.transform);
             Image hdImg = joyHandle.AddComponent<Image>();
-            hdImg.color = new Color(1f, 1f, 1f, 0.6f);
-            SetRect(joyHandle, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(65, 65));
+            hdImg.color = new Color(1f, 1f, 1f, 0.75f);
+            SetRect(joyHandle, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(85, 85));
 
             var joystick = joyBg.AddComponent<VirtualJoystick>();
-            joystick.SetupReferences(joyBg.GetComponent<RectTransform>(), joyHandle.GetComponent<RectTransform>(), 60f);
+            joystick.SetupReferences(joyBg.GetComponent<RectTransform>(), joyHandle.GetComponent<RectTransform>(), 80f);
 
             // --- Level Up Modal Panel ---
             GameObject levelModal = new GameObject("LevelUpModal");
             levelModal.transform.SetParent(canvasObj.transform);
             Image modalBg = levelModal.AddComponent<Image>();
-            modalBg.color = new Color(0.05f, 0.05f, 0.1f, 0.92f);
-            SetRect(levelModal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(520, 420));
+            modalBg.color = new Color(0.06f, 0.08f, 0.14f, 0.96f);
+            SetRect(levelModal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600, 520));
 
-            GameObject modalTitle = CreateText(levelModal.transform, "Title", "⭐ LEVEL UP! SELECT UPGRADE ⭐", 22, TextAnchor.MiddleCenter, defaultFont);
-            SetRect(modalTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -35), new Vector2(480, 40));
+            GameObject modalTitle = CreateText(levelModal.transform, "Title", "⭐ LEVEL UP! SELECT UPGRADE ⭐", 26, TextAnchor.MiddleCenter, defaultFont);
+            SetRect(modalTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -45), new Vector2(560, 50));
             modalTitle.GetComponent<Text>().color = Color.yellow;
 
             Button[] choiceBtns = new Button[3];
@@ -172,37 +180,63 @@ namespace Survivor2D.Editor
 
             for (int i = 0; i < 3; i++)
             {
-                GameObject card = CreateCardButton(levelModal.transform, $"Card_{i}", defaultFont, new Vector2(0, 75 - i * 110), out Button btn, out Text t, out Text d);
+                GameObject card = CreateCardButton(levelModal.transform, $"Card_{i}", defaultFont, new Vector2(0, 100 - i * 135), out Button btn, out Text t, out Text d);
                 choiceBtns[i] = btn;
                 titles[i] = t;
                 descs[i] = d;
             }
 
-            levelUpMgr.SetupUIReferences(levelModal, choiceBtns, titles, descs);
+            // Bind LevelUpManager serialized properties so they persist in scene
+            SerializedObject soLevel = new SerializedObject(levelUpMgr);
+            soLevel.FindProperty("levelUpPanel").objectReferenceValue = levelModal;
+            SerializedProperty propBtns = soLevel.FindProperty("choiceButtons");
+            SerializedProperty propTitles = soLevel.FindProperty("choiceTitleTexts");
+            SerializedProperty propDescs = soLevel.FindProperty("choiceDescTexts");
+            propBtns.arraySize = 3;
+            propTitles.arraySize = 3;
+            propDescs.arraySize = 3;
+            for (int i = 0; i < 3; i++)
+            {
+                propBtns.GetArrayElementAtIndex(i).objectReferenceValue = choiceBtns[i];
+                propTitles.GetArrayElementAtIndex(i).objectReferenceValue = titles[i];
+                propDescs.GetArrayElementAtIndex(i).objectReferenceValue = descs[i];
+            }
+            soLevel.ApplyModifiedProperties();
 
             // --- Game Over Panel ---
             GameObject overModal = new GameObject("GameOverModal");
             overModal.transform.SetParent(canvasObj.transform);
             Image overBg = overModal.AddComponent<Image>();
-            overBg.color = new Color(0.1f, 0f, 0f, 0.94f);
-            SetRect(overModal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(440, 260));
+            overBg.color = new Color(0.12f, 0.02f, 0.02f, 0.96f);
+            SetRect(overModal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(500, 320));
 
-            GameObject overTitle = CreateText(overModal.transform, "Title", "YOU DIED", 42, TextAnchor.MiddleCenter, defaultFont);
-            SetRect(overTitle, new Vector2(0.5f, 0.8f), new Vector2(0.5f, 0.8f), Vector2.zero, new Vector2(380, 50));
+            GameObject overTitle = CreateText(overModal.transform, "Title", "YOU DIED", 50, TextAnchor.MiddleCenter, defaultFont);
+            SetRect(overTitle, new Vector2(0.5f, 0.82f), new Vector2(0.5f, 0.82f), Vector2.zero, new Vector2(440, 60));
             overTitle.GetComponent<Text>().color = Color.red;
 
-            GameObject resTime = CreateText(overModal.transform, "Time", "SURVIVED: 00:00", 20, TextAnchor.MiddleCenter, defaultFont);
-            SetRect(resTime, new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.55f), Vector2.zero, new Vector2(350, 30));
+            GameObject resTime = CreateText(overModal.transform, "Time", "SURVIVED: 00:00", 24, TextAnchor.MiddleCenter, defaultFont);
+            SetRect(resTime, new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.55f), Vector2.zero, new Vector2(420, 36));
             resTime.GetComponent<Text>().color = Color.white;
 
-            GameObject resKills = CreateText(overModal.transform, "Kills", "ENEMIES SLAIN: 0", 20, TextAnchor.MiddleCenter, defaultFont);
-            SetRect(resKills, new Vector2(0.5f, 0.40f), new Vector2(0.5f, 0.40f), Vector2.zero, new Vector2(350, 30));
+            GameObject resKills = CreateText(overModal.transform, "Kills", "ENEMIES SLAIN: 0", 24, TextAnchor.MiddleCenter, defaultFont);
+            SetRect(resKills, new Vector2(0.5f, 0.38f), new Vector2(0.5f, 0.38f), Vector2.zero, new Vector2(420, 36));
             resKills.GetComponent<Text>().color = Color.yellow;
 
-            GameObject retryBtnObj = CreateSimpleButton(overModal.transform, "RetryBtn", "PLAY AGAIN", defaultFont, new Vector2(0, -65), new Vector2(180, 48));
+            GameObject retryBtnObj = CreateSimpleButton(overModal.transform, "RetryBtn", "PLAY AGAIN", defaultFont, new Vector2(0, -85), new Vector2(220, 56));
             Button retryBtn = retryBtnObj.GetComponent<Button>();
 
-            uiMgr.SetupReferences(expSlider, lvObj.GetComponent<Text>(), timerObj.GetComponent<Text>(), killObj.GetComponent<Text>(), hpSlider, overModal, resTime.GetComponent<Text>(), resKills.GetComponent<Text>(), retryBtn);
+            // Bind SurvivorUIManager serialized properties
+            SerializedObject soUI = new SerializedObject(uiMgr);
+            soUI.FindProperty("expSlider").objectReferenceValue = expSlider;
+            soUI.FindProperty("levelText").objectReferenceValue = lvObj.GetComponent<Text>();
+            soUI.FindProperty("timerText").objectReferenceValue = timerObj.GetComponent<Text>();
+            soUI.FindProperty("killCountText").objectReferenceValue = killObj.GetComponent<Text>();
+            soUI.FindProperty("hpSlider").objectReferenceValue = hpSlider;
+            soUI.FindProperty("gameOverPanel").objectReferenceValue = overModal;
+            soUI.FindProperty("resultTimeText").objectReferenceValue = resTime.GetComponent<Text>();
+            soUI.FindProperty("resultKillsText").objectReferenceValue = resKills.GetComponent<Text>();
+            soUI.FindProperty("restartButton").objectReferenceValue = retryBtn;
+            soUI.ApplyModifiedProperties();
         }
 
         private static GameObject CreateCardButton(Transform parent, string name, Font font, Vector2 pos, out Button btn, out Text title, out Text desc)
