@@ -29,6 +29,8 @@ namespace BlockBlast
 
         public void SpawnNewHand()
         {
+            ClearHand();
+
             for (int i = 0; i < 3; i++)
             {
                 if (slotParents != null && i < slotParents.Length && slotParents[i] != null)
@@ -73,6 +75,7 @@ namespace BlockBlast
             }
         }
 
+        // 🔄 90-degree Rotation
         public void RotateHandBlocks()
         {
             bool rotatedAny = false;
@@ -96,9 +99,19 @@ namespace BlockBlast
             }
         }
 
+        // 🎲 Skip Current Blocks and Reroll New Set
+        public void SkipHandBlocks()
+        {
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayPickup();
+            }
+            SpawnNewHand();
+        }
+
         private IEnumerator CheckGameOverDeferred()
         {
-            // Give 0.35s for line clear animations and board updates to settle
+            // Wait for line clear animations and board updates to settle
             yield return new WaitForSeconds(0.35f);
 
             if (BlockGridManager.Instance == null) yield break;
@@ -109,7 +122,8 @@ namespace BlockBlast
             {
                 if (_activeBlocks[i] != null)
                 {
-                    if (CanShapeFitAnywhere(_activeBlocks[i].Shape))
+                    // Check all 4 rotations (0, 90, 180, 270) so players aren't unfairly blocked!
+                    if (CanShapeFitAnywhereWithRotation(_activeBlocks[i].Shape))
                     {
                         anyCanFit = true;
                         break;
@@ -125,7 +139,7 @@ namespace BlockBlast
 
             if (hasRemainingBlocks && !anyCanFit)
             {
-                Debug.Log("[BlockBlast] No more moves! Game Over triggered.");
+                Debug.Log("[BlockBlast] No more moves in any rotation! Game Over triggered.");
                 if (BlockBlastUIManager.Instance != null)
                 {
                     BlockBlastUIManager.Instance.ShowGameOver();
@@ -133,18 +147,30 @@ namespace BlockBlast
             }
         }
 
-        private bool CanShapeFitAnywhere(BlockShape shape)
+        // Check 4 rotations so game doesn't end if rotating can fit!
+        private bool CanShapeFitAnywhereWithRotation(BlockShape shape)
         {
-            for (int r = 0; r < BlockGridManager.GridSize; r++)
+            int[,] originalMatrix = (int[,])shape.matrix.Clone();
+
+            for (int rot = 0; rot < 4; rot++)
             {
-                for (int c = 0; c < BlockGridManager.GridSize; c++)
+                for (int r = 0; r < BlockGridManager.GridSize; r++)
                 {
-                    if (BlockGridManager.Instance.CanPlaceShape(shape, r, c))
+                    for (int c = 0; c < BlockGridManager.GridSize; c++)
                     {
-                        return true;
+                        if (BlockGridManager.Instance.CanPlaceShape(shape, r, c))
+                        {
+                            // Restore original matrix before returning
+                            shape.matrix = originalMatrix;
+                            return true;
+                        }
                     }
                 }
+                shape.Rotate90Clockwise();
             }
+
+            // Restore original matrix
+            shape.matrix = originalMatrix;
             return false;
         }
 

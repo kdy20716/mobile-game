@@ -759,30 +759,22 @@
       btnHammer.classList.toggle('ring-amber-400', hammerCount > 0);
     }
 
-    // --- Skills: Hammer & Rotate ---
-    btnHammer.addEventListener('click', () => {
-      if (hammerCount <= 0) return;
-      isHammerActive = !isHammerActive;
-      btnHammer.classList.toggle('bg-amber-600', isHammerActive);
-      gridBoardEl.classList.toggle('cursor-crosshair', isHammerActive);
-    });
+    // --- Skills: Skip & Rotate ---
+    btnHammer.id = 'btnSkip';
+    const btnSkip = btnHammer;
+    btnSkip.querySelector('span:nth-child(2)').textContent = '스킵';
+    btnSkip.querySelector('span:nth-child(1)').textContent = '🎲';
 
-    function onCellClick(r, c) {
-      if (isHammerActive && hammerCount > 0) {
-        if (board[r][c] !== null) {
-          board[r][c] = null;
-          sound.playBomb();
-          triggerScreenShake();
-          hammerCount--;
-          isHammerActive = false;
-          btnHammer.classList.remove('bg-amber-600');
-          gridBoardEl.classList.remove('cursor-crosshair');
-          updateSkillBadges();
-          renderBoard();
-          checkGameOver();
-        }
-      }
-    }
+    let skipCount = 1;
+    hammerBadgeEl.textContent = skipCount;
+
+    btnSkip.addEventListener('click', () => {
+      if (skipCount <= 0) return;
+      skipCount--;
+      hammerBadgeEl.textContent = skipCount;
+      sound.playPickup();
+      spawnHand();
+    });
 
     btnRotate.addEventListener('click', () => {
       // Rotate all blocks in hand 90 degrees clockwise
@@ -808,14 +800,14 @@
       return result;
     }
 
-    // --- Game Over Check ---
+    // --- Game Over Check with 4 Rotations ---
     function checkGameOver() {
       let anyCanBePlaced = false;
 
       for (let i = 0; i < 3; i++) {
         const item = hand[i];
         if (item) {
-          if (canItemFitAnywhere(item.matrix)) {
+          if (canItemFitAnywhereWithRotation(item.matrix)) {
             anyCanBePlaced = true;
             break;
           }
@@ -827,11 +819,15 @@
       }
     }
 
-    function canItemFitAnywhere(matrix) {
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-          if (canPlaceShape(matrix, r, c)) return true;
+    function canItemFitAnywhereWithRotation(matrix) {
+      let curr = matrix;
+      for (let rot = 0; rot < 4; rot++) {
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            if (canPlaceShape(curr, r, c)) return true;
+          }
         }
+        curr = rotateMatrix(curr);
       }
       return false;
     }

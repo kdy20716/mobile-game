@@ -26,13 +26,6 @@ namespace BlockBlast
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
-
-            BlockCellUI.OnCellClickedForHammer += HandleHammerClick;
-        }
-
-        private void OnDestroy()
-        {
-            BlockCellUI.OnCellClickedForHammer -= HandleHammerClick;
         }
 
         public void RegisterCell(int r, int c, BlockCellUI cell)
@@ -233,23 +226,6 @@ namespace BlockBlast
             else
             {
                 CurrentCombo = 0;
-            }
-        }
-
-        private void HandleHammerClick(int r, int c)
-        {
-            if (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsHammerActive)
-            {
-                if (_cells[r, c] != null && _cells[r, c].IsOccupied)
-                {
-                    _cells[r, c].PlayClearAnim(0f);
-                    if (BlockAudioManager.Instance != null)
-                    {
-                        BlockAudioManager.Instance.PlayHammer();
-                    }
-                    OnBombExploded?.Invoke();
-                    BlockBlastUIManager.Instance.ConsumeHammer();
-                }
             }
         }
 

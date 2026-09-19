@@ -14,8 +14,8 @@ namespace BlockBlast
 
         [Header("Fever & Skills")]
         [SerializeField] private Image feverBarFill;
-        [SerializeField] private Button btnHammer;
-        [SerializeField] private Text hammerBadgeText;
+        [SerializeField] private Button btnSkip;
+        [SerializeField] private Text skipBadgeText;
         [SerializeField] private Button btnRotate;
 
         [Header("Combo & Shake")]
@@ -28,11 +28,10 @@ namespace BlockBlast
         [SerializeField] private Text modalBestScoreText;
         [SerializeField] private Button btnRestart;
 
-        public bool IsHammerActive { get; private set; } = false;
         private int _score = 0;
         private int _bestScore = 0;
         private float _fever = 0f;
-        private int _hammerCount = 1;
+        private int _skipCount = 1;
 
         private void Awake()
         {
@@ -46,7 +45,7 @@ namespace BlockBlast
         {
             UpdateScoreUI();
             UpdateFeverUI();
-            UpdateHammerUI();
+            UpdateSkipUI();
 
             if (gameOverModal != null) gameOverModal.SetActive(false);
             if (comboPopupText != null) comboPopupText.gameObject.SetActive(false);
@@ -59,9 +58,9 @@ namespace BlockBlast
                 BlockGridManager.Instance.OnBombExploded += TriggerShake;
             }
 
-            if (btnHammer != null)
+            if (btnSkip != null)
             {
-                btnHammer.onClick.AddListener(ToggleHammerMode);
+                btnSkip.onClick.AddListener(OnSkipClicked);
             }
 
             if (btnRotate != null)
@@ -104,8 +103,8 @@ namespace BlockBlast
             if (_fever >= 100f)
             {
                 _fever = 0f;
-                _hammerCount++;
-                UpdateHammerUI();
+                _skipCount++;
+                UpdateSkipUI();
             }
             UpdateFeverUI();
         }
@@ -118,32 +117,25 @@ namespace BlockBlast
             }
         }
 
-        private void ToggleHammerMode()
+        private void OnSkipClicked()
         {
-            if (_hammerCount <= 0) return;
-            IsHammerActive = !IsHammerActive;
-            UpdateHammerUI();
-        }
+            if (_skipCount <= 0) return;
 
-        public void ConsumeHammer()
-        {
-            if (_hammerCount > 0)
+            _skipCount--;
+            UpdateSkipUI();
+
+            if (BlockSpawner.Instance != null)
             {
-                _hammerCount--;
-                IsHammerActive = false;
-                UpdateHammerUI();
-                TriggerShake();
+                BlockSpawner.Instance.SkipHandBlocks();
             }
         }
 
-        private void UpdateHammerUI()
+        private void UpdateSkipUI()
         {
-            if (hammerBadgeText != null) hammerBadgeText.text = _hammerCount.ToString();
-            if (btnHammer != null)
+            if (skipBadgeText != null) skipBadgeText.text = _skipCount.ToString();
+            if (btnSkip != null)
             {
-                var colors = btnHammer.colors;
-                colors.normalColor = IsHammerActive ? new Color(0.9f, 0.4f, 0.1f) : Color.white;
-                btnHammer.colors = colors;
+                btnSkip.interactable = _skipCount > 0;
             }
         }
 
@@ -180,7 +172,6 @@ namespace BlockBlast
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / dur;
-                // Bouncy elastic curve
                 float s = Mathf.Sin(t * Mathf.PI) * 0.75f + 0.85f;
                 comboPopupText.transform.localScale = startScale * s;
                 yield return null;
@@ -230,12 +221,11 @@ namespace BlockBlast
         {
             _score = 0;
             _fever = 0f;
-            _hammerCount = 1;
-            IsHammerActive = false;
+            _skipCount = 1;
 
             UpdateScoreUI();
             UpdateFeverUI();
-            UpdateHammerUI();
+            UpdateSkipUI();
 
             if (gameOverModal != null) gameOverModal.SetActive(false);
 
@@ -251,13 +241,13 @@ namespace BlockBlast
             }
         }
 
-        public void SetupReferences(Text score, Text best, Image fever, Button hammer, Text hBadge, Button rotate, Text combo, RectTransform bContainer, GameObject modal, Text finalS, Text mBestS, Button restart)
+        public void SetupReferences(Text score, Text best, Image fever, Button skip, Text sBadge, Button rotate, Text combo, RectTransform bContainer, GameObject modal, Text finalS, Text mBestS, Button restart)
         {
             scoreText = score;
             bestScoreText = best;
             feverBarFill = fever;
-            btnHammer = hammer;
-            hammerBadgeText = hBadge;
+            btnSkip = skip;
+            skipBadgeText = sBadge;
             btnRotate = rotate;
             comboPopupText = combo;
             boardContainer = bContainer;

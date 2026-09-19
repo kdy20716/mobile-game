@@ -44,7 +44,7 @@ namespace BlockBlast.Editor
 #endif
             }
 
-            // 4. Canvas & Scaler (Mobile Portrait 1080 x 1920)
+            // 4. Canvas & Scaler (Universal Mobile Responsive: 1080 x 1920 Match Width)
             GameObject canvasObj = new GameObject("BlockBlastCanvas", typeof(RectTransform));
             Canvas canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -52,7 +52,7 @@ namespace BlockBlast.Editor
             CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080, 1920);
-            scaler.matchWidthOrHeight = 1.0f; // match width for portrait mobile
+            scaler.matchWidthOrHeight = 0.0f; // Match Width ensures board never clips on any device ratio (16:9, 19.5:9, 20:9, 4:3)!
 
             canvasObj.AddComponent<GraphicRaycaster>();
 
@@ -66,29 +66,29 @@ namespace BlockBlast.Editor
             gridMgr.SetSprites(jellyTileSprite, starBombSprite);
 
             // ==========================================
-            // CUTE PASTEL UI HIERARCHY
+            // CUTE PASTEL UI HIERARCHY (RESPONSIVE)
             // ==========================================
 
-            // --- A. Header (Top) ---
+            // --- A. Header (Top Anchor) ---
             GameObject headerObj = new GameObject("Header", typeof(RectTransform));
             headerObj.transform.SetParent(canvasObj.transform, false);
-            SetRect(headerObj, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -115), new Vector2(-60, 150));
+            SetRect(headerObj, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -110), new Vector2(-60, 140));
 
             // Current Score (Left)
             GameObject scoreBox = new GameObject("ScoreBox", typeof(RectTransform));
             scoreBox.transform.SetParent(headerObj.transform, false);
-            SetRect(scoreBox, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(120, 0), new Vector2(250, 130));
+            SetRect(scoreBox, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(120, 0), new Vector2(250, 120));
 
             GameObject scoreLabel = CreateText(scoreBox.transform, "Label", "SCORE", 24, TextAnchor.MiddleLeft, defaultFont, new Color(0.7f, 0.75f, 0.9f));
             SetRect(scoreLabel, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -15), new Vector2(0, 35));
 
             GameObject scoreVal = CreateText(scoreBox.transform, "Value", "0", 56, TextAnchor.MiddleLeft, defaultFont, new Color(1f, 0.76f, 0.25f)); // Mango Gold
-            SetRect(scoreVal, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 15), new Vector2(0, 70));
+            SetRect(scoreVal, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 15), new Vector2(0, 65));
 
             // Center Title
             GameObject titleBox = new GameObject("TitleBox", typeof(RectTransform));
             titleBox.transform.SetParent(headerObj.transform, false);
-            SetRect(titleBox, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(360, 130));
+            SetRect(titleBox, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(360, 120));
 
             GameObject mainTitle = CreateText(titleBox.transform, "MainTitle", "BLOCK BLAST", 36, TextAnchor.MiddleCenter, defaultFont, new Color(0.45f, 0.88f, 1f));
             SetRect(mainTitle, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -20), new Vector2(0, 45));
@@ -99,20 +99,20 @@ namespace BlockBlast.Editor
             // Best Score (Right)
             GameObject bestBox = new GameObject("BestBox", typeof(RectTransform));
             bestBox.transform.SetParent(headerObj.transform, false);
-            SetRect(bestBox, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-120, 0), new Vector2(250, 130));
+            SetRect(bestBox, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-120, 0), new Vector2(250, 120));
 
             GameObject bestLabel = CreateText(bestBox.transform, "Label", "BEST", 24, TextAnchor.MiddleRight, defaultFont, new Color(0.7f, 0.75f, 0.9f));
             SetRect(bestLabel, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -15), new Vector2(0, 35));
 
             GameObject bestVal = CreateText(bestBox.transform, "Value", "0", 56, TextAnchor.MiddleRight, defaultFont, new Color(0.95f, 0.95f, 1f));
-            SetRect(bestVal, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 15), new Vector2(0, 70));
+            SetRect(bestVal, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 15), new Vector2(0, 65));
 
             // --- B. Skills Bar (Below Header) ---
             GameObject skillsBar = new GameObject("SkillsBar", typeof(RectTransform));
             skillsBar.transform.SetParent(canvasObj.transform, false);
-            SetRect(skillsBar, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -235), new Vector2(980, 90));
+            SetRect(skillsBar, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -230), new Vector2(980, 85));
             Image sBarBg = skillsBar.AddComponent<Image>();
-            sBarBg.color = new Color(0.16f, 0.17f, 0.28f, 0.95f); // Soft rounded container
+            sBarBg.color = new Color(0.16f, 0.17f, 0.28f, 0.95f);
 
             // Fever Gauge Bar
             GameObject feverLabel = CreateText(skillsBar.transform, "FeverLabel", "FEVER", 24, TextAnchor.MiddleLeft, defaultFont, new Color(1f, 0.85f, 0.35f));
@@ -132,28 +132,28 @@ namespace BlockBlast.Editor
             fFillImg.fillAmount = 0f;
             fFillImg.color = new Color(1f, 0.45f, 0.65f); // Sweet Strawberry Pink
 
-            // Cute Squeaky Hammer Button (Capsule)
-            GameObject hammerBtnObj = CreateButton(skillsBar.transform, "BtnHammer", "🔨 뿅망치", defaultFont, new Vector2(1, 0.5f), new Vector2(-235, 0), new Vector2(185, 64), new Color(0.95f, 0.35f, 0.55f));
-            var btnHammer = hammerBtnObj.GetComponent<Button>();
+            // 🎲 Skip Button (Replaces Hammer!)
+            GameObject skipBtnObj = CreateButton(skillsBar.transform, "BtnSkip", "🎲 스킵", defaultFont, new Vector2(1, 0.5f), new Vector2(-235, 0), new Vector2(185, 64), new Color(0.95f, 0.35f, 0.55f));
+            var btnSkip = skipBtnObj.GetComponent<Button>();
 
-            // Hammer Badge
+            // Skip Badge
             GameObject badgeObj = new GameObject("Badge", typeof(RectTransform), typeof(Image));
-            badgeObj.transform.SetParent(hammerBtnObj.transform, false);
+            badgeObj.transform.SetParent(skipBtnObj.transform, false);
             SetRect(badgeObj, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-4, -4), new Vector2(32, 32));
             badgeObj.GetComponent<Image>().color = new Color(1f, 0.85f, 0.2f); // Gold badge
             GameObject badgeText = CreateText(badgeObj.transform, "Text", "1", 18, TextAnchor.MiddleCenter, defaultFont, new Color(0.2f, 0.1f, 0f));
             SetRect(badgeText, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-            // Cute Rotate Button (Capsule)
+            // 🔄 Rotate Button
             GameObject rotateBtnObj = CreateButton(skillsBar.transform, "BtnRotate", "🔄 돌리기", defaultFont, new Vector2(1, 0.5f), new Vector2(-40, 0), new Vector2(165, 64), new Color(0.20f, 0.78f, 0.62f));
             var btnRotate = rotateBtnObj.GetComponent<Button>();
 
-            // --- C. Board Container (Center) ---
+            // --- C. Board Container (Center Anchor) ---
             GameObject boardContainer = new GameObject("BoardContainer", typeof(RectTransform));
             boardContainer.transform.SetParent(canvasObj.transform, false);
-            SetRect(boardContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 105), new Vector2(980, 980));
+            SetRect(boardContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 100), new Vector2(980, 980));
             Image bBg = boardContainer.AddComponent<Image>();
-            bBg.color = new Color(0.15f, 0.16f, 0.27f, 0.98f); // Cute macaron tray
+            bBg.color = new Color(0.15f, 0.16f, 0.27f, 0.98f);
 
             // 64 Grid Cells
             float cellSize = 108f;
@@ -166,7 +166,7 @@ namespace BlockBlast.Editor
             {
                 for (int c = 0; c < BlockGridManager.GridSize; c++)
                 {
-                    GameObject cellObj = new GameObject($"Cell_{r}_{c}", typeof(RectTransform), typeof(Image), typeof(Button));
+                    GameObject cellObj = new GameObject($"Cell_{r}_{c}", typeof(RectTransform), typeof(Image));
                     cellObj.transform.SetParent(boardContainer.transform, false);
 
                     RectTransform rt = cellObj.GetComponent<RectTransform>();
@@ -174,7 +174,7 @@ namespace BlockBlast.Editor
                     rt.anchoredPosition = new Vector2(startGridX + c * (cellSize + spacing), startGridY - r * (cellSize + spacing));
 
                     Image bgImg = cellObj.GetComponent<Image>();
-                    bgImg.color = new Color(0.10f, 0.11f, 0.18f); // Soft dark indented cell
+                    bgImg.color = new Color(0.10f, 0.11f, 0.18f);
 
                     // Fill Child (Jelly Sprite)
                     GameObject fillObj = new GameObject("Fill", typeof(RectTransform), typeof(Image));
@@ -213,12 +213,12 @@ namespace BlockBlast.Editor
             SetRect(comboObj, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(650, 220));
             comboObj.SetActive(false);
 
-            // --- D. Hand Slots (Bottom) ---
+            // --- D. Hand Slots (Bottom Anchor) ---
             GameObject handContainer = new GameObject("HandContainer", typeof(RectTransform));
             handContainer.transform.SetParent(canvasObj.transform, false);
             SetRect(handContainer, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 240), new Vector2(980, 260));
             Image hBg = handContainer.AddComponent<Image>();
-            hBg.color = new Color(0.15f, 0.16f, 0.27f, 0.95f); // Macaron plate
+            hBg.color = new Color(0.15f, 0.16f, 0.27f, 0.95f);
 
             Transform[] slotTransforms = new Transform[3];
             float slotSpacing = 310f;
@@ -276,7 +276,7 @@ namespace BlockBlast.Editor
                 scoreVal.GetComponent<Text>(),
                 bestVal.GetComponent<Text>(),
                 fFillImg,
-                btnHammer,
+                btnSkip,
                 badgeText.GetComponent<Text>(),
                 btnRotate,
                 comboObj.GetComponent<Text>(),
@@ -292,7 +292,7 @@ namespace BlockBlast.Editor
             EditorSceneManager.SaveScene(newScene, scenePath);
             AssetDatabase.Refresh();
 
-            Debug.Log("<color=#FF7AA2><b>[Block Blast]</b> 귀염뽀짝 파스텔 젤리 모바일 씬이 성공적으로 완성되었습니다! (Assets/Scenes/BlockBlastScene.unity)</color>");
+            Debug.Log("<color=#FF7AA2><b>[Block Blast]</b> 스킵 버튼 및 4방향 회전 검사, 반응형 모바일 씬이 완성되었습니다! (Assets/Scenes/BlockBlastScene.unity)</color>");
         }
 
         private static GameObject CreateButton(Transform parent, string name, string label, Font font, Vector2 anchor, Vector2 pos, Vector2 size, Color bgColor)
