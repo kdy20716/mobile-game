@@ -243,6 +243,7 @@ namespace MobileRacing.Editor
             collider.size = new Vector3(1.8f, 0.9f, 3.8f);
 
             var controller = car.AddComponent<ArcadeCarController>();
+            car.AddComponent<CarAudioSystem>();
 
             // Car Body Meshes
             GameObject bodyLower = GameObject.CreatePrimitive(PrimitiveType.Cube);

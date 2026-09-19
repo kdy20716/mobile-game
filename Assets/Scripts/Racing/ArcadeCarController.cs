@@ -48,8 +48,8 @@ namespace MobileRacing
         {
             CheckGround();
 
-            float throttle = MobileInputManager.Instance != null ? MobileInputManager.Instance.ThrottleInput : Input.GetAxis("Vertical");
-            float steer = MobileInputManager.Instance != null ? MobileInputManager.Instance.SteerInput : Input.GetAxis("Horizontal");
+            float throttle = MobileInputManager.Instance != null ? MobileInputManager.Instance.ThrottleInput : 0f;
+            float steer = MobileInputManager.Instance != null ? MobileInputManager.Instance.SteerInput : 0f;
             bool boost = MobileInputManager.Instance != null && MobileInputManager.Instance.BoostInput;
             bool handbrake = MobileInputManager.Instance != null && MobileInputManager.Instance.HandbrakeInput;
 
@@ -125,7 +125,7 @@ namespace MobileRacing
 
         private void UpdateWheelVisuals()
         {
-            float steer = MobileInputManager.Instance != null ? MobileInputManager.Instance.SteerInput : Input.GetAxis("Horizontal");
+            float steer = MobileInputManager.Instance != null ? MobileInputManager.Instance.SteerInput : 0f;
             _currentSteerAngle = Mathf.Lerp(_currentSteerAngle, steer * maxSteerAngle, Time.deltaTime * 10f);
 
             if (frontLeftWheel != null)
