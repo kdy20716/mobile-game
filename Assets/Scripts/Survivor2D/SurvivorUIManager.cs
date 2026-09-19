@@ -24,8 +24,15 @@ namespace Survivor2D
         private int _killCount = 0;
         private bool _isGameOver = false;
 
+        private void Awake()
+        {
+            AutoFindUIReferences();
+        }
+
         private void Start()
         {
+            AutoFindUIReferences();
+
             if (SurvivorPlayer2D.Instance != null)
             {
                 SurvivorPlayer2D.Instance.OnHpChanged += UpdateHp;
@@ -39,6 +46,22 @@ namespace Survivor2D
             if (restartButton != null) restartButton.onClick.AddListener(RestartGame);
 
             UpdateKillDisplay();
+        }
+
+        private void AutoFindUIReferences()
+        {
+            if (expSlider == null) expSlider = transform.Find("ExpBar")?.GetComponent<Slider>();
+            if (levelText == null) levelText = transform.Find("LevelText")?.GetComponent<Text>();
+            if (timerText == null) timerText = transform.Find("TimerText")?.GetComponent<Text>();
+            if (killCountText == null) killCountText = transform.Find("KillText")?.GetComponent<Text>();
+            if (hpSlider == null) hpSlider = transform.Find("HpBar")?.GetComponent<Slider>();
+            if (gameOverPanel == null) gameOverPanel = transform.Find("GameOverModal")?.gameObject;
+            if (gameOverPanel != null)
+            {
+                if (resultTimeText == null) resultTimeText = gameOverPanel.transform.Find("Time")?.GetComponent<Text>();
+                if (resultKillsText == null) resultKillsText = gameOverPanel.transform.Find("Kills")?.GetComponent<Text>();
+                if (restartButton == null) restartButton = gameOverPanel.transform.Find("RetryBtn")?.GetComponent<Button>();
+            }
         }
 
         private void OnDestroy()

@@ -31,6 +31,8 @@ namespace Survivor2D
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
+
+            AutoFindUIReferences();
         }
 
         private void Start()
@@ -40,7 +42,44 @@ namespace Survivor2D
                 SurvivorPlayer2D.Instance.OnLevelUp += TriggerLevelUp;
             }
 
+            AutoFindUIReferences();
+
             if (levelUpPanel != null) levelUpPanel.SetActive(false);
+        }
+
+        private void AutoFindUIReferences()
+        {
+            if (levelUpPanel == null)
+            {
+                var panelTransform = transform.Find("LevelUpModal");
+                if (panelTransform != null) levelUpPanel = panelTransform.gameObject;
+            }
+
+            if (levelUpPanel != null && (choiceButtons == null || choiceButtons.Length == 0 || choiceButtons[0] == null))
+            {
+                var buttonsList = new List<Button>();
+                var titleList = new List<Text>();
+                var descList = new List<Text>();
+
+                for (int i = 0; i < 3; i++)
+                {
+                    var card = levelUpPanel.transform.Find($"Card_{i}");
+                    if (card != null)
+                    {
+                        var btn = card.GetComponent<Button>();
+                        var title = card.Find("Title")?.GetComponent<Text>();
+                        var desc = card.Find("Desc")?.GetComponent<Text>();
+
+                        if (btn != null) buttonsList.Add(btn);
+                        if (title != null) titleList.Add(title);
+                        if (desc != null) descList.Add(desc);
+                    }
+                }
+
+                choiceButtons = buttonsList.ToArray();
+                choiceTitleTexts = titleList.ToArray();
+                choiceDescTexts = descList.ToArray();
+            }
         }
 
         private void OnDestroy()
