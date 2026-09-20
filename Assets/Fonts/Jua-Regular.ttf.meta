@@ -6,13 +6,13 @@ TrueTypeFontImporter:
   fontSize: 64
   forceTextureCase: -2
   characterSpacing: 0
-  characterPadding: 2
+  characterPadding: 4
   includeFontData: 1
   fontNames:
   - Jua
   fallbackFontReferences: []
   customCharacters: 
-  fontRenderingMode: 2
+  fontRenderingMode: 0
   ascentCalculationMode: 1
   useLegacyBoundsCalculation: 0
   shouldRoundAdvanceValue: 1

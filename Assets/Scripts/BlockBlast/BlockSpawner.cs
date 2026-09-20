@@ -24,7 +24,10 @@ namespace BlockBlast
 
         private void Start()
         {
-            SpawnNewHand();
+            if (slotParents != null && slotParents.Length > 0 && slotParents[0] != null && slotParents[0].gameObject.activeInHierarchy)
+            {
+                SpawnNewHand();
+            }
         }
 
         public void SpawnNewHand()
@@ -35,7 +38,7 @@ namespace BlockBlast
             {
                 if (slotParents != null && i < slotParents.Length && slotParents[i] != null)
                 {
-                    BlockShape shape = BlockShapeData.GetRandomShape(0.15f);
+                    BlockShape shape = BlockShapeData.GetRandomShape(0f);
 
                     GameObject blockObj = new GameObject($"Block_{i}", typeof(RectTransform));
                     blockObj.transform.SetParent(slotParents[i], false);

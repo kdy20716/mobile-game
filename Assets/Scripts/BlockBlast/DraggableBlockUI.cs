@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace BlockBlast
 {
-    public class DraggableBlockUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class DraggableBlockUI : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         public BlockShape Shape { get; private set; }
         public int SlotIndex { get; private set; }
@@ -27,17 +27,32 @@ namespace BlockBlast
 
         private void Awake()
         {
-            _rectTransform = GetComponent<RectTransform>();
-            _originalScale = _rectTransform.localScale;
+            EnsureRectTransform();
+        }
+
+        private void EnsureRectTransform()
+        {
+            if (_rectTransform == null)
+            {
+                _rectTransform = GetComponent<RectTransform>();
+                if (_rectTransform != null)
+                {
+                    _originalScale = _rectTransform.localScale;
+                }
+            }
         }
 
         public void Init(BlockShape shape, int slotIdx, Canvas canvas, Sprite gemSprite, Sprite bombSprite)
         {
+            EnsureRectTransform();
             Shape = shape;
             SlotIndex = slotIdx;
             _parentCanvas = canvas;
             _originalParent = transform.parent;
-            _originalAnchoredPosition = _rectTransform.anchoredPosition;
+            if (_rectTransform != null)
+            {
+                _originalAnchoredPosition = _rectTransform.anchoredPosition;
+            }
 
             BuildVisuals(gemSprite, bombSprite);
         }
@@ -53,15 +68,31 @@ namespace BlockBlast
 
         private void BuildVisuals(Sprite gemSprite, Sprite bombSprite)
         {
-            float cellSize = 38f;
-            float spacing = 3.5f;
+            // Root hit-box to ensure entire shape boundary catches touches & clicks
+            Image rootHitbox = GetComponent<Image>();
+            if (rootHitbox == null) rootHitbox = gameObject.AddComponent<Image>();
+            rootHitbox.color = Color.clear;
+            rootHitbox.raycastTarget = true;
+
+            float cellSize = 50f;
+            float spacing = 4f;
 
             float totalWidth = Shape.Cols * cellSize + (Shape.Cols - 1) * spacing;
             float totalHeight = Shape.Rows * cellSize + (Shape.Rows - 1) * spacing;
-            _rectTransform.sizeDelta = new Vector2(totalWidth, totalHeight);
+            if (_rectTransform != null)
+            {
+                _rectTransform.sizeDelta = new Vector2(totalWidth, totalHeight);
+            }
 
             float startX = -totalWidth * 0.5f + cellSize * 0.5f;
             float startY = totalHeight * 0.5f - cellSize * 0.5f;
+
+            Sprite blockSp = null;
+            if (BlockGridManager.Instance != null)
+            {
+                blockSp = BlockGridManager.Instance.GetBlockSpriteForColor(Shape.blockColor, Shape.isBomb)
+                    ?? BlockGridManager.Instance.GetFaceSpriteForColor(Shape.blockColor, Shape.isBomb);
+            }
 
             for (int r = 0; r < Shape.Rows; r++)
             {
@@ -77,20 +108,9 @@ namespace BlockBlast
                         rt.anchoredPosition = new Vector2(startX + c * (cellSize + spacing), startY - r * (cellSize + spacing));
 
                         Image img = cellObj.GetComponent<Image>();
-                        img.color = Shape.blockColor;
-                        if (gemSprite != null) img.sprite = gemSprite;
-
-                        // Bomb Icon
-                        if (Shape.isBomb && r == 0 && c == 0 && bombSprite != null)
-                        {
-                            GameObject bObj = new GameObject("BombIcon", typeof(RectTransform), typeof(Image));
-                            bObj.transform.SetParent(cellObj.transform, false);
-                            RectTransform bRt = bObj.GetComponent<RectTransform>();
-                            bRt.sizeDelta = new Vector2(cellSize * 0.85f, cellSize * 0.85f);
-                            bRt.anchoredPosition = Vector2.zero;
-                            Image bImg = bObj.GetComponent<Image>();
-                            bImg.sprite = bombSprite;
-                        }
+                        img.sprite = blockSp ?? gemSprite;
+                        img.color = Color.white;
+                        img.raycastTarget = true; // Enabled for precise click detection!
                     }
                 }
             }
@@ -98,7 +118,7 @@ namespace BlockBlast
 
         private float ActiveOffsetY => (Application.isMobilePlatform || Input.touchCount > 0) ? fingerOffsetY : 20f;
 
-        public void OnBeginDrag(PointerEventData eventData)
+        public void OnPointerDown(PointerEventData eventData)
         {
             if (_isPlaced) return;
 
@@ -110,10 +130,16 @@ namespace BlockBlast
             transform.SetParent(_parentCanvas.transform, true);
             transform.SetAsLastSibling();
 
-            // Smooth bouncy scale up on pickup
             StopAllCoroutines();
             StartCoroutine(PickupBounceAnim());
 
+            UpdateDragPosition(eventData);
+            UpdateSnapPreview(eventData);
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (_isPlaced) return;
             UpdateDragPosition(eventData);
         }
 

@@ -103,14 +103,15 @@
       
       <!-- Logo -->
       <div class="text-center">
-        <h1 class="text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-300 to-amber-300 drop-shadow">
-          BLOCK BLAST
+        <h1 class="text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-300 to-amber-300 drop-shadow font-black">
+          말랑블라스트
         </h1>
-        <span class="text-xs tracking-widest text-pink-300 font-bold drop-shadow">✨ E L E M E N T A L ✨</span>
+        <span class="text-xs tracking-widest text-pink-300 font-bold drop-shadow">✨ MALLANG BLAST ✨</span>
       </div>
 
       <!-- Best Box -->
-      <div class="jelly-score-box rounded-2xl px-4 py-2 flex flex-col items-center min-w-[90px]">
+      <div class="jelly-score-box rounded-2xl px-4 py-2 flex flex-col items-center min-w-[90px] relative">
+        <span class="absolute -top-3 text-lg">👑</span>
         <span class="text-xs text-cyan-200 tracking-wider">BEST</span>
         <span id="bestScore" class="text-3xl font-black text-slate-100 text-shadow-cute">0</span>
       </div>
@@ -119,7 +120,7 @@
     <!-- Skills Bar (3D Jelly Capsule Buttons) -->
     <div class="flex items-center justify-between jelly-panel rounded-2xl px-4 py-2.5 mt-1 shadow-lg">
       <div class="flex items-center gap-2">
-        <span class="text-xs text-amber-300 text-shadow-cute">FEVER</span>
+        <span class="text-xs text-amber-300 text-shadow-cute flex items-center gap-1"><span>🔥</span>FEVER</span>
         <div class="w-28 h-4 bg-[#141526] rounded-full overflow-hidden p-0.5 border border-slate-700 shadow-inner">
           <div id="feverBar" class="h-full bg-gradient-to-r from-pink-400 to-amber-400 rounded-full w-0 transition-all duration-300"></div>
         </div>
@@ -148,25 +149,45 @@
     </div>
 
     <!-- Combo Popup Overlay -->
-    <div id="comboOverlay" class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden"></div>
+    <div id="comboOverlay" class="absolute inset-0 pointer-events-none flex items-center justify-center z-50"></div>
   </main>
 
-  <!-- Bottom: 3 Hand Blocks -->
-  <footer class="w-full max-w-md pb-4 pt-1">
-    <div id="handSlots" class="grid grid-cols-3 gap-3 h-28 items-center justify-items-center jelly-panel rounded-2xl p-2.5 shadow-lg">
-      <!-- 3 Draggable Blocks will be rendered here -->
-    </div>
-    <div class="text-center mt-2.5">
-      <span class="text-xs font-bold text-slate-300 drop-shadow">✨ 블록을 쏙! 넣어 라인을 팡팡 터뜨려요 💖 (🧨폭탄 3x3 연쇄 폭발)</span>
-    </div>
+  <!-- Hand Blocks Container (3 Slots) -->
+  <footer class="w-full max-w-md flex flex-col items-center gap-2 pb-3">
+    <div id="handSlots" class="w-full grid grid-cols-3 gap-3 p-3 jelly-panel rounded-3xl min-h-[140px] items-center justify-items-center shadow-lg"></div>
+    <span class="text-[11px] text-slate-400/80 tracking-wider">블록을 끌어다 보드에 놓아 가로/세로 한 줄을 채우세요!</span>
   </footer>
 
-  <!-- Game Over Modal -->
-  <div id="gameOverModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="jelly-panel rounded-3xl p-6 max-w-xs w-full text-center shadow-2xl animate-fade-in border-2 border-pink-500/40">
-      <div class="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 border border-rose-400/40 shadow-lg">
-        💥
+  <!-- Main Menu Screen Modal -->
+  <div id="mainMenuModal" class="fixed inset-0 bg-[#0B0C18]/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="jelly-panel rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center">
+      <div class="flex items-center justify-center gap-3 mb-2">
+        <span class="text-5xl animate-bounce">🍓</span>
+        <span class="text-5xl animate-bounce" style="animation-delay: 0.15s;">🫧</span>
       </div>
+      <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-300 to-amber-300 drop-shadow mb-1">
+        말랑블라스트
+      </h2>
+      <p class="text-xs text-pink-300 font-bold mb-6 tracking-wider">✨ 세상에서 가장 쫀득한 젤리 퍼즐 ✨</p>
+
+      <div class="jelly-score-box rounded-2xl p-4 w-full mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">👑</span>
+          <span class="text-xs font-bold text-cyan-200">최고 점수</span>
+        </div>
+        <span id="menuBestScore" class="text-2xl font-black text-amber-300 text-shadow-cute">0</span>
+      </div>
+
+      <button id="btnStartGame" class="jelly-btn-pink w-full py-4 text-white font-black text-xl rounded-2xl transition-all shadow-xl">
+        게임 시작 ✨
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Over Dialog Modal -->
+  <div id="gameOverModal" class="fixed inset-0 bg-[#0B0C18]/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="jelly-panel rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl">
+      <div class="text-4xl mb-3">💫</div>
       <h2 class="text-2xl font-black text-slate-100 text-shadow-cute">NO MORE MOVES</h2>
       <p class="text-xs text-slate-300 mt-1 mb-5">더 이상 블록을 둘 곳이 없습니다!</p>
 
@@ -309,13 +330,12 @@
 
     // --- Sweet Macaron & Pastel Jelly Color Palette ---
     const COLORS = [
-      { bg: '#5CC4FF', border: '#38A7E8' }, // Sky Milk Blue
-      { bg: '#FFC043', border: '#EAA522' }, // Mango Sorbet Yellow
-      { bg: '#4EE0B5', border: '#2DC295' }, // Apple Soda Mint
-      { bg: '#FF7AA2', border: '#E85B85' }, // Strawberry Milk Pink
-      { bg: '#A67CFF', border: '#8A59EE' }, // Berry Lavender Purple
-      { bg: '#FF8F6B', border: '#E86E47' }, // Peach Coral Orange
-      { bg: '#FF4D69', border: '#E02A48' }, // Sweet Cherry Red (Bomb)
+      { bg: '#FF85A2', border: '#FF5C84', img: 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Smile.png', icon: '🍓' }, // Strawberry Milk Pink (Mascot)
+      { bg: '#4EE0B5', border: '#2DC295', img: 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Mint.png', icon: '🫧' }, // Apple Soda Mint (Mint Mascot)
+      { bg: '#FFC043', border: '#EAA522', img: 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Gold.png', icon: '👑' }, // Mango Sorbet Yellow (Royal Gold Mascot)
+      { bg: '#A67CFF', border: '#8A59EE', img: 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Purple.png', icon: '🍇' }, // Berry Lavender Purple (Sleepy Purple Mascot)
+      { bg: '#5CC4FF', border: '#38A7E8', img: 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Blue.png', icon: '🌊' }, // Sky Milk Blue (Winking Blue Mascot)
+      { bg: '#FF4D69', border: '#E02A48', img: 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Red.png', icon: '⭐' }, // Sweet Cherry Red (Star Mascot Bomb)
     ];
 
     const SHAPES = [
@@ -402,15 +422,28 @@
           if (data) {
             cell.style.backgroundColor = data.color.bg;
             cell.style.borderColor = data.color.border;
-            cell.innerHTML = data.isBomb ? '<span class="text-xs">🧨</span>' : '';
+            cell.style.boxShadow = 'inset 0 3px 6px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.35)';
+            const imgSrc = data.isBomb ? 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Red.png' : (data.color.img || '');
+            const fallbackIcon = data.isBomb ? '⭐' : (data.color.icon || '💖');
+            cell.innerHTML = `
+              <div class="w-full h-full flex items-center justify-center p-0.5 pointer-events-none">
+                <img src="${imgSrc}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" class="w-4/5 h-4/5 object-contain pointer-events-none drop-shadow select-none" />
+                <span class="text-sm select-none pointer-events-none filter drop-shadow hidden">${fallbackIcon}</span>
+              </div>
+            `;
           } else {
             cell.style.backgroundColor = '';
             cell.style.borderColor = '';
+            cell.style.boxShadow = '';
             cell.innerHTML = '';
           }
           cell.classList.remove('highlight', 'clearing');
         }
       }
+    }
+
+    function onCellClick(r, c) {
+      // Safe no-op click handler
     }
 
     // --- Spawn Hand Blocks ---
@@ -457,8 +490,8 @@
       const container = document.createElement('div');
       container.className = 'cursor-grab active:cursor-grabbing p-1 transition-transform hover:scale-105';
       container.style.display = 'grid';
-      container.style.gridTemplateRows = `repeat(${rows}, 20px)`;
-      container.style.gridTemplateColumns = `repeat(${cols}, 20px)`;
+      container.style.gridTemplateRows = `repeat(${rows}, 24px)`;
+      container.style.gridTemplateColumns = `repeat(${cols}, 24px)`;
       container.style.gap = '2.5px';
 
       for (let r = 0; r < rows; r++) {
@@ -466,10 +499,16 @@
           const bit = item.matrix[r][c];
           const cell = document.createElement('div');
           if (bit) {
-            cell.className = 'rounded-md shadow-sm flex items-center justify-center text-[10px]';
+            cell.className = 'rounded-md shadow-sm flex items-center justify-center overflow-hidden p-0.5';
             cell.style.backgroundColor = item.color.bg;
             cell.style.border = `1.5px solid ${item.color.border}`;
-            if (item.isBomb && r === 0 && c === 0) cell.textContent = '🧨';
+            cell.style.boxShadow = 'inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -2px 4px rgba(0,0,0,0.3)';
+            const imgSrc = item.isBomb ? 'Assets/Textures/BlockBlastCute/Jelly_Mascot_Red.png' : (item.color.img || '');
+            const fallbackIcon = item.isBomb ? '⭐' : (item.color.icon || '💖');
+            cell.innerHTML = `
+              <img src="${imgSrc}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" class="w-full h-full object-contain pointer-events-none drop-shadow select-none" />
+              <span class="text-[10px] select-none pointer-events-none filter drop-shadow hidden">${fallbackIcon}</span>
+            `;
           } else {
             cell.style.opacity = '0';
           }
@@ -486,7 +525,6 @@
 
     function setupDragAndDrop(element, item, slotIndex) {
       element.addEventListener('pointerdown', (e) => {
-        if (isHammerActive) return;
         e.preventDefault();
         sound.playPickup();
 
@@ -923,7 +961,21 @@
       gameOverModal.classList.remove('hidden');
     }
 
-    btnRestart.addEventListener('click', () => {
+    const mainMenuModal = document.getElementById('mainMenuModal');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const menuBestScoreEl = document.getElementById('menuBestScore');
+
+    if (menuBestScoreEl) menuBestScoreEl.textContent = bestScore;
+
+    if (btnStartGame) {
+      btnStartGame.addEventListener('click', () => {
+        sound.playPickup();
+        if (mainMenuModal) mainMenuModal.classList.add('hidden');
+        resetGame();
+      });
+    }
+
+    function resetGame() {
       board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
       hand = [null, null, null];
       score = 0;
@@ -935,12 +987,14 @@
       currentScoreEl.textContent = '0';
       feverBarEl.style.width = '0%';
       updateSkipUI();
-      gameOverModal.classList.add('hidden');
+      if (gameOverModal) gameOverModal.classList.add('hidden');
       initBoardUI();
       spawnHand();
-    });
+    }
 
-    // Start Game
+    btnRestart.addEventListener('click', resetGame);
+
+    // Initial Setup
     initBoardUI();
     spawnHand();
     updateSkipUI();

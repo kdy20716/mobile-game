@@ -97,6 +97,14 @@ namespace MobileRacing.Editor
                 {
                     responseString = $"{{\"isPlaying\":{EditorApplication.isPlaying.ToString().ToLower()},\"isCompiling\":{EditorApplication.isCompiling.ToString().ToLower()}}}";
                 }
+                else if (req.Url.AbsolutePath == "/generate-blockblast")
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        BlockBlast.Editor.BlockBlastSceneBuilder.GenerateBlockBlastScene();
+                    };
+                    responseString = "{\"status\":\"ok\",\"message\":\"Generating Block Blast Scene\"}";
+                }
                 else
                 {
                     responseString = "{\"status\":\"ok\",\"service\":\"UnityMcpBridge\",\"version\":\"1.0\"}";

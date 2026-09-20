@@ -7,8 +7,10 @@ namespace BlockBlast
 {
     public class BlockCellUI : MonoBehaviour
     {
-        public int Row { get; private set; }
-        public int Col { get; private set; }
+        [SerializeField] private int row;
+        [SerializeField] private int col;
+        public int Row => row;
+        public int Col => col;
         public bool IsOccupied { get; private set; } = false;
         public bool IsBomb { get; private set; } = false;
 
@@ -16,6 +18,7 @@ namespace BlockBlast
         [SerializeField] private Image bgImage;
         [SerializeField] private Image fillImage;
         [SerializeField] private Image bombIcon;
+        [SerializeField] private Image faceIcon;
         [SerializeField] private GameObject highlightObj;
 
         private Button cellButton;
@@ -35,12 +38,21 @@ namespace BlockBlast
 
         public void Init(int r, int c)
         {
-            Row = r;
-            Col = c;
+            row = r;
+            col = c;
             SetEmpty();
         }
 
-        public void SetOccupied(Color col, bool bomb, Sprite tileSprite = null, Sprite bombSprite = null)
+        public void SetupComponents(Image bg, Image fill, Image bIcon, GameObject hl, Image face = null)
+        {
+            bgImage = bg;
+            fillImage = fill;
+            bombIcon = bIcon;
+            highlightObj = hl;
+            faceIcon = face;
+        }
+
+        public void SetOccupied(Color col, bool bomb, Sprite tileSprite = null, Sprite faceSprite = null)
         {
             IsOccupied = true;
             IsBomb = bomb;
@@ -52,10 +64,24 @@ namespace BlockBlast
                 if (tileSprite != null) fillImage.sprite = tileSprite;
             }
 
+            if (faceIcon != null)
+            {
+                if (faceSprite != null)
+                {
+                    faceIcon.gameObject.SetActive(true);
+                    faceIcon.sprite = faceSprite;
+                    faceIcon.color = Color.white;
+                }
+                else
+                {
+                    faceIcon.gameObject.SetActive(false);
+                }
+            }
+
             if (bombIcon != null)
             {
                 bombIcon.gameObject.SetActive(bomb);
-                if (bomb && bombSprite != null) bombIcon.sprite = bombSprite;
+                if (bomb && faceSprite != null) bombIcon.sprite = faceSprite;
             }
 
             SetHighlight(false);
@@ -72,6 +98,11 @@ namespace BlockBlast
                 fillImage.transform.localScale = Vector3.one;
             }
 
+            if (faceIcon != null)
+            {
+                faceIcon.gameObject.SetActive(false);
+            }
+
             if (bombIcon != null)
             {
                 bombIcon.gameObject.SetActive(false);
@@ -80,11 +111,40 @@ namespace BlockBlast
             SetHighlight(false);
         }
 
-        public void SetHighlight(bool active)
+        public void SetHighlight(bool active, Sprite tileSprite = null, Sprite faceSprite = null, Color? color = null)
         {
             if (highlightObj != null)
             {
                 highlightObj.SetActive(active);
+                if (active)
+                {
+                    Image hlImg = highlightObj.GetComponent<Image>();
+                    if (hlImg != null)
+                    {
+                        if (tileSprite != null) hlImg.sprite = tileSprite;
+                        Color c = color ?? Color.white;
+                        hlImg.color = new Color(c.r, c.g, c.b, 0.65f);
+                    }
+
+                    Transform faceChild = highlightObj.transform.Find("FaceHighlight");
+                    if (faceChild != null)
+                    {
+                        Image faceImg = faceChild.GetComponent<Image>();
+                        if (faceImg != null)
+                        {
+                            if (faceSprite != null)
+                            {
+                                faceChild.gameObject.SetActive(true);
+                                faceImg.sprite = faceSprite;
+                                faceImg.color = new Color(1f, 1f, 1f, 0.75f);
+                            }
+                            else
+                            {
+                                faceChild.gameObject.SetActive(false);
+                            }
+                        }
+                    }
+                }
             }
         }
 

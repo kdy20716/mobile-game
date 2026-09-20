@@ -15,12 +15,82 @@ namespace BlockBlast
         [SerializeField] private Sprite gemTileSprite;
         [SerializeField] private Sprite bombIconSprite;
 
+        [Header("Cute Face Sprites")]
+        [SerializeField] private Sprite pinkMascotSprite;
+        [SerializeField] private Sprite mintMascotSprite;
+        [SerializeField] private Sprite crownSprite;
+        [SerializeField] private Sprite diceSprite;
+        [SerializeField] private Sprite starBombSprite;
+
+        [Header("Pastel Block Sprites (With Mascots Embedded)")]
+        [SerializeField] private Sprite pinkBlockSprite;
+        [SerializeField] private Sprite mintBlockSprite;
+        [SerializeField] private Sprite goldBlockSprite;
+        [SerializeField] private Sprite purpleBlockSprite;
+        [SerializeField] private Sprite blueBlockSprite;
+        [SerializeField] private Sprite starBombBlockSprite;
+
+        public void SetupPastelBlockSprites(Sprite pink, Sprite mint, Sprite gold, Sprite purple, Sprite blue, Sprite bomb)
+        {
+            pinkBlockSprite = pink;
+            mintBlockSprite = mint;
+            goldBlockSprite = gold;
+            purpleBlockSprite = purple;
+            blueBlockSprite = blue;
+            starBombBlockSprite = bomb;
+
+            pinkMascotSprite = pink;
+            mintMascotSprite = mint;
+            crownSprite = gold;
+            diceSprite = purple;
+            starBombSprite = bomb;
+            bombIconSprite = bomb;
+        }
+
+        public Sprite GetBlockSpriteForColor(Color col, bool isBomb)
+        {
+            if (isBomb) return starBombBlockSprite ?? bombIconSprite;
+            Color.RGBToHSV(col, out float h, out float s, out float v);
+            if (h >= 0.88f || h <= 0.08f) return pinkBlockSprite;
+            if (h >= 0.35f && h <= 0.58f) return mintBlockSprite;
+            if (h >= 0.09f && h <= 0.22f) return goldBlockSprite;
+            if (h > 0.50f && h < 0.68f) return blueBlockSprite;
+            return purpleBlockSprite ?? pinkBlockSprite;
+        }
+
+        public void SetupFaceSprites(Sprite gem, Sprite pink, Sprite mint, Sprite crown, Sprite dice, Sprite bomb)
+        {
+            gemTileSprite = gem;
+            pinkMascotSprite = pink;
+            mintMascotSprite = mint;
+            crownSprite = crown;
+            diceSprite = dice;
+            starBombSprite = bomb;
+            bombIconSprite = bomb;
+        }
+
+        public Sprite GetFaceSpriteForColor(Color col, bool isBomb)
+        {
+            if (isBomb) return starBombSprite ?? bombIconSprite;
+            Color.RGBToHSV(col, out float h, out float s, out float v);
+            if (h >= 0.88f || h <= 0.08f) return pinkMascotSprite;
+            if (h >= 0.35f && h <= 0.58f) return mintMascotSprite;
+            if (h >= 0.09f && h <= 0.22f) return crownSprite;
+            return diceSprite;
+        }
+
         [Header("Board Metrics")]
-        public RectTransform BoardRect { get; private set; }
-        public float CellSize { get; private set; } = 108f;
-        public float CellSpacing { get; private set; } = 10f;
-        public float StartGridX { get; private set; }
-        public float StartGridY { get; private set; }
+        [SerializeField] private RectTransform boardRect;
+        [SerializeField] private float cellSize = 108f;
+        [SerializeField] private float cellSpacing = 10f;
+        [SerializeField] private float startGridX = -385f;
+        [SerializeField] private float startGridY = 385f;
+
+        public RectTransform BoardRect => boardRect;
+        public float CellSize => cellSize;
+        public float CellSpacing => cellSpacing;
+        public float StartGridX => startGridX;
+        public float StartGridY => startGridY;
 
         public int CurrentCombo { get; private set; } = 0;
 
@@ -28,20 +98,54 @@ namespace BlockBlast
         public event Action<int> OnScoreAdded; // points
         public event Action<float> OnFeverAdded; // fever percentage
         public event Action OnBombExploded;
+        public event Action OnShapePlaced;
 
         private void Awake()
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
+
+            InitializeGridCells();
+        }
+
+        private void Start()
+        {
+            InitializeGridCells();
+        }
+
+        public void InitializeGridCells()
+        {
+            if (boardRect == null)
+            {
+                var bObj = GameObject.Find("BoardPanel") ?? GameObject.Find("BoardContainer") ?? GameObject.Find("Board");
+                if (bObj != null) boardRect = bObj.GetComponent<RectTransform>();
+            }
+
+            BlockCellUI[] foundCells = GetComponentsInChildren<BlockCellUI>(true);
+            if ((foundCells == null || foundCells.Length == 0) && boardRect != null)
+            {
+                foundCells = boardRect.GetComponentsInChildren<BlockCellUI>(true);
+            }
+
+            if (foundCells != null)
+            {
+                foreach (var cell in foundCells)
+                {
+                    if (cell != null && cell.Row >= 0 && cell.Row < GridSize && cell.Col >= 0 && cell.Col < GridSize)
+                    {
+                        _cells[cell.Row, cell.Col] = cell;
+                    }
+                }
+            }
         }
 
         public void SetupBoardMetrics(RectTransform bRect, float cSize, float cSpacing, float startX, float startY)
         {
-            BoardRect = bRect;
-            CellSize = cSize;
-            CellSpacing = cSpacing;
-            StartGridX = startX;
-            StartGridY = startY;
+            boardRect = bRect;
+            cellSize = cSize;
+            cellSpacing = cSpacing;
+            startGridX = startX;
+            startGridY = startY;
         }
 
         public Vector2Int? GetGridCoordFromLocalPoint(Vector2 localPoint)
@@ -76,6 +180,8 @@ namespace BlockBlast
 
         public bool CanPlaceShape(BlockShape shape, int startR, int startC)
         {
+            if (_cells[0, 0] == null) InitializeGridCells();
+
             for (int r = 0; r < shape.Rows; r++)
             {
                 for (int c = 0; c < shape.Cols; c++)
@@ -86,7 +192,7 @@ namespace BlockBlast
                         int gc = startC + c;
 
                         if (gr < 0 || gr >= GridSize || gc < 0 || gc >= GridSize) return false;
-                        if (_cells[gr, gc] != null && _cells[gr, gc].IsOccupied) return false;
+                        if (_cells[gr, gc] == null || _cells[gr, gc].IsOccupied) return false;
                     }
                 }
             }
@@ -96,7 +202,12 @@ namespace BlockBlast
         public void HighlightPreview(BlockShape shape, int startR, int startC, bool active)
         {
             ClearHighlights();
-            if (!active) return;
+            if (!active || shape == null) return;
+
+            Sprite blockSp = GetBlockSpriteForColor(shape.blockColor, shape.isBomb) 
+                ?? GetFaceSpriteForColor(shape.blockColor, shape.isBomb) 
+                ?? gemTileSprite;
+            Sprite faceSp = GetFaceSpriteForColor(shape.blockColor, shape.isBomb);
 
             for (int r = 0; r < shape.Rows; r++)
             {
@@ -109,7 +220,7 @@ namespace BlockBlast
 
                         if (gr >= 0 && gr < GridSize && gc >= 0 && gc < GridSize)
                         {
-                            if (_cells[gr, gc] != null) _cells[gr, gc].SetHighlight(true);
+                            if (_cells[gr, gc] != null) _cells[gr, gc].SetHighlight(true, blockSp, faceSp, shape.blockColor);
                         }
                     }
                 }
@@ -132,6 +243,10 @@ namespace BlockBlast
             if (!CanPlaceShape(shape, startR, startC)) return false;
 
             int blockCount = 0;
+            Sprite blockSp = GetBlockSpriteForColor(shape.blockColor, shape.isBomb) 
+                ?? GetFaceSpriteForColor(shape.blockColor, shape.isBomb) 
+                ?? gemTileSprite;
+
             for (int r = 0; r < shape.Rows; r++)
             {
                 for (int c = 0; c < shape.Cols; c++)
@@ -141,13 +256,17 @@ namespace BlockBlast
                         int gr = startR + r;
                         int gc = startC + c;
 
-                        _cells[gr, gc].SetOccupied(shape.blockColor, shape.isBomb, gemTileSprite, bombIconSprite);
-                        blockCount++;
+                        if (_cells[gr, gc] != null)
+                        {
+                            _cells[gr, gc].SetOccupied(Color.white, shape.isBomb, blockSp, null);
+                            blockCount++;
+                        }
                     }
                 }
             }
 
             OnScoreAdded?.Invoke(blockCount * 10);
+            OnShapePlaced?.Invoke();
             CheckLineClears();
             return true;
         }

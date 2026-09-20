@@ -88,13 +88,13 @@ namespace BlockBlast
             new int[,] { { 1, 0 }, { 1, 1 }, { 1, 0 } },
         };
 
-        public static BlockShape GetRandomShape(float bombChance = 0.15f)
+        public static BlockShape GetRandomShape(float bombChance = 0f)
         {
             int shapeIdx = Random.Range(0, ShapeTemplates.Length);
             int[,] template = (int[,])ShapeTemplates[shapeIdx].Clone();
 
-            bool isBomb = Random.value < bombChance;
-            Color col = isBomb ? BombColor : Palette[Random.Range(0, Palette.Length)];
+            bool isBomb = false;
+            Color col = Palette[Random.Range(0, Palette.Length)];
 
             return new BlockShape(template, col, isBomb, $"Shape_{shapeIdx}");
         }
