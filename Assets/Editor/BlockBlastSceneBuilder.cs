@@ -720,11 +720,30 @@ namespace BlockBlast.Editor
             GameObject partyTip = CreateText(partyStage.transform, "PartyTip", "말랑이들을 톡톡 눌러보세요!", 28, TextAlignmentOptions.Center, cuteFont, new Color(0.42f, 0.30f, 0.55f, 0.95f));
             SetRect(partyTip, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 115), new Vector2(600, 45));
 
-            // Dynamic Bottom Action Button
-            GameObject playBtnObj = CreateButton(lobbyRoot.transform, "BtnBottomAction", "게임 시작!", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 165), new Vector2(480, 115), btnPinkSprite, 40);
+            // Dynamic Bottom Action Button (Glossy 3D Fairy Capsule)
+            Sprite actionBtnSprite = CuteBlockTextureGenerator.GetOrCreateFairyActionButtonSprite();
+
+            GameObject playBtnObj = CreateButton(lobbyRoot.transform, "BtnBottomAction", "게임 시작!", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 165), new Vector2(500, 120), actionBtnSprite, 44);
             Button playBtn = playBtnObj.GetComponent<Button>();
             Image playBtnBg = playBtnObj.GetComponent<Image>();
+            playBtnBg.type = Image.Type.Sliced;
+            playBtnBg.preserveAspect = false;
+            playBtnBg.color = new Color(1f, 0.33f, 0.53f, 1f); // #FF5588 default pink
+
+            // Soft glowing aura behind the action button
+            GameObject playGlowObj = CreateImage(playBtnObj.transform, "GlowAura", glowOrbSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(580, 170));
+            playGlowObj.transform.SetAsFirstSibling();
+            Image playGlowImg = playGlowObj.GetComponent<Image>();
+            playGlowImg.color = new Color(1f, 0.33f, 0.53f, 0.45f);
+            playGlowImg.raycastTarget = false;
+
             TMP_Text playBtnText = playBtnObj.GetComponentInChildren<TMP_Text>();
+            if (playBtnText != null)
+            {
+                playBtnText.fontStyle = FontStyles.Bold;
+                playBtnText.enableWordWrapping = false;
+                playBtnText.overflowMode = TextOverflowModes.Overflow;
+            }
 
             // --- Profile Modal ---
             GameObject pModal = new GameObject("ProfileModal", typeof(RectTransform));
@@ -823,21 +842,30 @@ namespace BlockBlast.Editor
             GameObject sCoinTxt = CreateText(sCard.transform, "Coins", "내 코인: 1,000 C", 30, TextAlignmentOptions.Center, cuteFont, new Color(0.92f, 0.45f, 0.05f));
             SetRect(sCoinTxt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -105), new Vector2(500, 40));
 
-            // --- Shop Tabs (In-Game vs Lobby) ---
-            GameObject tabInGameBtnObj = CreateButton(sCard.transform, "TabInGame", "인게임 테마", cuteFont, new Vector2(0.5f, 1), new Vector2(-180, -162), new Vector2(340, 58), tabPillSprite, 27);
-            GameObject tabLobbyBtnObj = CreateButton(sCard.transform, "TabLobby", "로비 테마", cuteFont, new Vector2(0.5f, 1), new Vector2(180, -162), new Vector2(340, 58), tabPillSprite, 27);
+            // --- Shop Tabs (Game Theme vs Lobby Theme) ---
+            GameObject tabInGameBtnObj = CreateButton(sCard.transform, "TabInGame", "게임 테마", cuteFont, new Vector2(0.5f, 1), new Vector2(-185, -165), new Vector2(350, 68), tabPillSprite, 28);
+            GameObject tabLobbyBtnObj = CreateButton(sCard.transform, "TabLobby", "로비 테마", cuteFont, new Vector2(0.5f, 1), new Vector2(185, -165), new Vector2(350, 68), tabPillSprite, 28);
 
             Button tabInGameBtn = tabInGameBtnObj.GetComponent<Button>();
             Button tabLobbyBtn = tabLobbyBtnObj.GetComponent<Button>();
             Image tabInGameBg = tabInGameBtnObj.GetComponent<Image>();
             Image tabLobbyBg = tabLobbyBtnObj.GetComponent<Image>();
+            tabInGameBg.type = Image.Type.Sliced;
+            tabInGameBg.preserveAspect = false;
+            tabInGameBg.raycastTarget = true;
+            tabLobbyBg.type = Image.Type.Sliced;
+            tabLobbyBg.preserveAspect = false;
+            tabLobbyBg.raycastTarget = true;
+
             TMP_Text tabInGameTxt = tabInGameBtnObj.GetComponentInChildren<TMP_Text>();
             TMP_Text tabLobbyTxt = tabLobbyBtnObj.GetComponentInChildren<TMP_Text>();
 
             // --- InGame Themes Panel ---
             GameObject inGamePanel = new GameObject("InGameThemesPanel", typeof(RectTransform));
             inGamePanel.transform.SetParent(sCard.transform, false);
-            SetRect(inGamePanel, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0, -105), new Vector2(0, -210));
+            RectTransform inGameRT = inGamePanel.GetComponent<RectTransform>();
+            inGameRT.pivot = new Vector2(0.5f, 1f);
+            SetRect(inGamePanel, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -215), new Vector2(800, 890));
 
             string[] themeTitles = new string[] { "몽환의 밤", "캔디 랜드", "크리스탈 바다", "별빛 우주" };
             string[] themeDescs = new string[] { "기본 테마 - 달콤한 보랏빛 밤", "달콤한 디저트와 사탕 세상", "신비로운 반짝임의 바다 궁전", "아름다운 보랏빛 은하수 별빛" };
@@ -877,7 +905,9 @@ namespace BlockBlast.Editor
             // --- Lobby Themes Panel ---
             GameObject lobbyPanel = new GameObject("LobbyThemesPanel", typeof(RectTransform));
             lobbyPanel.transform.SetParent(sCard.transform, false);
-            SetRect(lobbyPanel, new Vector2(0, 0), new Vector2(1, 1), new Vector2(0, -105), new Vector2(0, -210));
+            RectTransform lobbyRT = lobbyPanel.GetComponent<RectTransform>();
+            lobbyRT.pivot = new Vector2(0.5f, 1f);
+            SetRect(lobbyPanel, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -215), new Vector2(800, 890));
             lobbyPanel.SetActive(false);
 
             Button[] lobbyThemeActionBtns = new Button[3];
@@ -911,6 +941,11 @@ namespace BlockBlast.Editor
                 lobbyThemeActionBtns[i] = actBtnObj.GetComponent<Button>();
                 lobbyThemeActionTMPs[i] = actBtnObj.GetComponentInChildren<TMP_Text>();
             }
+
+            // Ensure tab buttons and close button render above both panels for guaranteed raycast clicks
+            tabInGameBtnObj.transform.SetAsLastSibling();
+            tabLobbyBtnObj.transform.SetAsLastSibling();
+            sCloseBtn.transform.SetAsLastSibling();
 
             // --- Settings Modal ---
             GameObject setModal = new GameObject("SettingsModal", typeof(RectTransform));
@@ -1041,7 +1076,8 @@ namespace BlockBlast.Editor
                 mascotAvatars,
                 partyGlowObjs,
                 pNickInput,
-                hConfirmBtnObj.GetComponent<Button>()
+                hConfirmBtnObj.GetComponent<Button>(),
+                playGlowImg
             );
 
             lobbyMgr.SetupShopTabs(tabInGameBtn, tabLobbyBtn, tabInGameBg, tabLobbyBg, tabInGameTxt, tabLobbyTxt, inGamePanel, lobbyPanel);

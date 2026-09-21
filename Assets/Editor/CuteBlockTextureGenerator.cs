@@ -2571,7 +2571,7 @@ namespace BlockBlast.Editor
             EnsureFolder();
             string path = $"{Folder}/Lobby_Tab_Pill.png";
             Sprite existing = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-            if (existing != null) return existing;
+            if (existing != null && existing.border != Vector4.zero) return existing;
 
             int w = 96;
             int h = 48;
@@ -2617,6 +2617,77 @@ namespace BlockBlast.Editor
                 importer.filterMode = FilterMode.Bilinear;
                 importer.spritePixelsPerUnit = 100;
                 importer.spriteBorder = new Vector4(24, 20, 24, 20); // 9-slice
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        public static Sprite GetOrCreateFairyActionButtonSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Lobby_Btn_Action_3D.png";
+
+            int w = 256;
+            int h = 104;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            float radius = 42f;
+
+            Color bottomShadow = new Color(0.80f, 0.76f, 0.88f); // soft grounding pearl
+            Color topGlow = new Color(1.0f, 1.0f, 1.0f);         // clean bright white
+
+            for (int y = 0; y < h; y++)
+            {
+                float normY = (float)y / (h - 1);
+                for (int x = 0; x < w; x++)
+                {
+                    float cx = Mathf.Clamp(x, radius, w - 1 - radius);
+                    float cy = Mathf.Clamp(y, radius, h - 1 - radius);
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy));
+
+                    if (dist > radius + 0.5f)
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                    }
+                    else
+                    {
+                        float alpha = Mathf.Clamp01(radius + 0.5f - dist);
+                        
+                        // Pure continuous smooth vertical gradient
+                        Color baseColor = Color.Lerp(bottomShadow, topGlow, normY);
+
+                        // Top curved glass shine arc
+                        if (normY > 0.40f)
+                        {
+                            float shineAlpha = Mathf.SmoothStep(0.40f, 0.90f, normY) * 0.35f;
+                            baseColor = Color.Lerp(baseColor, Color.white, shineAlpha);
+                        }
+
+                        // Bottom 3D bevel depth
+                        if (normY < 0.15f)
+                        {
+                            float shadowAlpha = (1f - normY / 0.15f) * 0.25f;
+                            baseColor = Color.Lerp(baseColor, new Color(0.45f, 0.40f, 0.55f), shadowAlpha);
+                        }
+
+                        baseColor.a *= alpha;
+                        tex.SetPixel(x, y, baseColor);
+                    }
+                }
+            }
+
+            tex.Apply();
+            SafeWriteAllBytes(path, tex.EncodeToPNG());
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.alphaIsTransparency = true;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.spritePixelsPerUnit = 100;
+                importer.spriteBorder = new Vector4(46, 36, 46, 36); // 9-slice
                 importer.SaveAndReimport();
             }
 

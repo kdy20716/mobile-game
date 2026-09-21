@@ -47,6 +47,7 @@ namespace BlockBlast
         [SerializeField] private Button btnPlayGame;
         [SerializeField] private Image btnPlayGameBg;
         [SerializeField] private TMP_Text btnPlayGameText;
+        [SerializeField] private Image btnPlayGameGlow;
 
         [Header("Profile Modal")]
         [SerializeField] private GameObject profileModal;
@@ -237,6 +238,19 @@ namespace BlockBlast
 
             // Shop Modal
             if (btnCloseShop != null) btnCloseShop.onClick.AddListener(() => { PlayClickSound(); CloseShopModal(); });
+            
+            // Shop Tabs (In-Game Theme vs Lobby Theme)
+            if (btnShopTabInGame != null)
+            {
+                btnShopTabInGame.onClick.RemoveAllListeners();
+                btnShopTabInGame.onClick.AddListener(() => { PlayClickSound(); SelectShopTab(0); });
+            }
+            if (btnShopTabLobby != null)
+            {
+                btnShopTabLobby.onClick.RemoveAllListeners();
+                btnShopTabLobby.onClick.AddListener(() => { PlayClickSound(); SelectShopTab(1); });
+            }
+
             if (themeActionButtons != null)
             {
                 for (int i = 0; i < themeActionButtons.Length; i++)
@@ -248,6 +262,22 @@ namespace BlockBlast
                         themeActionButtons[i].onClick.AddListener(() =>
                         {
                             BuyOrEquipTheme(idx);
+                        });
+                    }
+                }
+            }
+
+            if (lobbyThemeActionButtons != null)
+            {
+                for (int i = 0; i < lobbyThemeActionButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (lobbyThemeActionButtons[i] != null)
+                    {
+                        lobbyThemeActionButtons[i].onClick.RemoveAllListeners();
+                        lobbyThemeActionButtons[i].onClick.AddListener(() =>
+                        {
+                            BuyOrEquipLobbyTheme(idx);
                         });
                     }
                 }
@@ -356,6 +386,16 @@ namespace BlockBlast
             {
                 var img = btnPlayGame.GetComponent<Image>();
                 if (img != null) img.color = MenuColors[index];
+            }
+
+            if (btnPlayGameGlow != null)
+            {
+                btnPlayGameGlow.color = new Color(MenuColors[index].r, MenuColors[index].g, MenuColors[index].b, 0.50f);
+            }
+
+            if (triggerActionIfAlreadySelected && btnPlayGame != null)
+            {
+                StartCoroutine(PunchMascot(btnPlayGame.GetComponent<RectTransform>()));
             }
 
             // Update Glow Auras behind characters (light radiates from behind selected mascot!)
@@ -751,16 +791,24 @@ namespace BlockBlast
             if (shopInGameThemesPanel != null) shopInGameThemesPanel.SetActive(_currentShopTab == 0);
             if (shopLobbyThemesPanel != null) shopLobbyThemesPanel.SetActive(_currentShopTab == 1);
 
-            Color activeTabBg = new Color(1.0f, 0.45f, 0.65f, 1f); // Vibrant Pink
+            Color activeTabBg = new Color(1.0f, 0.40f, 0.62f, 1f); // Vibrant Candy Pink
             Color activeTabText = Color.white;
-            Color inactiveTabBg = new Color(0.90f, 0.88f, 0.95f, 0.75f); // Soft lavender
+            Color inactiveTabBg = new Color(0.92f, 0.90f, 0.97f, 0.85f); // Soft lavender
             Color inactiveTabText = new Color(0.40f, 0.30f, 0.55f, 0.9f);
 
             if (btnShopTabInGameBg != null) btnShopTabInGameBg.color = (_currentShopTab == 0) ? activeTabBg : inactiveTabBg;
-            if (btnShopTabInGameText != null) btnShopTabInGameText.color = (_currentShopTab == 0) ? activeTabText : inactiveTabText;
+            if (btnShopTabInGameText != null)
+            {
+                btnShopTabInGameText.text = "게임 테마";
+                btnShopTabInGameText.color = (_currentShopTab == 0) ? activeTabText : inactiveTabText;
+            }
 
             if (btnShopTabLobbyBg != null) btnShopTabLobbyBg.color = (_currentShopTab == 1) ? new Color(0.55f, 0.38f, 0.95f, 1f) : inactiveTabBg;
-            if (btnShopTabLobbyText != null) btnShopTabLobbyText.color = (_currentShopTab == 1) ? activeTabText : inactiveTabText;
+            if (btnShopTabLobbyText != null)
+            {
+                btnShopTabLobbyText.text = "로비 테마";
+                btnShopTabLobbyText.color = (_currentShopTab == 1) ? activeTabText : inactiveTabText;
+            }
 
             if (_currentShopTab == 0) RefreshThemeShopUI();
             else RefreshLobbyThemeShopUI();
@@ -1174,7 +1222,8 @@ namespace BlockBlast
             Sprite[] avatars,
             GameObject[] glowAuras = null,
             TMP_InputField pNickInput = null,
-            Button cfmHBtn = null)
+            Button cfmHBtn = null,
+            Image playBtnGlow = null)
         {
             lobbyRoot = root;
             lobbyCanvasGroup = cg;
@@ -1192,6 +1241,7 @@ namespace BlockBlast
             btnPlayGame = playBtn;
             btnPlayGameBg = playBtnBg;
             btnPlayGameText = playBtnText;
+            btnPlayGameGlow = playBtnGlow;
 
             profileModal = pModal;
             profileModalAvatar = pModalAv;
