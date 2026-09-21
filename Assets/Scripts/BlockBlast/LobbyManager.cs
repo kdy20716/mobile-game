@@ -15,6 +15,17 @@ namespace BlockBlast
         private const string KEY_AVATAR = "Mallang_Avatar";
         private const string KEY_COINS = "Mallang_Coins";
         private const string KEY_LOGGED_IN = "Mallang_LoggedIn";
+        public const string KEY_THEME_OWNED_PREFIX = "Mallang_Theme_Owned_";
+        public const string KEY_EQUIPPED_THEME = "Mallang_EquippedTheme";
+        public const string KEY_LOBBY_THEME_OWNED_PREFIX = "Mallang_LobbyTheme_Owned_";
+        public const string KEY_EQUIPPED_LOBBY_THEME = "Mallang_EquippedLobbyTheme";
+
+        public static readonly int[] ThemePrices = new int[] { 0, 300, 500, 700 };
+        public static readonly string[] ThemeNames = new string[] { "몽환의 밤", "캔디 랜드", "크리스탈 바다", "별빛 우주" };
+
+        public static readonly int[] LobbyThemePrices = new int[] { 0, 400, 600 };
+        public static readonly string[] LobbyThemeNames = new string[] { "몽환의 방", "달콤 캔디룸", "신비 바다룸" };
+        public static readonly string[] LobbyThemeDescs = new string[] { "기본 로비 - 아늑한 파스텔 방", "달콤한 디저트와 와플 무대", "신비로운 바다 궁전 무대" };
 
         [Header("Lobby Root & Groups")]
         [SerializeField] private GameObject lobbyRoot;
@@ -41,6 +52,7 @@ namespace BlockBlast
         [SerializeField] private GameObject profileModal;
         [SerializeField] private Image profileModalAvatar;
         [SerializeField] private TMP_Text profileModalNickname;
+        [SerializeField] private TMP_InputField profileModalNicknameInput;
         [SerializeField] private TMP_InputField profileModalBioInput;
         [SerializeField] private TMP_Text profileModalBestScore;
         [SerializeField] private TMP_Text profileModalCoins;
@@ -53,6 +65,32 @@ namespace BlockBlast
         [SerializeField] private TMP_Text shopCoinsText;
         [SerializeField] private Button btnCloseShop;
 
+        [Header("Theme Shop")]
+        [SerializeField] private Image inGameBackgroundImg;
+        [SerializeField] private Button[] themeActionButtons;
+        [SerializeField] private TMP_Text[] themeActionTexts;
+        [SerializeField] private TMP_Text[] themePriceTexts;
+        [SerializeField] private Sprite[] themeSprites;
+
+        [Header("Lobby Background & Themes")]
+        [SerializeField] private Image lobbyBackgroundImg;
+        [SerializeField] private Sprite[] lobbyThemeSprites;
+        [SerializeField] private Button[] lobbyThemeActionButtons;
+        [SerializeField] private TMP_Text[] lobbyThemeActionTexts;
+        [SerializeField] private TMP_Text[] lobbyThemePriceTexts;
+
+        [Header("Shop Tabs")]
+        [SerializeField] private Button btnShopTabInGame;
+        [SerializeField] private Button btnShopTabLobby;
+        [SerializeField] private Image btnShopTabInGameBg;
+        [SerializeField] private Image btnShopTabLobbyBg;
+        [SerializeField] private TMP_Text btnShopTabInGameText;
+        [SerializeField] private TMP_Text btnShopTabLobbyText;
+        [SerializeField] private GameObject shopInGameThemesPanel;
+        [SerializeField] private GameObject shopLobbyThemesPanel;
+
+        private int _currentShopTab = 0;
+
         [Header("Settings Modal")]
         [SerializeField] private GameObject settingsModal;
         [SerializeField] private Slider bgmSlider;
@@ -62,6 +100,7 @@ namespace BlockBlast
         [Header("Help Modal")]
         [SerializeField] private GameObject helpModal;
         [SerializeField] private Button btnCloseHelp;
+        [SerializeField] private Button btnConfirmHelp;
 
         [Header("Mascot Avatars (0:Pink, 1:Mint, 2:Gold, 3:Purple)")]
         [SerializeField] private Sprite[] mascotAvatars;
@@ -115,6 +154,12 @@ namespace BlockBlast
             RefreshProfileUI();
             SelectMenu(0, false); // Default: Game Start (Pink Mascot)
 
+            int equippedTheme = PlayerPrefs.GetInt(KEY_EQUIPPED_THEME, 0);
+            ApplyTheme(equippedTheme);
+
+            int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
+            ApplyLobbyTheme(equippedLobby);
+
             if (profileModal != null) profileModal.SetActive(false);
             if (shopModal != null) shopModal.SetActive(false);
             if (settingsModal != null) settingsModal.SetActive(false);
@@ -149,6 +194,8 @@ namespace BlockBlast
             {
                 _currentNickname = PlayerPrefs.GetString(KEY_NICKNAME, $"말랑이#{Random.Range(1000, 9999)}");
                 _currentBio = PlayerPrefs.GetString(KEY_BIO, "말랑블라스트에 오신 걸 환영해요!");
+                _currentNickname = System.Text.RegularExpressions.Regex.Replace(_currentNickname, @"[^\u0000-\u007F\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\s.,!?:;~()#+-]", "").Trim();
+                _currentBio = System.Text.RegularExpressions.Regex.Replace(_currentBio, @"[^\u0000-\u007F\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\s.,!?:;~()#+-]", "").Trim();
                 _currentAvatarIdx = PlayerPrefs.GetInt(KEY_AVATAR, 0);
                 _currentCoins = PlayerPrefs.GetInt(KEY_COINS, 1000);
                 _isLoggedIn = PlayerPrefs.GetInt(KEY_LOGGED_IN, 1) == 1;
@@ -165,6 +212,10 @@ namespace BlockBlast
 
             // Profile Modal
             if (btnCloseProfile != null) btnCloseProfile.onClick.AddListener(() => { PlayClickSound(); CloseProfileModal(); });
+            if (profileModalNicknameInput != null)
+            {
+                profileModalNicknameInput.onEndEdit.AddListener(OnNicknameEndEdit);
+            }
             if (profileModalBioInput != null)
             {
                 profileModalBioInput.onEndEdit.AddListener(OnBioEndEdit);
@@ -186,30 +237,44 @@ namespace BlockBlast
 
             // Shop Modal
             if (btnCloseShop != null) btnCloseShop.onClick.AddListener(() => { PlayClickSound(); CloseShopModal(); });
+            if (themeActionButtons != null)
+            {
+                for (int i = 0; i < themeActionButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (themeActionButtons[i] != null)
+                    {
+                        themeActionButtons[i].onClick.RemoveAllListeners();
+                        themeActionButtons[i].onClick.AddListener(() =>
+                        {
+                            BuyOrEquipTheme(idx);
+                        });
+                    }
+                }
+            }
 
             // Settings Modal
             if (btnCloseSettings != null) btnCloseSettings.onClick.AddListener(() => { PlayClickSound(); CloseSettingsModal(); });
             if (bgmSlider != null)
             {
-                bgmSlider.value = PlayerPrefs.GetFloat("BGM_Volume", 0.7f);
+                bgmSlider.value = PlayerPrefs.GetFloat("BGM_Volume", BlockAudioManager.DEFAULT_BGM_VOLUME);
                 bgmSlider.onValueChanged.AddListener((v) =>
                 {
-                    PlayerPrefs.SetFloat("BGM_Volume", v);
-                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.bgmVolume = v;
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.SetBGMVolume(v);
                 });
             }
             if (sfxSlider != null)
             {
-                sfxSlider.value = PlayerPrefs.GetFloat("SFX_Volume", 0.85f);
+                sfxSlider.value = PlayerPrefs.GetFloat("SFX_Volume", BlockAudioManager.DEFAULT_SFX_VOLUME);
                 sfxSlider.onValueChanged.AddListener((v) =>
                 {
-                    PlayerPrefs.SetFloat("SFX_Volume", v);
-                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.sfxVolume = v;
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.SetSFXVolume(v);
                 });
             }
 
             // Help Modal
             if (btnCloseHelp != null) btnCloseHelp.onClick.AddListener(() => { PlayClickSound(); CloseHelpModal(); });
+            if (btnConfirmHelp != null) btnConfirmHelp.onClick.AddListener(() => { PlayClickSound(); CloseHelpModal(); });
 
             // Party Mascot & Floating Label Clicks
             if (partyMascots != null)
@@ -327,11 +392,6 @@ namespace BlockBlast
             {
                 StartCoroutine(PunchMascot(partyMascots[index]));
             }
-
-            if (BlockAudioManager.Instance != null)
-            {
-                BlockAudioManager.Instance.PlayPickup();
-            }
         }
 
         private void ExecuteSelectedMenuAction()
@@ -361,6 +421,8 @@ namespace BlockBlast
         {
             if (profileModal != null)
             {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 RefreshProfileUI();
                 profileModal.SetActive(true);
@@ -369,7 +431,9 @@ namespace BlockBlast
 
         public void CloseProfileModal()
         {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (profileModal != null) profileModal.SetActive(false);
+            if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
         }
 
         private void SelectAvatar(int idx)
@@ -383,11 +447,24 @@ namespace BlockBlast
             }
         }
 
+        private void OnNicknameEndEdit(string newNick)
+        {
+            newNick = System.Text.RegularExpressions.Regex.Replace(newNick ?? "", @"[^\u0000-\u007F\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\s.,!?:;~()#+-]", "").Trim();
+            if (!string.IsNullOrWhiteSpace(newNick))
+            {
+                _currentNickname = newNick;
+                PlayerPrefs.SetString(KEY_NICKNAME, _currentNickname);
+                PlayerPrefs.Save();
+                RefreshProfileUI();
+            }
+        }
+
         private void OnBioEndEdit(string newBio)
         {
-            _currentBio = newBio.Trim();
+            _currentBio = System.Text.RegularExpressions.Regex.Replace(newBio ?? "", @"[^\u0000-\u007F\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\s.,!?:;~()#+-]", "").Trim();
             PlayerPrefs.SetString(KEY_BIO, _currentBio);
             PlayerPrefs.Save();
+            RefreshProfileUI();
         }
 
         private void OnLogoutClicked()
@@ -431,6 +508,12 @@ namespace BlockBlast
                 profileModalAvatar.sprite = avatarSprite;
             }
 
+            if (profileModalNicknameInput != null)
+            {
+                profileModalNicknameInput.text = _isLoggedIn ? _currentNickname : "로그인이 필요합니다";
+                profileModalNicknameInput.interactable = _isLoggedIn;
+            }
+
             if (profileModalNickname != null)
             {
                 profileModalNickname.text = _isLoggedIn ? _currentNickname : "로그인이 필요합니다";
@@ -464,22 +547,421 @@ namespace BlockBlast
         }
 
         // ==========================================
-        // SHOP MODAL
+        // SHOP MODAL & THEME STORE
         // ==========================================
 
         public void OpenShopModal()
         {
             if (shopModal != null)
             {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
-                if (shopCoinsText != null) shopCoinsText.text = $"내 코인: {_currentCoins:N0} C";
+                SelectShopTab(_currentShopTab);
+                RefreshThemeShopUI();
+                RefreshLobbyThemeShopUI();
                 shopModal.SetActive(true);
             }
         }
 
         public void CloseShopModal()
         {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (shopModal != null) shopModal.SetActive(false);
+            if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
+        }
+
+        public void BuyOrEquipTheme(int themeIdx)
+        {
+            if (themeIdx < 0 || themeIdx >= ThemePrices.Length) return;
+
+            bool isOwned = (themeIdx == 0) || (PlayerPrefs.GetInt(KEY_THEME_OWNED_PREFIX + themeIdx, 0) == 1);
+
+            if (isOwned)
+            {
+                // Equip Theme
+                PlayerPrefs.SetInt(KEY_EQUIPPED_THEME, themeIdx);
+                PlayerPrefs.Save();
+                ApplyTheme(themeIdx);
+                RefreshThemeShopUI();
+                PlayClickSound();
+            }
+            else
+            {
+                int price = ThemePrices[themeIdx];
+                if (_currentCoins >= price)
+                {
+                    _currentCoins -= price;
+                    PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
+                    PlayerPrefs.SetInt(KEY_THEME_OWNED_PREFIX + themeIdx, 1);
+                    PlayerPrefs.SetInt(KEY_EQUIPPED_THEME, themeIdx);
+                    PlayerPrefs.Save();
+
+                    ApplyTheme(themeIdx);
+                    RefreshProfileUI();
+                    RefreshThemeShopUI();
+
+                    if (FairyScreenTransition.Instance != null)
+                    {
+                        FairyScreenTransition.Instance.EmitCornerSparkles();
+                    }
+                    if (BlockAudioManager.Instance != null)
+                    {
+                        BlockAudioManager.Instance.PlayBuy();
+                    }
+                }
+                else
+                {
+                    // Insufficient Coins
+                    PlayClickSound();
+                    if (shopCoinsText != null)
+                    {
+                        StartCoroutine(FlashCoinsTextRed());
+                    }
+                }
+            }
+        }
+
+        private IEnumerator FlashCoinsTextRed()
+        {
+            if (shopCoinsText == null) yield break;
+            Color orig = shopCoinsText.color;
+            shopCoinsText.color = new Color(1f, 0.25f, 0.35f);
+            yield return new WaitForSeconds(0.4f);
+            shopCoinsText.color = orig;
+        }
+
+        public void ApplyTheme(int themeIdx)
+        {
+            if (inGameBackgroundImg == null)
+            {
+                var bgObj = GameObject.Find("BackgroundImage");
+                if (bgObj != null) inGameBackgroundImg = bgObj.GetComponent<Image>();
+            }
+
+            if (inGameBackgroundImg != null && themeSprites != null && themeIdx >= 0 && themeIdx < themeSprites.Length)
+            {
+                if (themeSprites[themeIdx] != null)
+                {
+                    inGameBackgroundImg.sprite = themeSprites[themeIdx];
+                    inGameBackgroundImg.color = Color.white;
+                }
+            }
+        }
+
+        public void RefreshThemeShopUI()
+        {
+            if (shopCoinsText != null)
+            {
+                shopCoinsText.text = $"내 코인: {_currentCoins:N0} C";
+            }
+
+            int equippedTheme = PlayerPrefs.GetInt(KEY_EQUIPPED_THEME, 0);
+
+            if (themeActionButtons != null)
+            {
+                for (int i = 0; i < themeActionButtons.Length; i++)
+                {
+                    if (themeActionButtons[i] == null) continue;
+
+                    bool isEquipped = (equippedTheme == i);
+                    bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_THEME_OWNED_PREFIX + i, 0) == 1);
+
+                    Image btnImg = themeActionButtons[i].GetComponent<Image>();
+                    TMP_Text txt = (themeActionTexts != null && i < themeActionTexts.Length && themeActionTexts[i] != null)
+                        ? themeActionTexts[i]
+                        : themeActionButtons[i].GetComponentInChildren<TMP_Text>();
+
+                    if (isEquipped)
+                    {
+                        if (txt != null)
+                        {
+                            txt.text = "적용 중";
+                            txt.color = Color.white;
+                        }
+                        if (btnImg != null) btnImg.color = new Color(0.20f, 0.82f, 0.65f, 1f); // Vibrant mint
+                        themeActionButtons[i].interactable = false;
+                    }
+                    else if (isOwned)
+                    {
+                        if (txt != null)
+                        {
+                            txt.text = "장착하기";
+                            txt.color = Color.white;
+                        }
+                        if (btnImg != null) btnImg.color = new Color(1.0f, 0.40f, 0.62f, 1f); // Vibrant strawberry pink
+                        themeActionButtons[i].interactable = true;
+                    }
+                    else
+                    {
+                        int price = (i < ThemePrices.Length) ? ThemePrices[i] : 0;
+                        if (txt != null)
+                        {
+                            txt.text = $"{price:N0} C 구매";
+                            txt.color = Color.white;
+                        }
+                        if (btnImg != null)
+                        {
+                            btnImg.color = (_currentCoins >= price)
+                                ? new Color(0.68f, 0.42f, 0.98f, 1f) // Vibrant lilac
+                                : new Color(0.65f, 0.60f, 0.72f, 0.7f); // Muted lavender
+                        }
+                        themeActionButtons[i].interactable = (_currentCoins >= price);
+                    }
+                }
+            }
+        }
+
+        public void SetupShopThemes(Image inGameBg, Sprite[] bgSprites, Button[] actionBtns, TMP_Text[] actionTexts, TMP_Text[] priceTexts = null)
+        {
+            inGameBackgroundImg = inGameBg;
+            themeSprites = bgSprites;
+            themeActionButtons = actionBtns;
+            themeActionTexts = actionTexts;
+            themePriceTexts = priceTexts;
+
+            if (themeActionButtons != null)
+            {
+                for (int i = 0; i < themeActionButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (themeActionButtons[i] != null)
+                    {
+                        themeActionButtons[i].onClick.RemoveAllListeners();
+                        themeActionButtons[i].onClick.AddListener(() =>
+                        {
+                            BuyOrEquipTheme(idx);
+                        });
+                    }
+                }
+            }
+
+            int equippedTheme = PlayerPrefs.GetInt(KEY_EQUIPPED_THEME, 0);
+            ApplyTheme(equippedTheme);
+            RefreshThemeShopUI();
+        }
+
+        // ==========================================
+        // SHOP TABS & LOBBY THEME STORE
+        // ==========================================
+
+        public void SelectShopTab(int tabIndex)
+        {
+            _currentShopTab = Mathf.Clamp(tabIndex, 0, 1);
+            if (shopInGameThemesPanel != null) shopInGameThemesPanel.SetActive(_currentShopTab == 0);
+            if (shopLobbyThemesPanel != null) shopLobbyThemesPanel.SetActive(_currentShopTab == 1);
+
+            Color activeTabBg = new Color(1.0f, 0.45f, 0.65f, 1f); // Vibrant Pink
+            Color activeTabText = Color.white;
+            Color inactiveTabBg = new Color(0.90f, 0.88f, 0.95f, 0.75f); // Soft lavender
+            Color inactiveTabText = new Color(0.40f, 0.30f, 0.55f, 0.9f);
+
+            if (btnShopTabInGameBg != null) btnShopTabInGameBg.color = (_currentShopTab == 0) ? activeTabBg : inactiveTabBg;
+            if (btnShopTabInGameText != null) btnShopTabInGameText.color = (_currentShopTab == 0) ? activeTabText : inactiveTabText;
+
+            if (btnShopTabLobbyBg != null) btnShopTabLobbyBg.color = (_currentShopTab == 1) ? new Color(0.55f, 0.38f, 0.95f, 1f) : inactiveTabBg;
+            if (btnShopTabLobbyText != null) btnShopTabLobbyText.color = (_currentShopTab == 1) ? activeTabText : inactiveTabText;
+
+            if (_currentShopTab == 0) RefreshThemeShopUI();
+            else RefreshLobbyThemeShopUI();
+        }
+
+        public void BuyOrEquipLobbyTheme(int lobbyIdx)
+        {
+            if (lobbyIdx < 0 || lobbyIdx >= LobbyThemePrices.Length) return;
+
+            bool isOwned = (lobbyIdx == 0) || (PlayerPrefs.GetInt(KEY_LOBBY_THEME_OWNED_PREFIX + lobbyIdx, 0) == 1);
+
+            if (isOwned)
+            {
+                PlayerPrefs.SetInt(KEY_EQUIPPED_LOBBY_THEME, lobbyIdx);
+                PlayerPrefs.Save();
+                ApplyLobbyTheme(lobbyIdx);
+                RefreshLobbyThemeShopUI();
+                PlayClickSound();
+            }
+            else
+            {
+                int price = LobbyThemePrices[lobbyIdx];
+                if (_currentCoins >= price)
+                {
+                    _currentCoins -= price;
+                    PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
+                    PlayerPrefs.SetInt(KEY_LOBBY_THEME_OWNED_PREFIX + lobbyIdx, 1);
+                    PlayerPrefs.SetInt(KEY_EQUIPPED_LOBBY_THEME, lobbyIdx);
+                    PlayerPrefs.Save();
+
+                    ApplyLobbyTheme(lobbyIdx);
+                    RefreshProfileUI();
+                    RefreshThemeShopUI();
+                    RefreshLobbyThemeShopUI();
+
+                    if (FairyScreenTransition.Instance != null)
+                    {
+                        FairyScreenTransition.Instance.EmitCornerSparkles();
+                    }
+                    if (BlockAudioManager.Instance != null)
+                    {
+                        BlockAudioManager.Instance.PlayBuy();
+                    }
+                }
+                else
+                {
+                    // Insufficient Coins
+                    PlayClickSound();
+                    if (shopCoinsText != null)
+                    {
+                        StartCoroutine(FlashCoinsTextRed());
+                    }
+                }
+            }
+        }
+
+        public void ApplyLobbyTheme(int lobbyIdx)
+        {
+            if (lobbyBackgroundImg == null)
+            {
+                var bgObj = GameObject.Find("LobbyBg");
+                if (bgObj != null) lobbyBackgroundImg = bgObj.GetComponent<Image>();
+            }
+
+            if (lobbyBackgroundImg != null && lobbyThemeSprites != null && lobbyIdx >= 0 && lobbyIdx < lobbyThemeSprites.Length)
+            {
+                if (lobbyThemeSprites[lobbyIdx] != null)
+                {
+                    lobbyBackgroundImg.sprite = lobbyThemeSprites[lobbyIdx];
+                    lobbyBackgroundImg.color = Color.white;
+                }
+            }
+
+            // Play matching Lobby BGM track (Theme 0 -> robby 1, Theme 1 -> robby 2, Theme 2 -> robby 3)
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayLobbyBGM(lobbyIdx);
+            }
+        }
+
+        public void RefreshLobbyThemeShopUI()
+        {
+            if (shopCoinsText != null)
+            {
+                shopCoinsText.text = $"내 코인: {_currentCoins:N0} C";
+            }
+
+            int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
+
+            if (lobbyThemeActionButtons != null)
+            {
+                for (int i = 0; i < lobbyThemeActionButtons.Length; i++)
+                {
+                    if (lobbyThemeActionButtons[i] == null) continue;
+
+                    bool isEquipped = (equippedLobby == i);
+                    bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_LOBBY_THEME_OWNED_PREFIX + i, 0) == 1);
+
+                    Image btnImg = lobbyThemeActionButtons[i].GetComponent<Image>();
+                    TMP_Text txt = (lobbyThemeActionTexts != null && i < lobbyThemeActionTexts.Length && lobbyThemeActionTexts[i] != null)
+                        ? lobbyThemeActionTexts[i]
+                        : lobbyThemeActionButtons[i].GetComponentInChildren<TMP_Text>();
+
+                    if (isEquipped)
+                    {
+                        if (txt != null)
+                        {
+                            txt.text = "적용 중";
+                            txt.color = Color.white;
+                        }
+                        if (btnImg != null) btnImg.color = new Color(0.20f, 0.82f, 0.65f, 1f); // Mint
+                        lobbyThemeActionButtons[i].interactable = false;
+                    }
+                    else if (isOwned)
+                    {
+                        if (txt != null)
+                        {
+                            txt.text = "장착하기";
+                            txt.color = Color.white;
+                        }
+                        if (btnImg != null) btnImg.color = new Color(1.0f, 0.40f, 0.62f, 1f); // Pink
+                        lobbyThemeActionButtons[i].interactable = true;
+                    }
+                    else
+                    {
+                        int price = (i < LobbyThemePrices.Length) ? LobbyThemePrices[i] : 0;
+                        if (txt != null)
+                        {
+                            txt.text = $"{price:N0} C 구매";
+                            txt.color = Color.white;
+                        }
+                        if (btnImg != null)
+                        {
+                            btnImg.color = (_currentCoins >= price)
+                                ? new Color(0.55f, 0.38f, 0.95f, 1f) // Purple
+                                : new Color(0.65f, 0.60f, 0.72f, 0.7f); // Muted
+                        }
+                        lobbyThemeActionButtons[i].interactable = (_currentCoins >= price);
+                    }
+                }
+            }
+        }
+
+        public void SetupShopTabs(
+            Button tabInGame, Button tabLobby,
+            Image tabInGameBg, Image tabLobbyBg,
+            TMP_Text tabInGameTxt, TMP_Text tabLobbyTxt,
+            GameObject inGamePanel, GameObject lobbyPanel)
+        {
+            btnShopTabInGame = tabInGame;
+            btnShopTabLobby = tabLobby;
+            btnShopTabInGameBg = tabInGameBg;
+            btnShopTabLobbyBg = tabLobbyBg;
+            btnShopTabInGameText = tabInGameTxt;
+            btnShopTabLobbyText = tabLobbyTxt;
+            shopInGameThemesPanel = inGamePanel;
+            shopLobbyThemesPanel = lobbyPanel;
+
+            if (btnShopTabInGame != null)
+            {
+                btnShopTabInGame.onClick.RemoveAllListeners();
+                btnShopTabInGame.onClick.AddListener(() => { PlayClickSound(); SelectShopTab(0); });
+            }
+            if (btnShopTabLobby != null)
+            {
+                btnShopTabLobby.onClick.RemoveAllListeners();
+                btnShopTabLobby.onClick.AddListener(() => { PlayClickSound(); SelectShopTab(1); });
+            }
+
+            SelectShopTab(0);
+        }
+
+        public void SetupLobbyThemes(
+            Image lobbyBg, Sprite[] bgSprites,
+            Button[] actionBtns, TMP_Text[] actionTexts, TMP_Text[] priceTexts = null)
+        {
+            lobbyBackgroundImg = lobbyBg;
+            lobbyThemeSprites = bgSprites;
+            lobbyThemeActionButtons = actionBtns;
+            lobbyThemeActionTexts = actionTexts;
+            lobbyThemePriceTexts = priceTexts;
+
+            if (lobbyThemeActionButtons != null)
+            {
+                for (int i = 0; i < lobbyThemeActionButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (lobbyThemeActionButtons[i] != null)
+                    {
+                        lobbyThemeActionButtons[i].onClick.RemoveAllListeners();
+                        lobbyThemeActionButtons[i].onClick.AddListener(() =>
+                        {
+                            BuyOrEquipLobbyTheme(idx);
+                        });
+                    }
+                }
+            }
+
+            int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
+            ApplyLobbyTheme(equippedLobby);
+            RefreshLobbyThemeShopUI();
         }
 
         // ==========================================
@@ -490,6 +972,8 @@ namespace BlockBlast
         {
             if (settingsModal != null)
             {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 settingsModal.SetActive(true);
             }
@@ -497,7 +981,9 @@ namespace BlockBlast
 
         public void CloseSettingsModal()
         {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (settingsModal != null) settingsModal.SetActive(false);
+            if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
         }
 
         // ==========================================
@@ -508,6 +994,8 @@ namespace BlockBlast
         {
             if (helpModal != null)
             {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 helpModal.SetActive(true);
             }
@@ -515,7 +1003,9 @@ namespace BlockBlast
 
         public void CloseHelpModal()
         {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (helpModal != null) helpModal.SetActive(false);
+            if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
         }
 
         // ==========================================
@@ -528,6 +1018,8 @@ namespace BlockBlast
             if (lobbyCanvasGroup != null) lobbyCanvasGroup.alpha = 1f;
             SelectMenu(0, false);
             RefreshProfileUI();
+            int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
+            ApplyLobbyTheme(equippedLobby);
             if (BlockBlastUIManager.Instance != null)
             {
                 BlockBlastUIManager.Instance.ShowInGameUI(false);
@@ -536,6 +1028,11 @@ namespace BlockBlast
 
         public void StartGameFromLobby()
         {
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayInGameBGM();
+            }
+
             if (FairyScreenTransition.Instance != null)
             {
                 FairyScreenTransition.Instance.DoTransition(() =>
@@ -675,7 +1172,9 @@ namespace BlockBlast
             GameObject setModal, Slider bSlider, Slider sSlider, Button clSetBtn,
             GameObject hModal, Button clHBtn,
             Sprite[] avatars,
-            GameObject[] glowAuras = null)
+            GameObject[] glowAuras = null,
+            TMP_InputField pNickInput = null,
+            Button cfmHBtn = null)
         {
             lobbyRoot = root;
             lobbyCanvasGroup = cg;
@@ -697,6 +1196,7 @@ namespace BlockBlast
             profileModal = pModal;
             profileModalAvatar = pModalAv;
             profileModalNickname = pNick;
+            profileModalNicknameInput = pNickInput;
             profileModalBioInput = pBio;
             profileModalBestScore = pBest;
             profileModalCoins = pCoin;
@@ -715,6 +1215,7 @@ namespace BlockBlast
 
             helpModal = hModal;
             btnCloseHelp = clHBtn;
+            btnConfirmHelp = cfmHBtn;
 
             mascotAvatars = avatars;
         }

@@ -94,10 +94,6 @@ namespace BlockBlast
 
             if (rotatedAny)
             {
-                if (BlockAudioManager.Instance != null)
-                {
-                    BlockAudioManager.Instance.PlayPickup();
-                }
                 StartCoroutine(CheckGameOverDeferred());
             }
         }
@@ -105,10 +101,6 @@ namespace BlockBlast
         // 🎲 Skip Current Blocks and Reroll New Set
         public void SkipHandBlocks()
         {
-            if (BlockAudioManager.Instance != null)
-            {
-                BlockAudioManager.Instance.PlayPickup();
-            }
             SpawnNewHand();
         }
 

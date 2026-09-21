@@ -40,6 +40,13 @@ namespace BlockBlast
         [SerializeField] private TMP_Text modalBestScoreText;
         [SerializeField] private Button btnRestart;
 
+        [Header("Pause Modal")]
+        [SerializeField] private GameObject pauseModal;
+        [SerializeField] private Button btnPause;
+        [SerializeField] private Button btnPauseResume;
+        [SerializeField] private Button btnPauseRestart;
+        [SerializeField] private Button btnPauseLobby;
+
         [Header("In-Game Root")]
         [SerializeField] private GameObject inGameRoot;
 
@@ -50,13 +57,13 @@ namespace BlockBlast
 
         private static readonly string[] GuideTips = new string[]
         {
-            "돌리기 버튼을 누르면 블록을 회전시킬 수 있어요!",
-            "가로 또는 세로 한 줄을 가득 채우면 블록이 팡! 터져요!",
-            "여러 줄을 한 번에 터뜨리면 짜릿한 콤보 보너스 획득!",
-            "시간이 다 되기 전에 서둘러 블록을 놓으세요! (점수가 높을수록 시간이 줄어들어요)",
-            "스킵 버튼으로 마음에 들지 않는 블록을 바꿀 수 있어요!",
-            "보드에 블록을 놓을 자리가 없으면 게임이 종료되니 주의하세요!",
-            "콤보를 길게 유지할수록 어마어마한 최고 점수를 달성할 수 있어요!"
+            "돌리기 버튼으로 블록 회전!",
+            "한 줄을 채우면 블록이 팡팡!",
+            "연속으로 터뜨려 콤보 보너스!",
+            "시간 내에 서둘러 블록을 놓으세요!",
+            "스킵 버튼으로 블록 교체!",
+            "놓을 자리가 없으면 게임 종료!",
+            "긴 콤보로 최고 점수 도전!"
         };
 
         private int _score = 0;
@@ -140,6 +147,50 @@ namespace BlockBlast
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
                     RestartGame();
+                });
+            }
+
+            if (pauseModal != null) pauseModal.SetActive(false);
+
+            if (btnPause != null)
+            {
+                btnPause.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    OpenPauseModal();
+                });
+            }
+
+            if (btnPauseResume != null)
+            {
+                btnPauseResume.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ClosePauseModal();
+                });
+            }
+
+            if (btnPauseRestart != null)
+            {
+                btnPauseRestart.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ClosePauseModal();
+                    RestartGame();
+                });
+            }
+
+            if (btnPauseLobby != null)
+            {
+                btnPauseLobby.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ClosePauseModal();
+                    _isTimerActive = false;
+                    if (LobbyManager.Instance != null)
+                    {
+                        LobbyManager.Instance.ReturnToLobby();
+                    }
                 });
             }
         }
@@ -238,6 +289,10 @@ namespace BlockBlast
                 if (!vignetteDangerOverlay.gameObject.activeSelf)
                 {
                     vignetteDangerOverlay.gameObject.SetActive(true);
+                    if (BlockAudioManager.Instance != null)
+                    {
+                        BlockAudioManager.Instance.PlayWarning();
+                    }
                 }
 
                 // Heartbeat pulse: faster and more intense as time runs out
@@ -402,7 +457,7 @@ namespace BlockBlast
             _isTimerActive = false;
             if (vignetteDangerOverlay != null) vignetteDangerOverlay.gameObject.SetActive(false);
 
-            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayGameOver();
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
 
             if (gameOverModal != null)
             {
@@ -422,7 +477,15 @@ namespace BlockBlast
             UpdateScoreUI();
             UpdateSkipUI();
 
-            if (gameOverModal != null) gameOverModal.SetActive(false);
+            if (gameOverModal != null && gameOverModal.activeSelf)
+            {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                gameOverModal.SetActive(false);
+            }
+            else if (gameOverModal != null)
+            {
+                gameOverModal.SetActive(false);
+            }
 
             if (BlockGridManager.Instance != null)
             {
@@ -457,6 +520,83 @@ namespace BlockBlast
             mainMenuModal = menuModal;
             btnStartGame = startBtn;
             menuBestScoreText = menuBest;
+        }
+
+        private bool _wasTimerActiveBeforePause = false;
+
+        public void OpenPauseModal()
+        {
+            _wasTimerActiveBeforePause = _isTimerActive;
+            _isTimerActive = false;
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (pauseModal != null) pauseModal.SetActive(true);
+        }
+
+        public void ClosePauseModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (pauseModal != null) pauseModal.SetActive(false);
+            if (_wasTimerActiveBeforePause)
+            {
+                _isTimerActive = true;
+            }
+        }
+
+        public void SetupPauseModal(GameObject modal, Button pauseBtn, Button resumeBtn, Button restartBtn, Button lobbyBtn)
+        {
+            pauseModal = modal;
+            btnPause = pauseBtn;
+            btnPauseResume = resumeBtn;
+            btnPauseRestart = restartBtn;
+            btnPauseLobby = lobbyBtn;
+
+            if (pauseModal != null) pauseModal.SetActive(false);
+
+            if (btnPause != null)
+            {
+                btnPause.onClick.RemoveAllListeners();
+                btnPause.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    OpenPauseModal();
+                });
+            }
+
+            if (btnPauseResume != null)
+            {
+                btnPauseResume.onClick.RemoveAllListeners();
+                btnPauseResume.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ClosePauseModal();
+                });
+            }
+
+            if (btnPauseRestart != null)
+            {
+                btnPauseRestart.onClick.RemoveAllListeners();
+                btnPauseRestart.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ClosePauseModal();
+                    RestartGame();
+                });
+            }
+
+            if (btnPauseLobby != null)
+            {
+                btnPauseLobby.onClick.RemoveAllListeners();
+                btnPauseLobby.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ClosePauseModal();
+                    _isTimerActive = false;
+                    if (LobbyManager.Instance != null)
+                    {
+                        LobbyManager.Instance.ReturnToLobby();
+                    }
+                });
+            }
         }
 
         public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null)

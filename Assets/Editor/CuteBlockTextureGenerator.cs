@@ -175,7 +175,7 @@ namespace BlockBlast.Editor
             }
         }
 
-        private static void PreciseFloodFillCutout(Texture2D tex)
+        private static Texture2D PreciseFloodFillCutout(Texture2D tex)
         {
             int w = tex.width;
             int h = tex.height;
@@ -254,8 +254,10 @@ namespace BlockBlast.Editor
                 }
             }
 
-            tex.SetPixels(pixels);
-            tex.Apply();
+            Texture2D result = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            result.SetPixels(pixels);
+            result.Apply();
+            return result;
         }
 
         public static void ConfigureFontSettings()
@@ -275,14 +277,20 @@ namespace BlockBlast.Editor
         {
             if (string.IsNullOrEmpty(assetPath)) return;
             TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-            if (importer != null && !importer.isReadable)
+            if (importer != null)
             {
-                importer.isReadable = true;
-                importer.SaveAndReimport();
+                bool dirty = false;
+                if (!importer.isReadable) { importer.isReadable = true; dirty = true; }
+                if (importer.textureCompression != TextureImporterCompression.Uncompressed)
+                {
+                    importer.textureCompression = TextureImporterCompression.Uncompressed;
+                    dirty = true;
+                }
+                if (dirty) importer.SaveAndReimport();
             }
         }
 
-        public static Sprite GetOrCreatePastelBlockSprite(string name, Color pastelCol, string overlayFileName = null, float overlayScale = 0.78f)
+        public static Sprite GetOrCreatePastelBlockSprite(string name, Color pastelCol, string overlayFileName = null, float overlayScale = 0.86f)
         {
             EnsureFolder();
             string path = $"{Folder}/{name}.png";
@@ -293,9 +301,22 @@ namespace BlockBlast.Editor
                 string ovPath = $"{Folder}/{overlayFileName}";
                 EnsureTextureReadable(ovPath);
                 overlayTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ovPath);
+                if (overlayTex != null)
+                {
+                    Color c0 = overlayTex.GetPixel(0, 0);
+                    // If corners have an opaque background, cut it out cleanly with flood fill
+                    if (c0.a > 0.8f && (c0.r + c0.g + c0.b) / 3f > 0.8f)
+                    {
+                        Texture2D cutoutTex = PreciseFloodFillCutout(overlayTex);
+                        byte[] bytesCutout = cutoutTex.EncodeToPNG();
+                        SafeWriteAllBytes(ovPath, bytesCutout);
+                        AssetDatabase.ImportAsset(ovPath, ImportAssetOptions.ForceUpdate);
+                        overlayTex = cutoutTex;
+                    }
+                }
             }
 
-            Texture2D blockTex = GeneratePastelBlockTexture(256, pastelCol, overlayTex, overlayScale);
+            Texture2D blockTex = GeneratePastelBlockTexture(512, pastelCol, overlayTex, overlayScale);
             byte[] bytes = blockTex.EncodeToPNG();
             SafeWriteAllBytes(path, bytes);
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
@@ -307,6 +328,9 @@ namespace BlockBlast.Editor
                 importer.alphaIsTransparency = true;
                 importer.spritePixelsPerUnit = 100;
                 importer.filterMode = FilterMode.Bilinear;
+                importer.anisoLevel = 4;
+                importer.mipmapEnabled = false; // Never blur 2D sprites with low-res mips
+                importer.textureCompression = TextureImporterCompression.Uncompressed; // 100% loss-free crisp rendering!
                 importer.isReadable = true;
                 importer.SaveAndReimport();
             }
@@ -331,13 +355,14 @@ namespace BlockBlast.Editor
                 importer.alphaIsTransparency = true;
                 importer.spritePixelsPerUnit = 100;
                 importer.filterMode = FilterMode.Bilinear;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
                 importer.SaveAndReimport();
             }
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
-        public static Texture2D GeneratePastelBlockTexture(int size, Color pastelCol, Texture2D overlayTex, float overlayScale = 0.78f)
+        public static Texture2D GeneratePastelBlockTexture(int size, Color pastelCol, Texture2D overlayTex, float overlayScale = 0.86f)
         {
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             Color[] pixels = new Color[size * size];
@@ -392,31 +417,38 @@ namespace BlockBlast.Editor
 
             tex.SetPixels(pixels);
 
-            // Composite overlay texture seamlessly into center
+            // Composite overlay texture seamlessly into center with 4-point supersampling & solid opacity
             if (overlayTex != null)
             {
                 int ovSize = Mathf.RoundToInt(size * overlayScale);
                 int startX = (size - ovSize) / 2;
                 int startY = (size - ovSize) / 2;
+                float stepU = 1f / Mathf.Max(1, ovSize - 1);
+                float stepV = 1f / Mathf.Max(1, ovSize - 1);
+                float subOffset = 0.25f;
 
                 for (int oy = 0; oy < ovSize; oy++)
                 {
                     for (int ox = 0; ox < ovSize; ox++)
                     {
-                        float u = (float)ox / (ovSize - 1);
-                        float v = (float)oy / (ovSize - 1);
-                        Color oc = overlayTex.GetPixelBilinear(u, v);
+                        float u = (float)ox * stepU;
+                        float v = (float)oy * stepV;
 
-                        if (oc.a > 0.01f)
+                        // 4-point supersampling for vector-crisp lines
+                        Color s1 = overlayTex.GetPixelBilinear(u - stepU * subOffset, v - stepV * subOffset);
+                        Color s2 = overlayTex.GetPixelBilinear(u + stepU * subOffset, v - stepV * subOffset);
+                        Color s3 = overlayTex.GetPixelBilinear(u - stepU * subOffset, v + stepV * subOffset);
+                        Color s4 = overlayTex.GetPixelBilinear(u + stepU * subOffset, v + stepV * subOffset);
+
+                        Color oc = new Color(
+                            (s1.r + s2.r + s3.r + s4.r) * 0.25f,
+                            (s1.g + s2.g + s3.g + s4.g) * 0.25f,
+                            (s1.b + s2.b + s3.b + s4.b) * 0.25f,
+                            (s1.a + s2.a + s3.a + s4.a) * 0.25f
+                        );
+
+                        if (oc.a > 0.02f)
                         {
-                            // Discard white / near-white background from JPEG or incomplete cutout
-                            float brightness = (oc.r + oc.g + oc.b) / 3f;
-                            float maxDiff = Mathf.Max(Mathf.Abs(oc.r - oc.g), Mathf.Abs(oc.g - oc.b), Mathf.Abs(oc.b - oc.r));
-                            if (brightness > 0.86f && maxDiff < 0.15f)
-                            {
-                                continue;
-                            }
-
                             int px = startX + ox;
                             int py = startY + oy;
                             if (px >= 0 && px < size && py >= 0 && py < size)
@@ -425,7 +457,16 @@ namespace BlockBlast.Editor
                                 Color bc = pixels[idx];
                                 if (bc.a > 0.1f)
                                 {
-                                    float a = oc.a;
+                                    // Solidify mascot body so it's punchy, bold and never faint
+                                    float a = (oc.a >= 0.85f) ? 1.0f : Mathf.SmoothStep(0f, 1f, oc.a * 1.25f);
+                                    
+                                    // Micro-sharpen dark lines (eyes, pupils, mouth)
+                                    float brightness = (oc.r + oc.g + oc.b) / 3f;
+                                    if (brightness < 0.35f && oc.a > 0.4f)
+                                    {
+                                        a = 1.0f;
+                                    }
+
                                     Color blended = new Color(
                                         oc.r * a + bc.r * (1f - a),
                                         oc.g * a + bc.g * (1f - a),
@@ -535,6 +576,148 @@ namespace BlockBlast.Editor
             EnsureFolder();
             string path = $"{Folder}/Lobby_Stage_Background.png";
             return ForceGetOrImportSingleSprite(path) ?? GetOrCreateBackgroundSprite();
+        }
+
+        public static Sprite GetOrCreateLobbyCandyStageSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Lobby_Stage_Candy.jpg";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateBackgroundSprite();
+        }
+
+        public static Sprite GetOrCreateLobbyOceanStageSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Lobby_Stage_Ocean.jpg";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateBackgroundSprite();
+        }
+
+        public static Sprite GetOrCreateCandyWonderlandBackgroundSprite()
+        {
+            EnsureFolder();
+            EnsureThemeBackgrounds();
+            string path = $"{Folder}/Theme_Candy_Wonderland.jpg";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateBackgroundSprite();
+        }
+
+        public static Sprite GetOrCreateCrystalMermaidBackgroundSprite()
+        {
+            EnsureFolder();
+            EnsureThemeBackgrounds();
+            string path = $"{Folder}/Theme_Crystal_Mermaid.jpg";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateBackgroundSprite();
+        }
+
+        public static Sprite GetOrCreateStarryNebulaBackgroundSprite()
+        {
+            EnsureFolder();
+            EnsureThemeBackgrounds();
+            string path = $"{Folder}/Theme_Starry_Nebula.jpg";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateBackgroundSprite();
+        }
+
+        public static Sprite GetOrCreatePauseBarsSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Icon_Pause_Bars.png";
+            if (File.Exists(path))
+            {
+                return ForceGetOrImportSingleSprite(path);
+            }
+
+            int size = 128;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            Color[] pixels = new Color[size * size];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.clear;
+
+            // Two smooth rounded vertical bars:
+            float halfW = 11f;
+            float halfH = 34f;
+            float radius = 7f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float d1 = GetPauseBoxDistance(x - 44f, y - 64f, halfW, halfH, radius);
+                    float d2 = GetPauseBoxDistance(x - 84f, y - 64f, halfW, halfH, radius);
+                    float d = Mathf.Min(d1, d2);
+
+                    if (d <= 0f)
+                    {
+                        pixels[y * size + x] = Color.white;
+                    }
+                    else if (d < 1.5f)
+                    {
+                        float a = 1f - (d / 1.5f);
+                        pixels[y * size + x] = new Color(1f, 1f, 1f, a);
+                    }
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.SaveAndReimport();
+            }
+
+            return ForceGetOrImportSingleSprite(path);
+        }
+
+        private static float GetPauseBoxDistance(float px, float py, float halfW, float halfH, float r)
+        {
+            float dx = Mathf.Abs(px) - (halfW - r);
+            float dy = Mathf.Abs(py) - (halfH - r);
+            if (dx <= 0f && dy <= 0f) return -r;
+            if (dx > 0f && dy <= 0f) return dx - r;
+            if (dx <= 0f && dy > 0f) return dy - r;
+            return Mathf.Sqrt(dx * dx + dy * dy) - r;
+        }
+
+        public static void EnsureThemeBackgrounds()
+        {
+            EnsureFolder();
+            string brainDir = @"C:\Users\kdy02\.gemini\antigravity\brain\11e13a30-67ac-4ca4-aa02-999cf9c4f657";
+            var targets = new (string pattern, string dstName)[]
+            {
+                ("bg_candy_wonderland_*.jpg", "Theme_Candy_Wonderland.jpg"),
+                ("bg_crystal_mermaid_*.jpg", "Theme_Crystal_Mermaid.jpg"),
+                ("bg_starry_nebula_*.jpg", "Theme_Starry_Nebula.jpg")
+            };
+
+            foreach (var item in targets)
+            {
+                string dstPath = $"{Folder}/{item.dstName}";
+                if (!File.Exists(dstPath) && Directory.Exists(brainDir))
+                {
+                    string[] files = Directory.GetFiles(brainDir, item.pattern);
+                    if (files.Length > 0)
+                    {
+                        File.Copy(files[files.Length - 1], dstPath, true);
+                        AssetDatabase.ImportAsset(dstPath, ImportAssetOptions.ForceUpdate);
+
+                        TextureImporter importer = AssetImporter.GetAtPath(dstPath) as TextureImporter;
+                        if (importer != null)
+                        {
+                            importer.textureType = TextureImporterType.Sprite;
+                            importer.spriteImportMode = SpriteImportMode.Single;
+                            importer.alphaIsTransparency = false;
+                            importer.spritePixelsPerUnit = 100;
+                            importer.filterMode = FilterMode.Bilinear;
+                            importer.SaveAndReimport();
+                        }
+                    }
+                }
+            }
         }
 
         public static void EnsureMascotsCutout()
@@ -2444,12 +2627,17 @@ namespace BlockBlast.Editor
         {
             EnsureFolder();
             string path = $"{Folder}/Lobby_Cute_Card.png";
-            Sprite existing = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-            if (existing != null) return existing;
 
-            int size = 96;
+            int size = 256;
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            float r = 24f;
+            float r = 52f;
+
+            // Premium fairy-tale marshmallow card: crisp pastel lavender border + subtle glossy rim
+            Color cardTop = new Color(1.0f, 0.99f, 1.0f, 0.98f);
+            Color cardBot = new Color(0.97f, 0.95f, 0.99f, 0.98f);
+            Color borderCol = new Color(0.92f, 0.85f, 0.97f, 1f);
+            Color innerGlowCol = new Color(1.0f, 0.96f, 0.99f, 1f);
+            Color shadowCol = new Color(0.15f, 0.10f, 0.25f, 0.22f);
 
             for (int y = 0; y < size; y++)
             {
@@ -2459,25 +2647,46 @@ namespace BlockBlast.Editor
                     float cy = (y < r) ? r : (y > size - 1 - r) ? size - 1 - r : y;
                     float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
 
-                    if (d > r + 1f)
+                    // Outer drop shadow (offset down 3px)
+                    float sy = y + 3f;
+                    float scy = (sy < r) ? r : (sy > size - 1 - r) ? size - 1 - r : sy;
+                    float sd = Mathf.Sqrt((x - cx) * (x - cx) + (sy - scy) * (sy - scy));
+
+                    if (d > r + 1.5f)
                     {
-                        tex.SetPixel(x, y, Color.clear);
+                        if (sd <= r + 5f)
+                        {
+                            float sa = Mathf.Clamp01((r + 5f - sd) / 5f) * shadowCol.a;
+                            tex.SetPixel(x, y, new Color(shadowCol.r, shadowCol.g, shadowCol.b, sa));
+                        }
+                        else
+                        {
+                            tex.SetPixel(x, y, Color.clear);
+                        }
                     }
-                    else if (d > r - 1f)
+                    else if (d > r - 1.5f)
                     {
-                        float a = Mathf.Clamp01(r + 1f - d);
-                        tex.SetPixel(x, y, new Color(0.9f, 0.82f, 0.95f, a));
+                        // Outer anti-aliasing
+                        float a = Mathf.Clamp01(r + 1.5f - d);
+                        tex.SetPixel(x, y, new Color(borderCol.r, borderCol.g, borderCol.b, a));
                     }
-                    else if (d > r - 3f)
+                    else if (d > r - 5.5f)
                     {
-                        // Border
-                        tex.SetPixel(x, y, new Color(1f, 0.85f, 0.92f, 1f));
+                        // Crisp delicate pastel rim
+                        tex.SetPixel(x, y, borderCol);
+                    }
+                    else if (d > r - 8.5f)
+                    {
+                        // Soft inner glow
+                        float gt = Mathf.Clamp01((d - (r - 8.5f)) / 3f);
+                        Color c = Color.Lerp(cardTop, innerGlowCol, gt);
+                        tex.SetPixel(x, y, c);
                     }
                     else
                     {
-                        // Card inside: soft pastel gradient
+                        // Card inside: clean sweet marshmallow gradient
                         float v = (float)y / size;
-                        Color c = Color.Lerp(new Color(0.98f, 0.96f, 1.0f, 0.96f), new Color(1.0f, 0.98f, 0.99f, 0.98f), v);
+                        Color c = Color.Lerp(cardBot, cardTop, v);
                         tex.SetPixel(x, y, c);
                     }
                 }
@@ -2491,10 +2700,11 @@ namespace BlockBlast.Editor
             if (importer != null)
             {
                 importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
                 importer.filterMode = FilterMode.Bilinear;
                 importer.spritePixelsPerUnit = 100;
-                importer.spriteBorder = new Vector4(24, 24, 24, 24); // 9-slice
+                importer.spriteBorder = new Vector4(60, 60, 60, 60); // 9-slice
                 importer.SaveAndReimport();
             }
 

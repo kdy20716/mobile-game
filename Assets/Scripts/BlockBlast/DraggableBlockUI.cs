@@ -124,7 +124,7 @@ namespace BlockBlast
 
             if (BlockAudioManager.Instance != null)
             {
-                BlockAudioManager.Instance.PlayPickup();
+                BlockAudioManager.Instance.PlayGrab();
             }
 
             transform.SetParent(_parentCanvas.transform, true);
@@ -196,7 +196,7 @@ namespace BlockBlast
                 _isPlaced = true;
                 if (BlockAudioManager.Instance != null)
                 {
-                    BlockAudioManager.Instance.PlayPlace();
+                    BlockAudioManager.Instance.PlayGrabDown();
                 }
 
                 OnBlockPlaced?.Invoke(SlotIndex);

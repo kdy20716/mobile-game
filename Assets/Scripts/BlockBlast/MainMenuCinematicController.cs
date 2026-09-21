@@ -52,6 +52,11 @@ namespace BlockBlast
             }
 
             _introCoroutine = StartCoroutine(CinematicIntroRoutine());
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayIntroBGM();
+            }
         }
 
         private void Update()
@@ -306,6 +311,11 @@ namespace BlockBlast
         {
             if (_hasStarted) return;
             _hasStarted = true;
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.StopIntroBGM(0.2f);
+            }
 
             // Immediately cancel cinematic intro or idle coroutine on click
             if (_introCoroutine != null) StopCoroutine(_introCoroutine);
