@@ -36,6 +36,49 @@ namespace BlockBlast
 
         private void Awake()
         {
+            // ─── Enforce Screen Resolution Immediately on Boot ───────────────────────
+            // LobbyManager.ApplyScreenSettings() is called later (after the title screen),
+            // but the Windows Standalone player may restore a cached registry window size.
+            // Reading saved prefs here ensures the first visible frame is already 9:16.
+            const string kAspectKey = "Mallang_AspectRatio_Idx";
+            const string kWindowKey = "Mallang_WindowMode_Idx";
+            int aspectIdx = PlayerPrefs.GetInt(kAspectKey, 3);
+            int windowIdx = PlayerPrefs.GetInt(kWindowKey, 0);
+            if (aspectIdx < 0 || aspectIdx > 3) aspectIdx = 3;
+            if (windowIdx < 0 || windowIdx > 2) windowIdx = 0;
+
+            FullScreenMode mode = windowIdx == 2 ? FullScreenMode.ExclusiveFullScreen
+                                : windowIdx == 1 ? FullScreenMode.FullScreenWindow
+                                                 : FullScreenMode.Windowed;
+            int w, h;
+            if (mode == FullScreenMode.Windowed)
+            {
+                switch (aspectIdx)
+                {
+                    case 0: w = 1600; h =  900; break;  // 16:9
+                    case 1: w = 1440; h =  900; break;  // 16:10
+                    case 2: w = 1200; h =  900; break;  // 4:3
+                    default: w = 720; h = 1280; break;  // 9:16
+                }
+            }
+            else if (mode == FullScreenMode.ExclusiveFullScreen)
+            {
+                switch (aspectIdx)
+                {
+                    case 0: w = 1920; h = 1080; break;
+                    case 1: w = 1920; h = 1200; break;
+                    case 2: w = 1440; h = 1080; break;
+                    default: w = 1080; h = 1920; break;
+                }
+            }
+            else
+            {
+                w = Display.main.systemWidth  > 0 ? Display.main.systemWidth  : 1920;
+                h = Display.main.systemHeight > 0 ? Display.main.systemHeight : 1080;
+            }
+            Screen.SetResolution(w, h, mode);
+            // ────────────────────────────────────────────────────────────────────────
+
             if (mainCamera == null)
             {
                 mainCamera = Camera.main;

@@ -46,16 +46,17 @@ namespace BlockBlast.Editor
                 }
             }
 
-            // 5. App Icon Setup (Pink Mascot)
-            string iconPath = "Assets/Textures/BlockBlastCute_Backup/Block_Pink_Mascot.png";
-            TextureImporter importer = AssetImporter.GetAtPath(iconPath) as TextureImporter;
-            if (importer != null)
-            {
-                importer.isReadable = true;
-                importer.textureType = TextureImporterType.Default;
-                importer.SaveAndReimport();
-            }
+            // 5. Ensure high-resolution lossless textures (2048px, RGBA32, Mipmaps OFF)
+            HighResTextureOptimizer.OptimizeAllMascotTextures();
 
+            // 6. App Icon Setup (Dedicated AppIcon.png)
+            string pinkMascotPath = "Assets/Textures/BlockBlastCute/Block_Pink_Mascot.png";
+            string iconPath = "Assets/Textures/AppIcon.png";
+            if (!File.Exists(iconPath) && File.Exists(pinkMascotPath))
+            {
+                File.Copy(pinkMascotPath, iconPath, true);
+                AssetDatabase.ImportAsset(iconPath, ImportAssetOptions.ForceUpdate);
+            }
             Texture2D iconTex = AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath);
             if (iconTex != null)
             {

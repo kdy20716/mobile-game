@@ -35,14 +35,13 @@ namespace BlockBlast.Editor
                 }
             }
 
-            // 3. App Icon Setup (Pink Mascot)
-            string iconPath = "Assets/Textures/BlockBlastCute_Backup/Block_Pink_Mascot.png";
-            TextureImporter importer = AssetImporter.GetAtPath(iconPath) as TextureImporter;
-            if (importer != null)
+            // 3. App Icon Setup (Dedicated AppIcon.png)
+            string pinkMascotPath = "Assets/Textures/BlockBlastCute_Backup/Block_Pink_Mascot.png";
+            string iconPath = "Assets/Textures/AppIcon.png";
+            if (!System.IO.File.Exists(iconPath) && System.IO.File.Exists(pinkMascotPath))
             {
-                importer.isReadable = true;
-                importer.textureType = TextureImporterType.Default;
-                importer.SaveAndReimport();
+                System.IO.File.Copy(pinkMascotPath, iconPath, true);
+                AssetDatabase.ImportAsset(iconPath, ImportAssetOptions.ForceUpdate);
             }
 
             Texture2D iconTex = AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath);
