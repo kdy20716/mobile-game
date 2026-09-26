@@ -39,6 +39,7 @@ namespace BlockBlast
         [SerializeField] private TMP_Text modalFinalScoreText;
         [SerializeField] private TMP_Text modalBestScoreText;
         [SerializeField] private Button btnRestart;
+        [SerializeField] private Button btnGameOverLobby;
 
         [Header("Pause Modal")]
         [SerializeField] private GameObject pauseModal;
@@ -49,6 +50,10 @@ namespace BlockBlast
 
         [Header("In-Game Root")]
         [SerializeField] private GameObject inGameRoot;
+
+        [Header("Language Logos")]
+        [SerializeField] private Image titleLogoImage;
+        [SerializeField] private Sprite[] languageLogos;
 
         public void ShowInGameUI(bool show)
         {
@@ -76,6 +81,7 @@ namespace BlockBlast
         private int _skipRequiredLines = 10;
         private int _skipCurrentLines = 0;
         private Coroutine _tipCoroutine;
+        private int _currentTipIndex = 0;
 
         private void Awake()
         {
@@ -83,6 +89,114 @@ namespace BlockBlast
             else Destroy(gameObject);
 
             _bestScore = PlayerPrefs.GetInt("BlockBlast_Best", 0);
+        }
+
+        private void OnEnable()
+        {
+            LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
+            UpdatePauseModalTexts();
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
+        }
+
+        private void HandleLanguageChanged(GameLanguage lang)
+        {
+            UpdatePauseModalTexts();
+        }
+
+        private void UpdatePauseModalTexts()
+        {
+            if (btnPauseResume != null)
+            {
+                var txt = btnPauseResume.GetComponentInChildren<TMP_Text>();
+                if (txt != null) txt.text = LocalizationManager.Get("ingame_resume");
+            }
+            if (btnPauseRestart != null)
+            {
+                var txt = btnPauseRestart.GetComponentInChildren<TMP_Text>();
+                if (txt != null) txt.text = LocalizationManager.Get("ingame_restart");
+            }
+            if (btnPauseLobby != null)
+            {
+                var txt = btnPauseLobby.GetComponentInChildren<TMP_Text>();
+                if (txt != null) txt.text = LocalizationManager.Get("ingame_lobby");
+            }
+            if (pauseModal != null)
+            {
+                var title = pauseModal.transform.Find("Dialog/Title")?.GetComponent<TMP_Text>();
+                if (title != null) title.text = LocalizationManager.Get("ingame_pause");
+                var sub = pauseModal.transform.Find("Dialog/Subtitle")?.GetComponent<TMP_Text>();
+                if (sub != null) sub.text = LocalizationManager.Get("ingame_pause_sub");
+            }
+            if (gameOverModal != null)
+            {
+                var title = gameOverModal.transform.Find("Dialog/Title")?.GetComponent<TMP_Text>();
+                if (title != null) title.text = LocalizationManager.Get("ingame_gameover_no_moves");
+                var sub = gameOverModal.transform.Find("Dialog/Subtitle")?.GetComponent<TMP_Text>();
+                if (sub != null) sub.text = LocalizationManager.Get("ingame_gameover_sub");
+                var fLabel = gameOverModal.transform.Find("Dialog/ScoreCard/FLabel")?.GetComponent<TMP_Text>();
+                if (fLabel != null) fLabel.text = LocalizationManager.Get("ingame_gameover_score");
+                if (btnRestart != null)
+                {
+                    var txt = btnRestart.GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = LocalizationManager.Get("ingame_restart");
+                }
+                if (btnGameOverLobby != null)
+                {
+                    var txt = btnGameOverLobby.GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = LocalizationManager.Get("ingame_lobby");
+                }
+            }
+            if (btnPause != null)
+            {
+                var pLabel = btnPause.transform.Find("PauseLabel")?.GetComponent<TMP_Text>();
+                if (pLabel != null) pLabel.text = LocalizationManager.Get("ingame_pause");
+            }
+            if (inGameRoot != null)
+            {
+                var scoreLbl = inGameRoot.transform.Find("Header/ScoreBox/Label")?.GetComponent<TMP_Text>();
+                if (scoreLbl != null) scoreLbl.text = LocalizationManager.Get("ingame_score");
+                var bestLbl = inGameRoot.transform.Find("Header/BestBox/Label")?.GetComponent<TMP_Text>();
+                if (bestLbl != null) bestLbl.text = LocalizationManager.Get("ingame_best");
+                var timeLbl = inGameRoot.transform.Find("SkillsBar/TimeLabel")?.GetComponent<TMP_Text>();
+                if (timeLbl != null) timeLbl.text = LocalizationManager.Get("ingame_time");
+            }
+            if (mainMenuModal != null)
+            {
+                var touchText = mainMenuModal.transform.Find("TouchPrompt/TouchText")?.GetComponent<TMP_Text>();
+                if (touchText != null) touchText.text = LocalizationManager.Get("intro_touch");
+            }
+            if (guideTipText != null)
+            {
+                guideTipText.text = LocalizationManager.Get($"ingame_tip_{_currentTipIndex}");
+            }
+
+            // Update In-Game Header Title Logo based on language
+            GameLanguage curLang = LocalizationManager.CurrentLanguage;
+            if (titleLogoImage != null && languageLogos != null && (int)curLang >= 0 && (int)curLang < languageLogos.Length)
+            {
+                if (languageLogos[(int)curLang] != null)
+                {
+                    titleLogoImage.sprite = languageLogos[(int)curLang];
+                }
+            }
+        }
+
+        public void SetupLanguageLogos(Image img, Sprite[] logos)
+        {
+            titleLogoImage = img;
+            languageLogos = logos;
+            GameLanguage curLang = LocalizationManager.CurrentLanguage;
+            if (titleLogoImage != null && languageLogos != null && (int)curLang >= 0 && (int)curLang < languageLogos.Length)
+            {
+                if (languageLogos[(int)curLang] != null)
+                {
+                    titleLogoImage.sprite = languageLogos[(int)curLang];
+                }
+            }
         }
 
         private void Start()
@@ -150,6 +264,19 @@ namespace BlockBlast
                 });
             }
 
+            if (btnGameOverLobby != null)
+            {
+                btnGameOverLobby.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    if (gameOverModal != null) gameOverModal.SetActive(false);
+                    if (LobbyManager.Instance != null)
+                    {
+                        LobbyManager.Instance.ReturnToLobby();
+                    }
+                });
+            }
+
             if (pauseModal != null) pauseModal.SetActive(false);
 
             if (btnPause != null)
@@ -197,6 +324,41 @@ namespace BlockBlast
 
         private void Update()
         {
+            // Global PC Keyboard Hotkeys
+            bool isEscPressed = false;
+            bool isRotatePressed = false;
+
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                isEscPressed = UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame;
+                isRotatePressed = UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame || UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
+            }
+#else
+            isEscPressed = Input.GetKeyDown(KeyCode.Escape);
+            isRotatePressed = Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Space);
+#endif
+
+            if (isEscPressed)
+            {
+                if (pauseModal != null && pauseModal.activeSelf)
+                {
+                    ClosePauseModal();
+                }
+                else if (gameOverModal == null || !gameOverModal.activeSelf)
+                {
+                    OpenPauseModal();
+                }
+            }
+
+            if (isRotatePressed)
+            {
+                if (btnRotate != null && btnRotate.interactable && (pauseModal == null || !pauseModal.activeSelf) && (gameOverModal == null || !gameOverModal.activeSelf))
+                {
+                    btnRotate.onClick.Invoke();
+                }
+            }
+
             if (!_isTimerActive) return;
 
             _turnRemainingTime -= Time.deltaTime;
@@ -220,9 +382,9 @@ namespace BlockBlast
 
         private void UpdateTurnMaxTime()
         {
-            // Starts at 180s. Decreases by 5s for every 250 points, down to minimum 5s!
+            // Starts at 180s (3 minutes). Decreases by 4s for every 250 points, down to minimum 8s!
             int steps = _score / 250;
-            _currentTurnMaxTime = Mathf.Max(5f, 180f - steps * 5f);
+            _currentTurnMaxTime = Mathf.Max(8f, 180f - steps * 4f);
         }
 
         private void ResetTurnTimer()
@@ -462,8 +624,13 @@ namespace BlockBlast
             if (gameOverModal != null)
             {
                 gameOverModal.SetActive(true);
-                if (modalFinalScoreText != null) modalFinalScoreText.text = _score.ToString();
-                if (modalBestScoreText != null) modalBestScoreText.text = _bestScore.ToString();
+                UpdatePauseModalTexts();
+                if (modalFinalScoreText != null) modalFinalScoreText.text = _score.ToString("N0");
+                if (modalBestScoreText != null)
+                {
+                    string bestPrefix = LocalizationManager.Get("profile_best_score_prefix", "BEST");
+                    modalBestScoreText.text = $"{bestPrefix}: {_bestScore:N0}";
+                }
             }
         }
 
@@ -599,7 +766,7 @@ namespace BlockBlast
             }
         }
 
-        public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null)
+        public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null, Button gameOverLobby = null)
         {
             scoreText = score;
             bestScoreText = best;
@@ -616,6 +783,7 @@ namespace BlockBlast
             modalBestScoreText = mBestS;
             btnRestart = restart;
             inGameRoot = inGameR;
+            btnGameOverLobby = gameOverLobby;
         }
 
         public void SetupGuideTip(TMP_Text tip, CanvasGroup group = null)
@@ -634,7 +802,8 @@ namespace BlockBlast
             if (guideTipText == null) yield break;
 
             int index = 0;
-            guideTipText.text = GuideTips[0];
+            _currentTipIndex = 0;
+            guideTipText.text = LocalizationManager.Get("ingame_tip_0");
 
             while (true)
             {
@@ -654,7 +823,8 @@ namespace BlockBlast
                 }
 
                 index = (index + 1) % GuideTips.Length;
-                guideTipText.text = GuideTips[index];
+                _currentTipIndex = index;
+                guideTipText.text = LocalizationManager.Get($"ingame_tip_{index}");
 
                 // Smooth fade in
                 if (guideTipCanvasGroup != null)

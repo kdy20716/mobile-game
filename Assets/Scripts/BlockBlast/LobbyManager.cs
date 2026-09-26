@@ -49,6 +49,10 @@ namespace BlockBlast
         [SerializeField] private TMP_Text btnPlayGameText;
         [SerializeField] private Image btnPlayGameGlow;
 
+        [Header("Language Logos")]
+        [SerializeField] private Image lobbyLogoImage;
+        [SerializeField] private Sprite[] languageLogos;
+
         [Header("Profile Modal")]
         [SerializeField] private GameObject profileModal;
         [SerializeField] private Image profileModalAvatar;
@@ -90,6 +94,13 @@ namespace BlockBlast
         [SerializeField] private GameObject shopInGameThemesPanel;
         [SerializeField] private GameObject shopLobbyThemesPanel;
 
+        [Header("NanoBanana Custom Shop Tab Sprites")]
+        public bool useNanoBananaTabButtons = true;
+        [SerializeField] private Sprite tabGameActiveSprite;
+        [SerializeField] private Sprite tabLobbyActiveSprite;
+        [SerializeField] private Sprite tabInactiveSprite;
+        [SerializeField] private Sprite tabOriginalPillSprite;
+
         private int _currentShopTab = 0;
 
         [Header("Settings Modal")]
@@ -98,18 +109,70 @@ namespace BlockBlast
         [SerializeField] private Slider sfxSlider;
         [SerializeField] private Button btnCloseSettings;
 
+        [Header("Language Selection (Settings Modal)")]
+        [SerializeField] private Button[] languageButtons;
+        [SerializeField] private Image[] languageButtonBgs;
+        [SerializeField] private TMP_Text[] languageButtonTexts;
+        [SerializeField] private TMP_Text settingsTitleText;
+        [SerializeField] private TMP_Text settingsBgmText;
+        [SerializeField] private TMP_Text settingsSfxText;
+        [SerializeField] private TMP_Text settingsLangText;
+        [SerializeField] private TMP_Text shopTitleText;
+        [SerializeField] private TMP_Text helpTitleText;
+        [SerializeField] private TMP_Text helpConfirmText;
+        [SerializeField] private TMP_Text profileTitleText;
+        [SerializeField] private TMP_Text settingsVersionText;
+
         [Header("Help Modal")]
         [SerializeField] private GameObject helpModal;
         [SerializeField] private Button btnCloseHelp;
         [SerializeField] private Button btnConfirmHelp;
 
+        [Header("Party Stage Tip")]
+        [SerializeField] private TMP_Text partyTipText;
+
+        [Header("Quit Modal (PC)")]
+        [SerializeField] private GameObject quitModal;
+        [SerializeField] private Button btnQuitConfirmYes;
+        [SerializeField] private Button btnQuitConfirmNo;
+        [SerializeField] private Button btnQuitDarkBg;
+        [SerializeField] private Button btnOpenQuitModal;
+        [SerializeField] private TMP_Text quitModalTitleText;
+        [SerializeField] private TMP_Text quitModalDescText;
+        [SerializeField] private TMP_Text quitModalYesText;
+        [SerializeField] private TMP_Text quitModalNoText;
+        [SerializeField] private TMP_Text settingsQuitButtonText;
+
+        [Header("Screen Settings (Aspect Ratio & Window Mode)")]
+        [SerializeField] private TMP_Text settingsAspectTitleText;
+        [SerializeField] private Button[] aspectButtons; // 0: 16:9, 1: 16:10, 2: 4:3, 3: 9:16
+        [SerializeField] private Image[] aspectBgs;
+        [SerializeField] private TMP_Text[] aspectTexts;
+
+        [SerializeField] private TMP_Text settingsWindowModeTitleText;
+        [SerializeField] private Button[] windowModeButtons; // 0: 창모드, 1: 테두리없는 창모드, 2: 전체화면
+        [SerializeField] private Image[] windowModeBgs;
+        [SerializeField] private TMP_Text[] windowModeTexts;
+
+        [SerializeField] private Sprite screenActiveSprite;
+        [SerializeField] private Sprite screenInactiveSprite;
+
+        private const string KEY_ASPECT_RATIO_INDEX = "Mallang_AspectRatio_Idx";
+        private const string KEY_WINDOW_MODE_INDEX = "Mallang_WindowMode_Idx";
+        private int _currentAspectIdx = 3; // 0: 16:9, 1: 16:10, 2: 4:3, 3: 9:16 (Default: 9:16)
+        private int _currentWindowModeIdx = 0; // 0: 창모드, 1: 테두리없는 창모드, 2: 전체화면 (Default: 창모드)
+
         [Header("Mascot Avatars (0:Pink, 1:Mint, 2:Gold, 3:Purple)")]
         [SerializeField] private Sprite[] mascotAvatars;
+
+        [Header("Shop Action Button Sprites")]
+        [SerializeField] private Sprite shopEquipBtnSprite;
+        [SerializeField] private Sprite shopEquippedBtnSprite;
 
         private int _currentAvatarIdx = 0;
         private string _currentNickname = "";
         private string _currentBio = "";
-        private int _currentCoins = 1000;
+        private int _currentCoins = 0; // Steam default: 0 Gold
         private bool _isLoggedIn = true;
 
         private int _selectedMenuIdx = 0;
@@ -120,14 +183,6 @@ namespace BlockBlast
         private static readonly Color ColorMint = new Color(0.17f, 0.83f, 0.64f, 1f);   // #2CD4A4
         private static readonly Color ColorGold = new Color(1f, 0.70f, 0.0f, 1f);       // #FFB300
         private static readonly Color ColorPurple = new Color(0.66f, 0.33f, 0.97f, 1f);  // #A855F7
-
-        private static readonly string[] MenuActionTexts = new string[]
-        {
-            "게임 시작!",
-            "상점 가기!",
-            "설정 열기!",
-            "도움말 보기!"
-        };
 
         private static readonly Color[] MenuColors = new Color[]
         {
@@ -147,11 +202,28 @@ namespace BlockBlast
             }
 
             PerformAutoLogin();
+            EnsurePartyTipReference();
+        }
+
+        private void EnsurePartyTipReference()
+        {
+            if (partyTipText == null)
+            {
+                var tipObj = GameObject.Find("PartyTip");
+                if (tipObj != null)
+                {
+                    partyTipText = tipObj.GetComponent<TMP_Text>();
+                }
+            }
         }
 
         private void Start()
         {
+            LocalizationManager.Init();
+            LocalizationManager.OnLanguageChanged += UpdateLanguageUI;
+
             SetupEventListeners();
+            UpdateLanguageUI(LocalizationManager.CurrentLanguage);
             RefreshProfileUI();
             SelectMenu(0, false); // Default: Game Start (Pink Mascot)
 
@@ -159,15 +231,30 @@ namespace BlockBlast
             ApplyTheme(equippedTheme);
 
             int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
-            ApplyLobbyTheme(equippedLobby);
+            ApplyLobbyTheme(equippedLobby, playMusic: false);
 
             if (profileModal != null) profileModal.SetActive(false);
             if (shopModal != null) shopModal.SetActive(false);
             if (settingsModal != null) settingsModal.SetActive(false);
             if (helpModal != null) helpModal.SetActive(false);
+            if (quitModal != null) quitModal.SetActive(false);
+
+            _currentAspectIdx = PlayerPrefs.GetInt(KEY_ASPECT_RATIO_INDEX, 3);
+            if (_currentAspectIdx < 0 || _currentAspectIdx > 3) _currentAspectIdx = 3;
+            _currentWindowModeIdx = PlayerPrefs.GetInt(KEY_WINDOW_MODE_INDEX, 0);
+            if (_currentWindowModeIdx < 0 || _currentWindowModeIdx > 2) _currentWindowModeIdx = 0;
+            ApplyScreenSettings();
+            UpdateScreenSettingsUI();
 
             if (_mascotBounceCoroutine != null) StopCoroutine(_mascotBounceCoroutine);
             _mascotBounceCoroutine = StartCoroutine(MascotIdleBounceRoutine());
+
+            UpdateLanguageUI(LocalizationManager.CurrentLanguage);
+        }
+
+        private void OnDestroy()
+        {
+            LocalizationManager.OnLanguageChanged -= UpdateLanguageUI;
         }
 
         // ==========================================
@@ -181,7 +268,7 @@ namespace BlockBlast
                 _currentNickname = $"말랑이#{Random.Range(1000, 9999)}";
                 _currentBio = "말랑블라스트에 오신 걸 환영해요!";
                 _currentAvatarIdx = 0; // Pink Mascot default
-                _currentCoins = 1000;  // 1000 welcome coins
+                _currentCoins = 0;     // Steam default: 0 Gold
                 _isLoggedIn = true;
 
                 PlayerPrefs.SetString(KEY_NICKNAME, _currentNickname);
@@ -189,7 +276,6 @@ namespace BlockBlast
                 PlayerPrefs.SetInt(KEY_AVATAR, _currentAvatarIdx);
                 PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
                 PlayerPrefs.SetInt(KEY_LOGGED_IN, 1);
-                PlayerPrefs.Save();
             }
             else
             {
@@ -198,8 +284,26 @@ namespace BlockBlast
                 _currentNickname = System.Text.RegularExpressions.Regex.Replace(_currentNickname, @"[^\u0000-\u007F\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\s.,!?:;~()#+-]", "").Trim();
                 _currentBio = System.Text.RegularExpressions.Regex.Replace(_currentBio, @"[^\u0000-\u007F\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\s.,!?:;~()#+-]", "").Trim();
                 _currentAvatarIdx = PlayerPrefs.GetInt(KEY_AVATAR, 0);
-                _currentCoins = PlayerPrefs.GetInt(KEY_COINS, 1000);
+                _currentCoins = PlayerPrefs.GetInt(KEY_COINS, 0);
                 _isLoggedIn = PlayerPrefs.GetInt(KEY_LOGGED_IN, 1) == 1;
+            }
+
+            // Steam Launch Configuration: 0 Gold & all shop themes unlocked by default
+            if (PlayerPrefs.GetInt("Steam_Init_Unlocked_All_Themes_v1", 0) == 0)
+            {
+                PlayerPrefs.SetInt("Steam_Init_Unlocked_All_Themes_v1", 1);
+                _currentCoins = 0;
+                PlayerPrefs.SetInt(KEY_COINS, 0);
+                for (int i = 0; i < 10; i++)
+                {
+                    PlayerPrefs.SetInt(KEY_THEME_OWNED_PREFIX + i, 1);
+                    PlayerPrefs.SetInt(KEY_LOBBY_THEME_OWNED_PREFIX + i, 1);
+                }
+                PlayerPrefs.Save();
+            }
+            else
+            {
+                PlayerPrefs.Save();
             }
         }
 
@@ -302,6 +406,72 @@ namespace BlockBlast
                 });
             }
 
+            // Language Selection Buttons (Runtime binding)
+            if (languageButtons != null)
+            {
+                for (int i = 0; i < languageButtons.Length; i++)
+                {
+                    int langIdx = i;
+                    if (languageButtons[i] != null)
+                    {
+                        languageButtons[i].onClick.RemoveAllListeners();
+                        languageButtons[i].onClick.AddListener(() =>
+                        {
+                            PlayClickSound();
+                            SelectLanguage((GameLanguage)langIdx);
+                        });
+                    }
+                }
+            }
+
+            // Resolution & Screen Mode Events (Runtime binding)
+            if (aspectButtons != null)
+            {
+                for (int i = 0; i < aspectButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (aspectButtons[i] != null)
+                    {
+                        aspectButtons[i].onClick.RemoveAllListeners();
+                        aspectButtons[i].onClick.AddListener(() => SetAspectRatio(idx));
+                    }
+                }
+            }
+            if (windowModeButtons != null)
+            {
+                for (int j = 0; j < windowModeButtons.Length; j++)
+                {
+                    int idx = j;
+                    if (windowModeButtons[j] != null)
+                    {
+                        windowModeButtons[j].onClick.RemoveAllListeners();
+                        windowModeButtons[j].onClick.AddListener(() => SetWindowMode(idx));
+                    }
+                }
+            }
+
+            // Quit Confirm Modal Events (Runtime binding)
+            if (btnQuitConfirmYes != null)
+            {
+                btnQuitConfirmYes.onClick.RemoveAllListeners();
+                btnQuitConfirmYes.onClick.AddListener(QuitGame);
+            }
+            if (btnQuitConfirmNo != null)
+            {
+                btnQuitConfirmNo.onClick.RemoveAllListeners();
+                btnQuitConfirmNo.onClick.AddListener(CloseQuitModal);
+            }
+            if (btnQuitDarkBg != null)
+            {
+                btnQuitDarkBg.onClick.RemoveAllListeners();
+                btnQuitDarkBg.onClick.AddListener(CloseQuitModal);
+            }
+            if (btnOpenQuitModal != null)
+            {
+                btnOpenQuitModal.onClick.RemoveAllListeners();
+                btnOpenQuitModal.onClick.AddListener(OpenQuitModal);
+            }
+
             // Help Modal
             if (btnCloseHelp != null) btnCloseHelp.onClick.AddListener(() => { PlayClickSound(); CloseHelpModal(); });
             if (btnConfirmHelp != null) btnConfirmHelp.onClick.AddListener(() => { PlayClickSound(); CloseHelpModal(); });
@@ -359,9 +529,21 @@ namespace BlockBlast
         // MENU SELECTION & BOTTOM BUTTON SYNC
         // ==========================================
 
+        public string GetMenuActionText(int index)
+        {
+            switch (index)
+            {
+                case 0: return LocalizationManager.Get("lobby_start") + "!";
+                case 1: return LocalizationManager.Get("lobby_shop") + "!";
+                case 2: return LocalizationManager.Get("lobby_settings") + "!";
+                case 3: return LocalizationManager.Get("lobby_help") + "!";
+                default: return "";
+            }
+        }
+
         public void SelectMenu(int index, bool triggerActionIfAlreadySelected = false)
         {
-            if (index < 0 || index >= MenuActionTexts.Length) return;
+            if (index < 0 || index >= MenuColors.Length) return;
 
             // If already selected and user clicked again, trigger action immediately!
             if (_selectedMenuIdx == index && triggerActionIfAlreadySelected)
@@ -375,7 +557,7 @@ namespace BlockBlast
             // Update Bottom Button Text & Color
             if (btnPlayGameText != null)
             {
-                btnPlayGameText.text = MenuActionTexts[index];
+                btnPlayGameText.text = GetMenuActionText(index);
             }
 
             if (btnPlayGameBg != null)
@@ -550,30 +732,34 @@ namespace BlockBlast
 
             if (profileModalNicknameInput != null)
             {
-                profileModalNicknameInput.text = _isLoggedIn ? _currentNickname : "로그인이 필요합니다";
+                profileModalNicknameInput.text = _isLoggedIn ? _currentNickname : LocalizationManager.Get("profile_login_required");
                 profileModalNicknameInput.interactable = _isLoggedIn;
             }
 
             if (profileModalNickname != null)
             {
-                profileModalNickname.text = _isLoggedIn ? _currentNickname : "로그인이 필요합니다";
+                profileModalNickname.text = _isLoggedIn ? _currentNickname : LocalizationManager.Get("profile_login_required");
             }
 
             if (profileModalBioInput != null)
             {
                 profileModalBioInput.text = _currentBio;
                 profileModalBioInput.interactable = _isLoggedIn;
+                if (profileModalBioInput.placeholder is TMP_Text phText)
+                {
+                    phText.text = LocalizationManager.Get("profile_bio_placeholder");
+                }
             }
 
             if (profileModalBestScore != null)
             {
                 int best = PlayerPrefs.GetInt("BlockBlast_Best", 0);
-                profileModalBestScore.text = $"최고 점수: {best:N0}점";
+                profileModalBestScore.text = $"{LocalizationManager.Get("profile_best_score_prefix")}: {best:N0}{LocalizationManager.Get("profile_best_score_suffix")}";
             }
 
             if (profileModalCoins != null)
             {
-                profileModalCoins.text = $"보유 코인: {_currentCoins:N0} C";
+                profileModalCoins.text = $"{LocalizationManager.Get("profile_coins_label")}: {_currentCoins:N0} C";
             }
 
             if (btnLogout != null)
@@ -581,7 +767,19 @@ namespace BlockBlast
                 TMP_Text btnText = btnLogout.GetComponentInChildren<TMP_Text>();
                 if (btnText != null)
                 {
-                    btnText.text = _isLoggedIn ? "로그아웃" : "게스트로 로그인";
+                    btnText.text = _isLoggedIn ? LocalizationManager.Get("profile_btn_logout") : LocalizationManager.Get("profile_btn_login");
+                }
+            }
+
+            if (profileModal != null)
+            {
+                var card = profileModal.transform.Find("DialogCard");
+                if (card != null)
+                {
+                    var bioLbl = card.Find("BioLbl")?.GetComponent<TMP_Text>();
+                    if (bioLbl != null) bioLbl.text = LocalizationManager.Get("profile_bio_label");
+                    var pickLbl = card.Find("PickLbl")?.GetComponent<TMP_Text>();
+                    if (pickLbl != null) pickLbl.text = LocalizationManager.Get("profile_pick_label");
                 }
             }
         }
@@ -615,7 +813,7 @@ namespace BlockBlast
         {
             if (themeIdx < 0 || themeIdx >= ThemePrices.Length) return;
 
-            bool isOwned = (themeIdx == 0) || (PlayerPrefs.GetInt(KEY_THEME_OWNED_PREFIX + themeIdx, 0) == 1);
+            bool isOwned = (themeIdx == 0) || (PlayerPrefs.GetInt(KEY_THEME_OWNED_PREFIX + themeIdx, 1) == 1);
 
             if (isOwned)
             {
@@ -687,13 +885,18 @@ namespace BlockBlast
                     inGameBackgroundImg.color = Color.white;
                 }
             }
+
+            if (SideWingsDecorator.Instance != null)
+            {
+                SideWingsDecorator.Instance.SyncWithTheme(themeIdx);
+            }
         }
 
         public void RefreshThemeShopUI()
         {
             if (shopCoinsText != null)
             {
-                shopCoinsText.text = $"내 코인: {_currentCoins:N0} C";
+                shopCoinsText.text = $"{LocalizationManager.Get("my_coins")}: {_currentCoins:N0} C";
             }
 
             int equippedTheme = PlayerPrefs.GetInt(KEY_EQUIPPED_THEME, 0);
@@ -705,7 +908,7 @@ namespace BlockBlast
                     if (themeActionButtons[i] == null) continue;
 
                     bool isEquipped = (equippedTheme == i);
-                    bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_THEME_OWNED_PREFIX + i, 0) == 1);
+                    bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_THEME_OWNED_PREFIX + i, 1) == 1);
 
                     Image btnImg = themeActionButtons[i].GetComponent<Image>();
                     TMP_Text txt = (themeActionTexts != null && i < themeActionTexts.Length && themeActionTexts[i] != null)
@@ -716,20 +919,28 @@ namespace BlockBlast
                     {
                         if (txt != null)
                         {
-                            txt.text = "적용 중";
-                            txt.color = Color.white;
+                            txt.text = LocalizationManager.Get("shop_btn_equipped");
+                            txt.color = new Color(0.06f, 0.35f, 0.26f, 1f); // Dark Forest Teal
                         }
-                        if (btnImg != null) btnImg.color = new Color(0.20f, 0.82f, 0.65f, 1f); // Vibrant mint
+                        if (btnImg != null)
+                        {
+                            if (shopEquippedBtnSprite != null) btnImg.sprite = shopEquippedBtnSprite;
+                            btnImg.color = Color.white;
+                        }
                         themeActionButtons[i].interactable = false;
                     }
                     else if (isOwned)
                     {
                         if (txt != null)
                         {
-                            txt.text = "장착하기";
-                            txt.color = Color.white;
+                            txt.text = LocalizationManager.Get("shop_btn_equip");
+                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f); // Dark Berry Magenta
                         }
-                        if (btnImg != null) btnImg.color = new Color(1.0f, 0.40f, 0.62f, 1f); // Vibrant strawberry pink
+                        if (btnImg != null)
+                        {
+                            if (shopEquipBtnSprite != null) btnImg.sprite = shopEquipBtnSprite;
+                            btnImg.color = Color.white;
+                        }
                         themeActionButtons[i].interactable = true;
                     }
                     else
@@ -737,16 +948,30 @@ namespace BlockBlast
                         int price = (i < ThemePrices.Length) ? ThemePrices[i] : 0;
                         if (txt != null)
                         {
-                            txt.text = $"{price:N0} C 구매";
-                            txt.color = Color.white;
+                            txt.text = $"{price:N0} C " + LocalizationManager.Get("shop_btn_buy");
+                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
                         }
                         if (btnImg != null)
                         {
-                            btnImg.color = (_currentCoins >= price)
-                                ? new Color(0.68f, 0.42f, 0.98f, 1f) // Vibrant lilac
-                                : new Color(0.65f, 0.60f, 0.72f, 0.7f); // Muted lavender
+                            if (shopEquipBtnSprite != null) btnImg.sprite = shopEquipBtnSprite;
+                            btnImg.color = Color.white;
                         }
                         themeActionButtons[i].interactable = (_currentCoins >= price);
+                    }
+                }
+            }
+
+            if (shopInGameThemesPanel != null)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    var itemCard = shopInGameThemesPanel.transform.Find($"ThemeItem_{i}");
+                    if (itemCard != null)
+                    {
+                        var nameTxt = itemCard.Find("Name")?.GetComponent<TMP_Text>();
+                        if (nameTxt != null) nameTxt.text = LocalizationManager.Get($"theme_game_{i}_name");
+                        var descTxt = itemCard.Find("Desc")?.GetComponent<TMP_Text>();
+                        if (descTxt != null) descTxt.text = LocalizationManager.Get($"theme_game_{i}_desc");
                     }
                 }
             }
@@ -781,6 +1006,14 @@ namespace BlockBlast
             RefreshThemeShopUI();
         }
 
+        public void SetupShopButtonSprites(Sprite equipSp, Sprite equippedSp)
+        {
+            shopEquipBtnSprite = equipSp;
+            shopEquippedBtnSprite = equippedSp;
+            RefreshThemeShopUI();
+            RefreshLobbyThemeShopUI();
+        }
+
         // ==========================================
         // SHOP TABS & LOBBY THEME STORE
         // ==========================================
@@ -791,23 +1024,59 @@ namespace BlockBlast
             if (shopInGameThemesPanel != null) shopInGameThemesPanel.SetActive(_currentShopTab == 0);
             if (shopLobbyThemesPanel != null) shopLobbyThemesPanel.SetActive(_currentShopTab == 1);
 
-            Color activeTabBg = new Color(1.0f, 0.40f, 0.62f, 1f); // Vibrant Candy Pink
-            Color activeTabText = Color.white;
-            Color inactiveTabBg = new Color(0.92f, 0.90f, 0.97f, 0.85f); // Soft lavender
-            Color inactiveTabText = new Color(0.40f, 0.30f, 0.55f, 0.9f);
-
-            if (btnShopTabInGameBg != null) btnShopTabInGameBg.color = (_currentShopTab == 0) ? activeTabBg : inactiveTabBg;
-            if (btnShopTabInGameText != null)
+            if (useNanoBananaTabButtons && tabGameActiveSprite != null && tabLobbyActiveSprite != null && tabInactiveSprite != null)
             {
-                btnShopTabInGameText.text = "게임 테마";
-                btnShopTabInGameText.color = (_currentShopTab == 0) ? activeTabText : inactiveTabText;
+                Color activeTextColor = Color.white;
+                Color inactiveTextColor = new Color(0.32f, 0.22f, 0.48f, 1f);
+
+                if (btnShopTabInGameBg != null)
+                {
+                    btnShopTabInGameBg.sprite = (_currentShopTab == 0) ? tabGameActiveSprite : tabInactiveSprite;
+                    btnShopTabInGameBg.color = Color.white;
+                }
+                if (btnShopTabInGameText != null)
+                {
+                    btnShopTabInGameText.text = LocalizationManager.Get("shop_tab_game");
+                    btnShopTabInGameText.color = (_currentShopTab == 0) ? activeTextColor : inactiveTextColor;
+                }
+
+                if (btnShopTabLobbyBg != null)
+                {
+                    btnShopTabLobbyBg.sprite = (_currentShopTab == 1) ? tabLobbyActiveSprite : tabInactiveSprite;
+                    btnShopTabLobbyBg.color = Color.white;
+                }
+                if (btnShopTabLobbyText != null)
+                {
+                    btnShopTabLobbyText.text = LocalizationManager.Get("shop_tab_lobby");
+                    btnShopTabLobbyText.color = (_currentShopTab == 1) ? activeTextColor : inactiveTextColor;
+                }
             }
-
-            if (btnShopTabLobbyBg != null) btnShopTabLobbyBg.color = (_currentShopTab == 1) ? new Color(0.55f, 0.38f, 0.95f, 1f) : inactiveTabBg;
-            if (btnShopTabLobbyText != null)
+            else
             {
-                btnShopTabLobbyText.text = "로비 테마";
-                btnShopTabLobbyText.color = (_currentShopTab == 1) ? activeTabText : inactiveTabText;
+                Color activeTabBg = new Color(1.0f, 0.40f, 0.62f, 1f); // Vibrant Candy Pink
+                Color activeTabText = Color.white;
+                Color inactiveTabBg = new Color(0.92f, 0.90f, 0.97f, 0.85f); // Soft lavender
+                Color inactiveTabText = new Color(0.40f, 0.30f, 0.55f, 0.9f);
+
+                if (tabOriginalPillSprite != null)
+                {
+                    if (btnShopTabInGameBg != null) btnShopTabInGameBg.sprite = tabOriginalPillSprite;
+                    if (btnShopTabLobbyBg != null) btnShopTabLobbyBg.sprite = tabOriginalPillSprite;
+                }
+
+                if (btnShopTabInGameBg != null) btnShopTabInGameBg.color = (_currentShopTab == 0) ? activeTabBg : inactiveTabBg;
+                if (btnShopTabInGameText != null)
+                {
+                    btnShopTabInGameText.text = LocalizationManager.Get("shop_tab_game");
+                    btnShopTabInGameText.color = (_currentShopTab == 0) ? activeTabText : inactiveTabText;
+                }
+
+                if (btnShopTabLobbyBg != null) btnShopTabLobbyBg.color = (_currentShopTab == 1) ? new Color(0.55f, 0.38f, 0.95f, 1f) : inactiveTabBg;
+                if (btnShopTabLobbyText != null)
+                {
+                    btnShopTabLobbyText.text = LocalizationManager.Get("shop_tab_lobby");
+                    btnShopTabLobbyText.color = (_currentShopTab == 1) ? activeTabText : inactiveTabText;
+                }
             }
 
             if (_currentShopTab == 0) RefreshThemeShopUI();
@@ -818,7 +1087,7 @@ namespace BlockBlast
         {
             if (lobbyIdx < 0 || lobbyIdx >= LobbyThemePrices.Length) return;
 
-            bool isOwned = (lobbyIdx == 0) || (PlayerPrefs.GetInt(KEY_LOBBY_THEME_OWNED_PREFIX + lobbyIdx, 0) == 1);
+            bool isOwned = (lobbyIdx == 0) || (PlayerPrefs.GetInt(KEY_LOBBY_THEME_OWNED_PREFIX + lobbyIdx, 1) == 1);
 
             if (isOwned)
             {
@@ -865,7 +1134,7 @@ namespace BlockBlast
             }
         }
 
-        public void ApplyLobbyTheme(int lobbyIdx)
+        public void ApplyLobbyTheme(int lobbyIdx, bool playMusic = true)
         {
             if (lobbyBackgroundImg == null)
             {
@@ -883,7 +1152,7 @@ namespace BlockBlast
             }
 
             // Play matching Lobby BGM track (Theme 0 -> robby 1, Theme 1 -> robby 2, Theme 2 -> robby 3)
-            if (BlockAudioManager.Instance != null)
+            if (playMusic && BlockAudioManager.Instance != null)
             {
                 BlockAudioManager.Instance.PlayLobbyBGM(lobbyIdx);
             }
@@ -893,7 +1162,7 @@ namespace BlockBlast
         {
             if (shopCoinsText != null)
             {
-                shopCoinsText.text = $"내 코인: {_currentCoins:N0} C";
+                shopCoinsText.text = $"{LocalizationManager.Get("my_coins")}: {_currentCoins:N0} C";
             }
 
             int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
@@ -905,7 +1174,7 @@ namespace BlockBlast
                     if (lobbyThemeActionButtons[i] == null) continue;
 
                     bool isEquipped = (equippedLobby == i);
-                    bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_LOBBY_THEME_OWNED_PREFIX + i, 0) == 1);
+                    bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_LOBBY_THEME_OWNED_PREFIX + i, 1) == 1);
 
                     Image btnImg = lobbyThemeActionButtons[i].GetComponent<Image>();
                     TMP_Text txt = (lobbyThemeActionTexts != null && i < lobbyThemeActionTexts.Length && lobbyThemeActionTexts[i] != null)
@@ -916,20 +1185,28 @@ namespace BlockBlast
                     {
                         if (txt != null)
                         {
-                            txt.text = "적용 중";
-                            txt.color = Color.white;
+                            txt.text = LocalizationManager.Get("shop_btn_equipped");
+                            txt.color = new Color(0.06f, 0.35f, 0.26f, 1f); // Dark Forest Teal
                         }
-                        if (btnImg != null) btnImg.color = new Color(0.20f, 0.82f, 0.65f, 1f); // Mint
+                        if (btnImg != null)
+                        {
+                            if (shopEquippedBtnSprite != null) btnImg.sprite = shopEquippedBtnSprite;
+                            btnImg.color = Color.white;
+                        }
                         lobbyThemeActionButtons[i].interactable = false;
                     }
                     else if (isOwned)
                     {
                         if (txt != null)
                         {
-                            txt.text = "장착하기";
-                            txt.color = Color.white;
+                            txt.text = LocalizationManager.Get("shop_btn_equip");
+                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f); // Dark Berry Magenta
                         }
-                        if (btnImg != null) btnImg.color = new Color(1.0f, 0.40f, 0.62f, 1f); // Pink
+                        if (btnImg != null)
+                        {
+                            if (shopEquipBtnSprite != null) btnImg.sprite = shopEquipBtnSprite;
+                            btnImg.color = Color.white;
+                        }
                         lobbyThemeActionButtons[i].interactable = true;
                     }
                     else
@@ -937,16 +1214,30 @@ namespace BlockBlast
                         int price = (i < LobbyThemePrices.Length) ? LobbyThemePrices[i] : 0;
                         if (txt != null)
                         {
-                            txt.text = $"{price:N0} C 구매";
-                            txt.color = Color.white;
+                            txt.text = $"{price:N0} C " + LocalizationManager.Get("shop_btn_buy");
+                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
                         }
                         if (btnImg != null)
                         {
-                            btnImg.color = (_currentCoins >= price)
-                                ? new Color(0.55f, 0.38f, 0.95f, 1f) // Purple
-                                : new Color(0.65f, 0.60f, 0.72f, 0.7f); // Muted
+                            if (shopEquipBtnSprite != null) btnImg.sprite = shopEquipBtnSprite;
+                            btnImg.color = Color.white;
                         }
                         lobbyThemeActionButtons[i].interactable = (_currentCoins >= price);
+                    }
+                }
+            }
+
+            if (shopLobbyThemesPanel != null)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    var itemCard = shopLobbyThemesPanel.transform.Find($"LobbyThemeItem_{i}");
+                    if (itemCard != null)
+                    {
+                        var nameTxt = itemCard.Find("Name")?.GetComponent<TMP_Text>();
+                        if (nameTxt != null) nameTxt.text = LocalizationManager.Get($"theme_lobby_{i}_name");
+                        var descTxt = itemCard.Find("Desc")?.GetComponent<TMP_Text>();
+                        if (descTxt != null) descTxt.text = LocalizationManager.Get($"theme_lobby_{i}_desc");
                     }
                 }
             }
@@ -979,6 +1270,14 @@ namespace BlockBlast
             }
 
             SelectShopTab(0);
+        }
+
+        public void SetupShopTabSprites(Sprite gameActive, Sprite lobbyActive, Sprite inactive, Sprite originalPill)
+        {
+            tabGameActiveSprite = gameActive;
+            tabLobbyActiveSprite = lobbyActive;
+            tabInactiveSprite = inactive;
+            tabOriginalPillSprite = originalPill;
         }
 
         public void SetupLobbyThemes(
@@ -1032,6 +1331,234 @@ namespace BlockBlast
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (settingsModal != null) settingsModal.SetActive(false);
             if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
+        }
+
+        private void Update()
+        {
+            bool isEsc = false;
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+                isEsc = UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame;
+#else
+            isEsc = Input.GetKeyDown(KeyCode.Escape);
+#endif
+            if (isEsc)
+            {
+                HandleEscapeKey();
+            }
+        }
+
+        private void HandleEscapeKey()
+        {
+            if (quitModal != null && quitModal.activeSelf)
+            {
+                CloseQuitModal();
+                return;
+            }
+            if (settingsModal != null && settingsModal.activeSelf)
+            {
+                CloseSettingsModal();
+                return;
+            }
+            if (shopModal != null && shopModal.activeSelf)
+            {
+                CloseShopModal();
+                return;
+            }
+            if (helpModal != null && helpModal.activeSelf)
+            {
+                CloseHelpModal();
+                return;
+            }
+            if (profileModal != null && profileModal.activeSelf)
+            {
+                CloseProfileModal();
+                return;
+            }
+
+            // If no modal is open in Lobby, prompt quit confirmation
+            OpenQuitModal();
+        }
+
+        // ==========================================
+        // QUIT MODAL & MULTI-RESOLUTION SETTINGS
+        // ==========================================
+
+        public void OpenQuitModal()
+        {
+            if (quitModal != null)
+            {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                quitModal.transform.SetAsLastSibling();
+                quitModal.SetActive(true);
+            }
+        }
+
+        public void CloseQuitModal()
+        {
+            if (quitModal != null)
+            {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                quitModal.SetActive(false);
+            }
+        }
+
+        public void QuitGame()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+            Debug.Log("<color=red>[LobbyManager] Quitting application...</color>");
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
+        public void SetAspectRatio(int aspectIdx)
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+            _currentAspectIdx = Mathf.Clamp(aspectIdx, 0, 3);
+            PlayerPrefs.SetInt(KEY_ASPECT_RATIO_INDEX, _currentAspectIdx);
+            PlayerPrefs.Save();
+            ApplyScreenSettings();
+            UpdateScreenSettingsUI();
+        }
+
+        public void SetWindowMode(int modeIdx)
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+            _currentWindowModeIdx = Mathf.Clamp(modeIdx, 0, 2);
+            PlayerPrefs.SetInt(KEY_WINDOW_MODE_INDEX, _currentWindowModeIdx);
+            PlayerPrefs.Save();
+            ApplyScreenSettings();
+            UpdateScreenSettingsUI();
+        }
+
+        public void ApplyScreenSettings()
+        {
+            FullScreenMode mode = FullScreenMode.FullScreenWindow;
+            if (_currentWindowModeIdx == 0) mode = FullScreenMode.Windowed;
+            else if (_currentWindowModeIdx == 1) mode = FullScreenMode.FullScreenWindow;
+            else if (_currentWindowModeIdx == 2) mode = FullScreenMode.ExclusiveFullScreen;
+
+            int screenW = Display.main.systemWidth > 0 ? Display.main.systemWidth : Screen.currentResolution.width;
+            int screenH = Display.main.systemHeight > 0 ? Display.main.systemHeight : Screen.currentResolution.height;
+            if (screenW <= 0) screenW = 1920;
+            if (screenH <= 0) screenH = 1080;
+
+            int targetW = screenW;
+            int targetH = screenH;
+
+            if (mode == FullScreenMode.Windowed)
+            {
+                switch (_currentAspectIdx)
+                {
+                    case 0: targetW = 1600; targetH = 900; break;  // 16:9
+                    case 1: targetW = 1440; targetH = 900; break;  // 16:10
+                    case 2: targetW = 1200; targetH = 900; break;  // 4:3
+                    case 3: targetW = 720; targetH = 1280; break;  // 9:16
+                    default: targetW = 1600; targetH = 900; break;
+                }
+            }
+            else if (mode == FullScreenMode.ExclusiveFullScreen)
+            {
+                switch (_currentAspectIdx)
+                {
+                    case 0: targetW = 1920; targetH = 1080; break; // 16:9
+                    case 1: targetW = 1920; targetH = 1200; break; // 16:10
+                    case 2: targetW = 1440; targetH = 1080; break; // 4:3
+                    case 3: targetW = 1080; targetH = 1920; break; // 9:16
+                    default: targetW = 1920; targetH = 1080; break;
+                }
+            }
+            else // FullScreenWindow (Borderless)
+            {
+                targetW = screenW;
+                targetH = screenH;
+            }
+
+            Screen.SetResolution(targetW, targetH, mode);
+            Debug.Log($"<color=green>[LobbyManager] Applied Screen Settings: Aspect={_currentAspectIdx}, Mode={mode} -> {targetW}x{targetH}</color>");
+
+            if (AspectRatioAdapter.Instance != null)
+            {
+                AspectRatioAdapter.Instance.UpdateScaler();
+            }
+            if (SideWingsDecorator.Instance != null)
+            {
+                SideWingsDecorator.Instance.UpdateVisibility();
+            }
+        }
+
+        public void UpdateScreenSettingsUI()
+        {
+            if (settingsAspectTitleText != null)
+            {
+                settingsAspectTitleText.text = LocalizationManager.Get("settings_aspect_ratio_title");
+            }
+            if (settingsWindowModeTitleText != null)
+            {
+                settingsWindowModeTitleText.text = LocalizationManager.Get("settings_window_mode_title");
+            }
+
+            string[] aspectKeys = new string[] { "aspect_16_9", "aspect_16_10", "aspect_4_3", "aspect_9_16" };
+            if (aspectButtons != null && aspectBgs != null && aspectTexts != null)
+            {
+                for (int i = 0; i < aspectButtons.Length && i < aspectKeys.Length; i++)
+                {
+                    bool isActive = (_currentAspectIdx == i);
+                    if (aspectBgs[i] != null)
+                    {
+                        if (screenActiveSprite != null && screenInactiveSprite != null)
+                        {
+                            aspectBgs[i].sprite = isActive ? screenActiveSprite : screenInactiveSprite;
+                            aspectBgs[i].color = Color.white;
+                        }
+                        else
+                        {
+                            aspectBgs[i].color = isActive ? ColorPink : new Color(0.92f, 0.90f, 0.98f, 1f);
+                        }
+                    }
+                    if (aspectTexts[i] != null)
+                    {
+                        aspectTexts[i].text = LocalizationManager.Get(aspectKeys[i]);
+                        aspectTexts[i].color = isActive ? Color.white : new Color(0.35f, 0.22f, 0.55f);
+                        aspectTexts[i].fontStyle = isActive ? FontStyles.Bold : FontStyles.Normal;
+                    }
+                }
+            }
+
+            string[] winModeKeys = new string[] { "window_mode_windowed", "window_mode_borderless", "window_mode_fullscreen" };
+            if (windowModeButtons != null && windowModeBgs != null && windowModeTexts != null)
+            {
+                for (int j = 0; j < windowModeButtons.Length && j < winModeKeys.Length; j++)
+                {
+                    bool isActive = (_currentWindowModeIdx == j);
+                    if (windowModeBgs[j] != null)
+                    {
+                        if (screenActiveSprite != null && screenInactiveSprite != null)
+                        {
+                            windowModeBgs[j].sprite = isActive ? screenActiveSprite : screenInactiveSprite;
+                            windowModeBgs[j].color = Color.white;
+                        }
+                        else
+                        {
+                            windowModeBgs[j].color = isActive ? ColorPink : new Color(0.92f, 0.90f, 0.98f, 1f);
+                        }
+                    }
+                    if (windowModeTexts[j] != null)
+                    {
+                        windowModeTexts[j].text = LocalizationManager.Get(winModeKeys[j]);
+                        windowModeTexts[j].color = isActive ? Color.white : new Color(0.35f, 0.22f, 0.55f);
+                        windowModeTexts[j].fontStyle = isActive ? FontStyles.Bold : FontStyles.Normal;
+                    }
+                }
+            }
+        }
+
+        public void UpdateScreenModeUI(bool isFullscreen)
+        {
+            UpdateScreenSettingsUI();
         }
 
         // ==========================================
@@ -1223,7 +1750,8 @@ namespace BlockBlast
             GameObject[] glowAuras = null,
             TMP_InputField pNickInput = null,
             Button cfmHBtn = null,
-            Image playBtnGlow = null)
+            Image playBtnGlow = null,
+            TMP_Text partyTip = null)
         {
             lobbyRoot = root;
             lobbyCanvasGroup = cg;
@@ -1237,6 +1765,7 @@ namespace BlockBlast
             partyLabelBgs = labelBgs;
             partyLabelTexts = labelTexts;
             partyGlowAuras = glowAuras;
+            partyTipText = partyTip;
 
             btnPlayGame = playBtn;
             btnPlayGameBg = playBtnBg;
@@ -1268,6 +1797,253 @@ namespace BlockBlast
             btnConfirmHelp = cfmHBtn;
 
             mascotAvatars = avatars;
+
+            if (partyTipText != null)
+            {
+                partyTipText.text = LocalizationManager.Get("lobby_party_tip");
+            }
+        }
+
+        public void SetupScreenSettingsAndQuitReferences(
+            GameObject qModal, Button qYes, Button qNo, Button qDarkBg,
+            TMP_Text qTitle, TMP_Text qDesc, TMP_Text qYesTxt, TMP_Text qNoTxt,
+            TMP_Text aspectTitle, Button[] aBtns, Image[] aBgs, TMP_Text[] aTexts,
+            TMP_Text winModeTitle, Button[] wBtns, Image[] wBgs, TMP_Text[] wTexts,
+            Sprite activeSprite, Sprite inactiveSprite)
+        {
+            quitModal = qModal;
+            btnQuitConfirmYes = qYes;
+            btnQuitConfirmNo = qNo;
+            btnQuitDarkBg = qDarkBg;
+            quitModalTitleText = qTitle;
+            quitModalDescText = qDesc;
+            quitModalYesText = qYesTxt;
+            quitModalNoText = qNoTxt;
+
+            settingsAspectTitleText = aspectTitle;
+            aspectButtons = aBtns;
+            aspectBgs = aBgs;
+            aspectTexts = aTexts;
+
+            settingsWindowModeTitleText = winModeTitle;
+            windowModeButtons = wBtns;
+            windowModeBgs = wBgs;
+            windowModeTexts = wTexts;
+
+            screenActiveSprite = activeSprite;
+            screenInactiveSprite = inactiveSprite;
+
+            if (quitModal != null) quitModal.SetActive(false);
+
+            if (btnQuitConfirmYes != null)
+            {
+                btnQuitConfirmYes.onClick.RemoveAllListeners();
+                btnQuitConfirmYes.onClick.AddListener(QuitGame);
+            }
+            if (btnQuitConfirmNo != null)
+            {
+                btnQuitConfirmNo.onClick.RemoveAllListeners();
+                btnQuitConfirmNo.onClick.AddListener(CloseQuitModal);
+            }
+            if (btnQuitDarkBg != null)
+            {
+                btnQuitDarkBg.onClick.RemoveAllListeners();
+                btnQuitDarkBg.onClick.AddListener(CloseQuitModal);
+            }
+
+            if (aspectButtons != null)
+            {
+                for (int i = 0; i < aspectButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (aspectButtons[i] != null)
+                    {
+                        aspectButtons[i].onClick.RemoveAllListeners();
+                        aspectButtons[i].onClick.AddListener(() => SetAspectRatio(idx));
+                    }
+                }
+            }
+
+            if (windowModeButtons != null)
+            {
+                for (int j = 0; j < windowModeButtons.Length; j++)
+                {
+                    int idx = j;
+                    if (windowModeButtons[j] != null)
+                    {
+                        windowModeButtons[j].onClick.RemoveAllListeners();
+                        windowModeButtons[j].onClick.AddListener(() => SetWindowMode(idx));
+                    }
+                }
+            }
+
+            UpdateScreenSettingsUI();
+        }
+
+        public void SetupLanguageButtons(
+            Button[] langBtns, Image[] langBgs, TMP_Text[] langTexts,
+            TMP_Text setT, TMP_Text setB, TMP_Text setS, TMP_Text setL,
+            TMP_Text shpT = null, TMP_Text hlT = null, TMP_Text hlC = null, TMP_Text prT = null,
+            TMP_Text verT = null)
+        {
+            languageButtons = langBtns;
+            languageButtonBgs = langBgs;
+            languageButtonTexts = langTexts;
+            settingsTitleText = setT;
+            settingsBgmText = setB;
+            settingsSfxText = setS;
+            settingsLangText = setL;
+            shopTitleText = shpT;
+            helpTitleText = hlT;
+            helpConfirmText = hlC;
+            profileTitleText = prT;
+            settingsVersionText = verT;
+
+            if (languageButtons != null)
+            {
+                for (int i = 0; i < languageButtons.Length; i++)
+                {
+                    int langIdx = i;
+                    if (languageButtons[i] != null)
+                    {
+                        languageButtons[i].onClick.RemoveAllListeners();
+                        languageButtons[i].onClick.AddListener(() =>
+                        {
+                            PlayClickSound();
+                            SelectLanguage((GameLanguage)langIdx);
+                        });
+                    }
+                }
+            }
+
+            UpdateLanguageUI(LocalizationManager.CurrentLanguage);
+        }
+
+        public void SelectLanguage(GameLanguage lang)
+        {
+            LocalizationManager.CurrentLanguage = lang;
+            UpdateLanguageUI(lang);
+        }
+
+        public void UpdateLanguageUI(GameLanguage lang)
+        {
+            // Update 4 Language Button visual states
+            if (languageButtons != null)
+            {
+                for (int i = 0; i < languageButtons.Length; i++)
+                {
+                    bool isSelected = ((int)lang == i);
+                    if (languageButtonBgs != null && i < languageButtonBgs.Length && languageButtonBgs[i] != null)
+                    {
+                        // Active: Vibrant Candy Pink / Inactive: Soft Lavender Cream
+                        languageButtonBgs[i].color = isSelected ? new Color(1f, 0.35f, 0.55f, 1f) : new Color(0.92f, 0.90f, 0.96f, 1f);
+                    }
+                    if (languageButtonTexts != null && i < languageButtonTexts.Length && languageButtonTexts[i] != null)
+                    {
+                        languageButtonTexts[i].color = isSelected ? Color.white : new Color(0.40f, 0.30f, 0.55f, 1f);
+                        languageButtonTexts[i].fontStyle = isSelected ? FontStyles.Bold : FontStyles.Normal;
+                    }
+                }
+            }
+
+            // Update Party Stage Tip
+            EnsurePartyTipReference();
+            if (partyTipText != null) partyTipText.text = LocalizationManager.Get("lobby_party_tip");
+
+            // Update Settings Modal Texts
+            if (settingsTitleText != null) settingsTitleText.text = LocalizationManager.Get("settings_title");
+            if (settingsBgmText != null) settingsBgmText.text = LocalizationManager.Get("settings_bgm");
+            if (settingsSfxText != null) settingsSfxText.text = LocalizationManager.Get("settings_sfx");
+            if (settingsLangText != null) settingsLangText.text = LocalizationManager.Get("settings_language");
+            if (settingsVersionText != null) settingsVersionText.text = LocalizationManager.Get("settings_version");
+            if (settingsQuitButtonText != null) settingsQuitButtonText.text = LocalizationManager.Get("settings_btn_quit");
+            UpdateScreenSettingsUI();
+
+            // Update Quit Modal Texts
+            if (quitModalTitleText != null) quitModalTitleText.text = LocalizationManager.Get("quit_modal_title");
+            if (quitModalDescText != null) quitModalDescText.text = LocalizationManager.Get("quit_modal_desc");
+            if (quitModalYesText != null) quitModalYesText.text = LocalizationManager.Get("quit_modal_yes");
+            if (quitModalNoText != null) quitModalNoText.text = LocalizationManager.Get("quit_modal_no");
+
+            // Update Shop Texts
+            if (shopTitleText != null) shopTitleText.text = LocalizationManager.Get("shop_title");
+            if (btnShopTabInGameText != null) btnShopTabInGameText.text = LocalizationManager.Get("shop_tab_game");
+            if (btnShopTabLobbyText != null) btnShopTabLobbyText.text = LocalizationManager.Get("shop_tab_lobby");
+
+            // Update Help Modal Texts
+            if (helpTitleText != null) helpTitleText.text = LocalizationManager.Get("help_title");
+            if (helpConfirmText != null) helpConfirmText.text = LocalizationManager.Get("help_confirm");
+            if (btnConfirmHelp != null)
+            {
+                var txt = btnConfirmHelp.GetComponentInChildren<TMP_Text>();
+                if (txt != null) txt.text = LocalizationManager.Get("help_confirm");
+            }
+            if (helpModal != null)
+            {
+                var card = helpModal.transform.Find("DialogCard");
+                if (card != null)
+                {
+                    var sub = card.Find("Subtitle")?.GetComponent<TMP_Text>();
+                    if (sub != null) sub.text = LocalizationManager.Get("help_subtitle");
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var row = card.Find($"HelpRow_{i}");
+                        if (row != null)
+                        {
+                            var stepT = row.Find("StepTitle")?.GetComponent<TMP_Text>();
+                            if (stepT != null) stepT.text = LocalizationManager.Get($"help_step_{i + 1}_title");
+                            var stepD = row.Find("StepDesc")?.GetComponent<TMP_Text>();
+                            if (stepD != null) stepD.text = LocalizationManager.Get($"help_step_{i + 1}_desc");
+                        }
+                    }
+                }
+            }
+
+            // Update Profile Modal Texts
+            if (profileTitleText != null) profileTitleText.text = LocalizationManager.Get("profile_title");
+            RefreshProfileUI();
+
+            // Update Floating Mascot Labels
+            if (partyLabelTexts != null && partyLabelTexts.Length >= 4)
+            {
+                if (partyLabelTexts[0] != null) partyLabelTexts[0].text = LocalizationManager.Get("lobby_start");
+                if (partyLabelTexts[1] != null) partyLabelTexts[1].text = LocalizationManager.Get("lobby_shop");
+                if (partyLabelTexts[2] != null) partyLabelTexts[2].text = LocalizationManager.Get("lobby_settings");
+                if (partyLabelTexts[3] != null) partyLabelTexts[3].text = LocalizationManager.Get("lobby_help");
+            }
+
+            // Refresh Bottom Action Button Text
+            if (btnPlayGameText != null)
+            {
+                btnPlayGameText.text = GetMenuActionText(_selectedMenuIdx);
+            }
+
+            // Refresh Shop Buttons ("적용 중", "장착하기", "내 코인")
+            RefreshThemeShopUI();
+            RefreshLobbyThemeShopUI();
+
+            // Update Lobby Logo based on language
+            if (lobbyLogoImage != null && languageLogos != null && (int)lang >= 0 && (int)lang < languageLogos.Length)
+            {
+                if (languageLogos[(int)lang] != null)
+                {
+                    lobbyLogoImage.sprite = languageLogos[(int)lang];
+                }
+            }
+        }
+
+        public void SetupLanguageLogos(Image img, Sprite[] logos)
+        {
+            lobbyLogoImage = img;
+            languageLogos = logos;
+            if (lobbyLogoImage != null && languageLogos != null && (int)LocalizationManager.CurrentLanguage >= 0 && (int)LocalizationManager.CurrentLanguage < languageLogos.Length)
+            {
+                if (languageLogos[(int)LocalizationManager.CurrentLanguage] != null)
+                {
+                    lobbyLogoImage.sprite = languageLogos[(int)LocalizationManager.CurrentLanguage];
+                }
+            }
         }
     }
 }

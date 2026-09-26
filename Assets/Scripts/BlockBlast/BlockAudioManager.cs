@@ -10,7 +10,7 @@ namespace BlockBlast
         public static BlockAudioManager Instance { get; private set; }
 
         public const float DEFAULT_SFX_VOLUME = 0.42f; // 50% reduced comfortable default
-        public const float DEFAULT_BGM_VOLUME = 0.32f; // 50% reduced comfortable default
+        public const float DEFAULT_BGM_VOLUME = 0.22f; // further reduced for comfortable listening
 
         public enum BGMState
         {
@@ -84,14 +84,14 @@ namespace BlockBlast
             _bgmSource = gameObject.AddComponent<AudioSource>();
             _bgmSource.playOnAwake = false;
 
-            // Enforce 50% reduced volume default on existing and future sessions
-            if (!PlayerPrefs.HasKey("Sound_Volume_Halved_V4"))
+            // Enforce reduced volume default on existing and future sessions
+            if (!PlayerPrefs.HasKey("Sound_Volume_Halved_V5"))
             {
                 sfxVolume = DEFAULT_SFX_VOLUME;
                 bgmVolume = DEFAULT_BGM_VOLUME;
                 PlayerPrefs.SetFloat("SFX_Volume", sfxVolume);
                 PlayerPrefs.SetFloat("BGM_Volume", bgmVolume);
-                PlayerPrefs.SetInt("Sound_Volume_Halved_V4", 1);
+                PlayerPrefs.SetInt("Sound_Volume_Halved_V5", 1);
                 PlayerPrefs.Save();
             }
             else

@@ -21,6 +21,10 @@ namespace BlockBlast
         [SerializeField] private TMP_Text bestScoreText;
         [SerializeField] private CanvasGroup menuCanvasGroup;
 
+        [Header("Language Logos")]
+        [SerializeField] private Image logoImage;
+        [SerializeField] private Sprite[] languageLogos;
+
         [Header("Effects & Managers")]
         [SerializeField] private JellyFireworksEffect fireworksEffect;
         [SerializeField] private BlockBlastUIManager uiManager;
@@ -41,10 +45,68 @@ namespace BlockBlast
                 menuCanvasGroup = GetComponent<CanvasGroup>();
                 if (menuCanvasGroup == null) menuCanvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
+            LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
+            UpdateLocalizedPrompt();
+            UpdateLogo(LocalizationManager.CurrentLanguage);
+        }
+
+        private void OnDestroy()
+        {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
+        }
+
+        private void OnEnable()
+        {
+            UpdateLocalizedPrompt();
+            UpdateLogo(LocalizationManager.CurrentLanguage);
+        }
+
+        private void HandleLanguageChanged(GameLanguage lang)
+        {
+            UpdateLocalizedPrompt();
+            UpdateLogo(lang);
+        }
+
+        private void UpdateLocalizedPrompt()
+        {
+            if (touchPromptText == null)
+            {
+                var promptObj = transform.Find("TouchPromptGroup/TouchText");
+                if (promptObj != null) touchPromptText = promptObj.GetComponent<TMP_Text>();
+                if (touchPromptText == null)
+                {
+                    var found = GameObject.Find("TouchText");
+                    if (found != null) touchPromptText = found.GetComponent<TMP_Text>();
+                }
+            }
+            if (touchPromptText != null)
+            {
+                touchPromptText.text = LocalizationManager.Get("intro_touch");
+            }
+        }
+
+        public void SetupLanguageLogos(Image img, Sprite[] logos)
+        {
+            logoImage = img;
+            languageLogos = logos;
+            UpdateLogo(LocalizationManager.CurrentLanguage);
+        }
+
+        private void UpdateLogo(GameLanguage lang)
+        {
+            if (logoImage != null && languageLogos != null && (int)lang >= 0 && (int)lang < languageLogos.Length)
+            {
+                if (languageLogos[(int)lang] != null)
+                {
+                    logoImage.sprite = languageLogos[(int)lang];
+                }
+            }
         }
 
         private void Start()
         {
+            UpdateLocalizedPrompt();
+            UpdateLogo(LocalizationManager.CurrentLanguage);
             int best = PlayerPrefs.GetInt("BlockBlast_Best", 0);
             if (bestScoreText != null)
             {
@@ -61,8 +123,22 @@ namespace BlockBlast
 
         private void Update()
         {
-            // Allow instant tap/click anywhere at any time (including during intro) to start the game immediately
+            // Allow instant tap/click or ESC key anywhere at any time to start game immediately
             if (_hasStarted) return;
+
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                TriggerStartGame(Vector2.zero);
+                return;
+            }
+#else
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                TriggerStartGame(Vector2.zero);
+                return;
+            }
+#endif
 
 #if ENABLE_INPUT_SYSTEM
             bool clicked = false;
@@ -410,6 +486,8 @@ namespace BlockBlast
             fireworksEffect = fx;
             menuCanvasGroup = canvasGroup;
             uiManager = ui;
+            UpdateLocalizedPrompt();
+            UpdateLogo(LocalizationManager.CurrentLanguage);
         }
     }
 }

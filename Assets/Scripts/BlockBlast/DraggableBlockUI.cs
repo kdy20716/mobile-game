@@ -74,14 +74,28 @@ namespace BlockBlast
             rootHitbox.color = Color.clear;
             rootHitbox.raycastTarget = true;
 
+            // Maximum allowable visual bounding box inside the slot card to prevent ANY protrusion on rotation
+            float maxFitWidth = 220f;
+            float maxFitHeight = 175f;
+
             float cellSize = 50f;
             float spacing = 4f;
 
             float totalWidth = Shape.Cols * cellSize + (Shape.Cols - 1) * spacing;
             float totalHeight = Shape.Rows * cellSize + (Shape.Rows - 1) * spacing;
+
+            float fitScale = Mathf.Min(1f, Mathf.Min(maxFitWidth / totalWidth, maxFitHeight / totalHeight));
+
             if (_rectTransform != null)
             {
+                _rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                _rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                _rectTransform.pivot = new Vector2(0.5f, 0.5f);
                 _rectTransform.sizeDelta = new Vector2(totalWidth, totalHeight);
+                _rectTransform.anchoredPosition = Vector2.zero;
+                _rectTransform.localScale = Vector3.one * fitScale;
+                _originalScale = _rectTransform.localScale;
+                _originalAnchoredPosition = Vector2.zero;
             }
 
             float startX = -totalWidth * 0.5f + cellSize * 0.5f;
@@ -104,6 +118,9 @@ namespace BlockBlast
                         cellObj.transform.SetParent(transform, false);
 
                         RectTransform rt = cellObj.GetComponent<RectTransform>();
+                        rt.anchorMin = new Vector2(0.5f, 0.5f);
+                        rt.anchorMax = new Vector2(0.5f, 0.5f);
+                        rt.pivot = new Vector2(0.5f, 0.5f);
                         rt.sizeDelta = new Vector2(cellSize, cellSize);
                         rt.anchoredPosition = new Vector2(startX + c * (cellSize + spacing), startY - r * (cellSize + spacing));
 
@@ -116,7 +133,18 @@ namespace BlockBlast
             }
         }
 
-        private float ActiveOffsetY => (Application.isMobilePlatform || Input.touchCount > 0) ? fingerOffsetY : 20f;
+        private float ActiveOffsetY
+        {
+            get
+            {
+#if ENABLE_INPUT_SYSTEM
+                bool hasTouch = UnityEngine.InputSystem.Touchscreen.current != null && UnityEngine.InputSystem.Touchscreen.current.touches.Count > 0;
+                return (Application.isMobilePlatform || hasTouch) ? fingerOffsetY : 20f;
+#else
+                return (Application.isMobilePlatform || Input.touchCount > 0) ? fingerOffsetY : 20f;
+#endif
+            }
+        }
 
         public void OnPointerDown(PointerEventData eventData)
         {
@@ -147,7 +175,7 @@ namespace BlockBlast
         {
             float elapsed = 0f;
             float dur = 0.18f;
-            Vector3 targetScale = _originalScale * dragScale;
+            Vector3 targetScale = Vector3.one * dragScale;
 
             while (elapsed < dur)
             {
