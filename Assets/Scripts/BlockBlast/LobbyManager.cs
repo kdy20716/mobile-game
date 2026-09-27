@@ -160,7 +160,7 @@ namespace BlockBlast
         private const string KEY_ASPECT_RATIO_INDEX = "Mallang_AspectRatio_Idx";
         private const string KEY_WINDOW_MODE_INDEX = "Mallang_WindowMode_Idx";
         private int _currentAspectIdx = 3; // 0: 16:9, 1: 16:10, 2: 4:3, 3: 9:16 (Default: 9:16)
-        private int _currentWindowModeIdx = 0; // 0: 창모드, 1: 테두리없는 창모드, 2: 전체화면 (Default: 창모드)
+        private int _currentWindowModeIdx = 1; // 0: 창모드, 1: 테두리없는 창모드, 2: 전체화면 (Default: 테두리없는 창모드)
 
         [Header("Mascot Avatars (0:Pink, 1:Mint, 2:Gold, 3:Purple)")]
         [SerializeField] private Sprite[] mascotAvatars;
@@ -177,12 +177,13 @@ namespace BlockBlast
 
         private int _selectedMenuIdx = 0;
         private Coroutine _mascotBounceCoroutine;
+        private float _ignoreEscUntil = 0f;
 
-        // Button Colors & Texts matching mascots
-        private static readonly Color ColorPink = new Color(1f, 0.33f, 0.53f, 1f);     // #FF5588
-        private static readonly Color ColorMint = new Color(0.17f, 0.83f, 0.64f, 1f);   // #2CD4A4
-        private static readonly Color ColorGold = new Color(1f, 0.70f, 0.0f, 1f);       // #FFB300
-        private static readonly Color ColorPurple = new Color(0.66f, 0.33f, 0.97f, 1f);  // #A855F7
+        // Button Colors & Texts matching mascots (Adorable Pastel Palette)
+        private static readonly Color ColorPink = new Color(1f, 0.52f, 0.68f, 1f);     // Soft Strawberry Milk (#FFA6C4)
+        private static readonly Color ColorMint = new Color(0.42f, 0.88f, 0.78f, 1f);   // Soft Pastel Mint (#85E8D1)
+        private static readonly Color ColorGold = new Color(1f, 0.82f, 0.42f, 1f);       // Soft Honey Butter (#FFDC85)
+        private static readonly Color ColorPurple = new Color(0.78f, 0.60f, 0.98f, 1f);  // Soft Sweet Lavender (#C9ADFA)
 
         private static readonly Color[] MenuColors = new Color[]
         {
@@ -241,8 +242,8 @@ namespace BlockBlast
 
             _currentAspectIdx = PlayerPrefs.GetInt(KEY_ASPECT_RATIO_INDEX, 3);
             if (_currentAspectIdx < 0 || _currentAspectIdx > 3) _currentAspectIdx = 3;
-            _currentWindowModeIdx = PlayerPrefs.GetInt(KEY_WINDOW_MODE_INDEX, 0);
-            if (_currentWindowModeIdx < 0 || _currentWindowModeIdx > 2) _currentWindowModeIdx = 0;
+            _currentWindowModeIdx = PlayerPrefs.GetInt(KEY_WINDOW_MODE_INDEX, 1);
+            if (_currentWindowModeIdx < 0 || _currentWindowModeIdx > 2) _currentWindowModeIdx = 1;
             ApplyScreenSettings();
             UpdateScreenSettingsUI();
 
@@ -391,7 +392,9 @@ namespace BlockBlast
             if (btnCloseSettings != null) btnCloseSettings.onClick.AddListener(() => { PlayClickSound(); CloseSettingsModal(); });
             if (bgmSlider != null)
             {
-                bgmSlider.value = PlayerPrefs.GetFloat("BGM_Volume", BlockAudioManager.DEFAULT_BGM_VOLUME);
+                float defBgm = BlockAudioManager.Instance != null ? BlockAudioManager.Instance.bgmSliderLevel : BlockAudioManager.DEFAULT_SLIDER_PERCENT;
+                bgmSlider.value = PlayerPrefs.GetFloat("BGM_Slider_Level", defBgm);
+                bgmSlider.onValueChanged.RemoveAllListeners();
                 bgmSlider.onValueChanged.AddListener((v) =>
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.SetBGMVolume(v);
@@ -399,7 +402,9 @@ namespace BlockBlast
             }
             if (sfxSlider != null)
             {
-                sfxSlider.value = PlayerPrefs.GetFloat("SFX_Volume", BlockAudioManager.DEFAULT_SFX_VOLUME);
+                float defSfx = BlockAudioManager.Instance != null ? BlockAudioManager.Instance.sfxSliderLevel : BlockAudioManager.DEFAULT_SLIDER_PERCENT;
+                sfxSlider.value = PlayerPrefs.GetFloat("SFX_Slider_Level", defSfx);
+                sfxSlider.onValueChanged.RemoveAllListeners();
                 sfxSlider.onValueChanged.AddListener((v) =>
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.SetSFXVolume(v);
@@ -1335,6 +1340,8 @@ namespace BlockBlast
 
         private void Update()
         {
+            if (lobbyRoot == null || !lobbyRoot.activeInHierarchy || Time.unscaledTime < _ignoreEscUntil) return;
+
             bool isEsc = false;
 #if ENABLE_INPUT_SYSTEM
             if (UnityEngine.InputSystem.Keyboard.current != null)
@@ -1589,6 +1596,13 @@ namespace BlockBlast
 
         public void ShowLobby()
         {
+            _ignoreEscUntil = Time.unscaledTime + 0.35f;
+            if (quitModal != null) quitModal.SetActive(false);
+            if (settingsModal != null) settingsModal.SetActive(false);
+            if (shopModal != null) shopModal.SetActive(false);
+            if (helpModal != null) helpModal.SetActive(false);
+            if (profileModal != null) profileModal.SetActive(false);
+
             if (lobbyRoot != null) lobbyRoot.SetActive(true);
             if (lobbyCanvasGroup != null) lobbyCanvasGroup.alpha = 1f;
             SelectMenu(0, false);
@@ -1603,6 +1617,8 @@ namespace BlockBlast
 
         public void StartGameFromLobby()
         {
+            if (quitModal != null) quitModal.SetActive(false);
+
             if (BlockAudioManager.Instance != null)
             {
                 BlockAudioManager.Instance.PlayInGameBGM();

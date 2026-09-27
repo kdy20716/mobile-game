@@ -6,8 +6,10 @@ using UnityEngine.UI;
 
 namespace BlockBlast
 {
-    public class DraggableBlockUI : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class DraggableBlockUI : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerUpHandler
     {
+        public static DraggableBlockUI CurrentlyDraggedBlock { get; private set; }
+
         public BlockShape Shape { get; private set; }
         public int SlotIndex { get; private set; }
 
@@ -22,12 +24,42 @@ namespace BlockBlast
         private Vector2 _originalAnchoredPosition;
         private Vector3 _originalScale;
         private bool _isPlaced = false;
+        private bool _isDragging = false;
+        private bool _isDragCanceled = false;
 
         public event Action<int> OnBlockPlaced; // slotIndex
 
         private void Awake()
         {
             EnsureRectTransform();
+        }
+
+        private void OnDisable()
+        {
+            if (CurrentlyDraggedBlock == this)
+            {
+                CurrentlyDraggedBlock = null;
+            }
+            if (_isDragging && !_isPlaced)
+            {
+                ReturnToSlotImmediate();
+            }
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearHighlights();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (CurrentlyDraggedBlock == this)
+            {
+                CurrentlyDraggedBlock = null;
+            }
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearHighlights();
+            }
         }
 
         private void EnsureRectTransform()
@@ -59,11 +91,40 @@ namespace BlockBlast
 
         public void RebuildVisuals(Sprite gemSprite, Sprite bombSprite)
         {
+            bool isDragging = (CurrentlyDraggedBlock == this);
+            Vector2 savedPos = _rectTransform != null ? _rectTransform.anchoredPosition : Vector2.zero;
+
             foreach (Transform child in transform)
             {
                 Destroy(child.gameObject);
             }
             BuildVisuals(gemSprite, bombSprite);
+
+            if (isDragging && _rectTransform != null)
+            {
+                _rectTransform.anchoredPosition = savedPos;
+                _rectTransform.localScale = Vector3.one * dragScale;
+                UpdateSnapPreviewFromCurrentPointer();
+                StopCoroutine("RotateJellyAnim");
+                StartCoroutine("RotateJellyAnim");
+            }
+        }
+
+        private IEnumerator RotateJellyAnim()
+        {
+            if (_rectTransform == null) yield break;
+            float elapsed = 0f;
+            float dur = 0.16f;
+            Vector3 baseScale = Vector3.one * dragScale;
+            while (elapsed < dur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = elapsed / dur;
+                float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.15f;
+                _rectTransform.localScale = baseScale * s;
+                yield return null;
+            }
+            _rectTransform.localScale = baseScale;
         }
 
         private void BuildVisuals(Sprite gemSprite, Sprite bombSprite)
@@ -92,10 +153,15 @@ namespace BlockBlast
                 _rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 _rectTransform.pivot = new Vector2(0.5f, 0.5f);
                 _rectTransform.sizeDelta = new Vector2(totalWidth, totalHeight);
-                _rectTransform.anchoredPosition = Vector2.zero;
-                _rectTransform.localScale = Vector3.one * fitScale;
-                _originalScale = _rectTransform.localScale;
+
+                _originalScale = Vector3.one * fitScale;
                 _originalAnchoredPosition = Vector2.zero;
+
+                if (CurrentlyDraggedBlock != this)
+                {
+                    _rectTransform.anchoredPosition = Vector2.zero;
+                    _rectTransform.localScale = _originalScale;
+                }
             }
 
             float startX = -totalWidth * 0.5f + cellSize * 0.5f;
@@ -149,6 +215,11 @@ namespace BlockBlast
         public void OnPointerDown(PointerEventData eventData)
         {
             if (_isPlaced) return;
+            if (Time.timeScale <= 0f || (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsPaused)) return;
+
+            _isDragging = true;
+            _isDragCanceled = false;
+            CurrentlyDraggedBlock = this;
 
             if (BlockAudioManager.Instance != null)
             {
@@ -161,14 +232,23 @@ namespace BlockBlast
             StopAllCoroutines();
             StartCoroutine(PickupBounceAnim());
 
-            UpdateDragPosition(eventData);
-            UpdateSnapPreview(eventData);
+            UpdateDragPosition(eventData.position);
+            UpdateSnapPreviewAtPosition(eventData.position);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (_isPlaced) return;
-            UpdateDragPosition(eventData);
+            if (Time.timeScale <= 0f || (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsPaused))
+            {
+                CancelDrag(immediate: true);
+                return;
+            }
+
+            _isDragging = true;
+            _isDragCanceled = false;
+            CurrentlyDraggedBlock = this;
+            UpdateDragPosition(eventData.position);
         }
 
         private IEnumerator PickupBounceAnim()
@@ -179,7 +259,7 @@ namespace BlockBlast
 
             while (elapsed < dur)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Time.unscaledDeltaTime;
                 float t = elapsed / dur;
                 // Squash and stretch jelly bounce: Y stretches, X compresses, then settles
                 float squashX = 1f - 0.12f * Mathf.Sin(t * Mathf.PI);
@@ -194,21 +274,48 @@ namespace BlockBlast
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (_isPlaced) return;
-            UpdateDragPosition(eventData);
-            UpdateSnapPreview(eventData);
+            if (_isPlaced || _isDragCanceled || !_isDragging) return;
+            if (Time.timeScale <= 0f || (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsPaused))
+            {
+                CancelDrag(immediate: true);
+                return;
+            }
+
+            UpdateDragPosition(eventData.position);
+            UpdateSnapPreviewAtPosition(eventData.position);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
             if (_isPlaced) return;
 
+            // If drag was canceled or game is paused, NEVER place on board!
+            if (_isDragCanceled || !_isDragging || Time.timeScale <= 0f || (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsPaused))
+            {
+                _isDragCanceled = false;
+                _isDragging = false;
+                if (CurrentlyDraggedBlock == this)
+                {
+                    CurrentlyDraggedBlock = null;
+                }
+                ReturnToSlotImmediate();
+                return;
+            }
+
+            _isDragging = false;
+            _isDragCanceled = false;
+
+            if (CurrentlyDraggedBlock == this)
+            {
+                CurrentlyDraggedBlock = null;
+            }
+
             if (BlockGridManager.Instance != null)
             {
                 BlockGridManager.Instance.ClearHighlights();
             }
 
-            Vector2Int? gridPos = GetTargetGridPosition(eventData);
+            Vector2Int? gridPos = GetTargetGridPosition(eventData.position);
             bool placed = false;
 
             if (gridPos.HasValue && BlockGridManager.Instance != null)
@@ -236,23 +343,130 @@ namespace BlockBlast
             }
         }
 
-        private void UpdateDragPosition(PointerEventData eventData)
+        public void OnPointerUp(PointerEventData eventData)
         {
+            if (_isDragCanceled || !_isDragging)
+            {
+                _isDragCanceled = false;
+                _isDragging = false;
+                if (CurrentlyDraggedBlock == this)
+                {
+                    CurrentlyDraggedBlock = null;
+                }
+                ReturnToSlotImmediate();
+            }
+        }
+
+        public void ReturnToSlotImmediate()
+        {
+            StopAllCoroutines();
+            if (_originalParent != null)
+            {
+                transform.SetParent(_originalParent, true);
+            }
+            if (_rectTransform != null)
+            {
+                _rectTransform.anchoredPosition = _originalAnchoredPosition;
+                _rectTransform.localScale = _originalScale;
+            }
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearHighlights();
+            }
+            _isDragging = false;
+            _isDragCanceled = false;
+        }
+
+        public void CancelDrag(bool immediate = false)
+        {
+            if (_isPlaced) return;
+
+            _isDragCanceled = true;
+            _isDragging = false;
+
+            if (CurrentlyDraggedBlock == this)
+            {
+                CurrentlyDraggedBlock = null;
+            }
+
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearHighlights();
+            }
+
+            StopAllCoroutines();
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayGrabDown();
+            }
+
+            if (immediate || Time.timeScale <= 0f)
+            {
+                ReturnToSlotImmediate();
+            }
+            else
+            {
+                StartCoroutine(ReturnToSlot());
+            }
+        }
+
+        public void CancelDragImmediate()
+        {
+            CancelDrag(immediate: true);
+        }
+
+        public static void CancelAllActiveDrags(bool immediate = true)
+        {
+            if (CurrentlyDraggedBlock != null)
+            {
+                CurrentlyDraggedBlock.CancelDrag(immediate);
+                CurrentlyDraggedBlock = null;
+            }
+
+            var allBlocks = UnityEngine.Object.FindObjectsOfType<DraggableBlockUI>();
+            if (allBlocks != null)
+            {
+                for (int i = 0; i < allBlocks.Length; i++)
+                {
+                    if (allBlocks[i] != null && (allBlocks[i]._isDragging || allBlocks[i].transform.parent != allBlocks[i]._originalParent))
+                    {
+                        allBlocks[i].CancelDrag(immediate);
+                    }
+                }
+            }
+
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearHighlights();
+            }
+        }
+
+        private void UpdateDragPosition(Vector2 screenPos)
+        {
+            if (_parentCanvas == null || _rectTransform == null) return;
+
             Vector2 localPoint;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _parentCanvas.transform as RectTransform,
-                eventData.position + new Vector2(0f, ActiveOffsetY),
+                screenPos + new Vector2(0f, ActiveOffsetY),
                 _parentCanvas.worldCamera,
                 out localPoint
             );
             _rectTransform.anchoredPosition = localPoint;
         }
 
-        private void UpdateSnapPreview(PointerEventData eventData)
+        public void UpdateSnapPreviewFromCurrentPointer()
+        {
+            Vector2 pos = GetCurrentPointerScreenPosition();
+            UpdateSnapPreviewAtPosition(pos);
+        }
+
+        private void UpdateSnapPreviewAtPosition(Vector2 screenPos)
         {
             if (BlockGridManager.Instance == null) return;
 
-            Vector2Int? gridPos = GetTargetGridPosition(eventData);
+            Vector2Int? gridPos = GetTargetGridPosition(screenPos);
             if (gridPos.HasValue)
             {
                 bool canPlace = BlockGridManager.Instance.CanPlaceShape(Shape, gridPos.Value.x, gridPos.Value.y);
@@ -264,12 +478,31 @@ namespace BlockBlast
             }
         }
 
-        // 100% Mathematically Precise Grid Snapping via Board Local Coordinates
-        private Vector2Int? GetTargetGridPosition(PointerEventData eventData)
+        private Vector2 GetCurrentPointerScreenPosition()
         {
-            if (BlockGridManager.Instance == null || BlockGridManager.Instance.BoardRect == null) return null;
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Touchscreen.current != null && UnityEngine.InputSystem.Touchscreen.current.primaryTouch.press.isPressed)
+            {
+                return UnityEngine.InputSystem.Touchscreen.current.primaryTouch.position.ReadValue();
+            }
+            if (UnityEngine.InputSystem.Mouse.current != null)
+            {
+                return UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+            }
+#endif
+            if (Input.touchCount > 0)
+            {
+                return Input.GetTouch(0).position;
+            }
+            return Input.mousePosition;
+        }
 
-            Vector2 targetScreenPoint = eventData.position + new Vector2(0f, ActiveOffsetY);
+        // 100% Mathematically Precise Grid Snapping via Board Local Coordinates
+        private Vector2Int? GetTargetGridPosition(Vector2 screenPos)
+        {
+            if (BlockGridManager.Instance == null || BlockGridManager.Instance.BoardRect == null || _parentCanvas == null) return null;
+
+            Vector2 targetScreenPoint = screenPos + new Vector2(0f, ActiveOffsetY);
             Vector2 localInBoard;
 
             // Map screen point directly into Board RectTransform local space
@@ -305,7 +538,7 @@ namespace BlockBlast
 
             while (elapsed < dur)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Time.unscaledDeltaTime;
                 float t = elapsed / dur;
                 _rectTransform.position = Vector3.Lerp(startPos, targetPos, t);
                 _rectTransform.localScale = Vector3.Lerp(startScale, _originalScale, t);
@@ -314,6 +547,8 @@ namespace BlockBlast
 
             _rectTransform.anchoredPosition = _originalAnchoredPosition;
             _rectTransform.localScale = _originalScale;
+            _isDragging = false;
+            _isDragCanceled = false;
         }
     }
 }

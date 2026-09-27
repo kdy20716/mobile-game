@@ -52,9 +52,11 @@ namespace BlockBlast.Editor
             Sprite scoreBoxSprite = CuteBlockTextureGenerator.GetOrCreateIngameScoreBoxSprite();
             Sprite bestBoxSprite = CuteBlockTextureGenerator.GetOrCreateIngameBestBoxSprite();
             Sprite skillsBarSprite = CuteBlockTextureGenerator.GetOrCreatePanelSprite("Jelly_Skills_Bar", new Color(0.98f, 0.96f, 1f, 0.90f), new Color(0.88f, 0.82f, 1f, 0.95f));
-            Sprite btnPinkSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Pink", new Color(0.98f, 0.36f, 0.58f));
-            Sprite btnTealSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Teal", new Color(0.18f, 0.78f, 0.62f));
-            Sprite btnGoldSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Gold", new Color(1f, 0.78f, 0.22f));
+            Sprite btnPinkSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Pink", CuteBlockTextureGenerator.PastelPink);
+            Sprite btnTealSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Teal", CuteBlockTextureGenerator.PastelMint);
+            Sprite btnLavenderSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Lavender", CuteBlockTextureGenerator.PastelLavender);
+            Sprite btnGoldSprite = CuteBlockTextureGenerator.GetOrCreate3DJellyButtonSprite("Jelly_Button_Gold", CuteBlockTextureGenerator.PastelButter);
+            Sprite btnPauseCircleSprite = CuteBlockTextureGenerator.GetOrCreate3DRoundJellyButtonSprite("Jelly_Button_Circle_Pink", CuteBlockTextureGenerator.PastelPink);
 
             Sprite circleFrameSprite = CuteBlockTextureGenerator.GetOrCreateCircleFrameSprite();
             Sprite tabPillSprite = CuteBlockTextureGenerator.GetOrCreateTabPillSprite();
@@ -280,14 +282,14 @@ namespace BlockBlast.Editor
 
             // Pause Button (Far Left: pos 52, size 86x86 - high visibility, non-overlapping)
             Sprite pauseBarsSprite = CuteBlockTextureGenerator.GetOrCreatePauseBarsSprite();
-            GameObject pauseBtnObj = CreateButton(headerObj.transform, "BtnPause", "", cuteFont, new Vector2(0, 0.5f), new Vector2(52, 0), new Vector2(86, 86), btnPinkSprite, 20);
+            GameObject pauseBtnObj = CreateButton(headerObj.transform, "BtnPause", "", cuteFont, new Vector2(0, 0.5f), new Vector2(52, 0), new Vector2(86, 86), btnPauseCircleSprite, 20);
             
             // Icon: Pause Bars (||)
             GameObject pIcon = CreateImage(pauseBtnObj.transform, "PauseBarsIcon", pauseBarsSprite, new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(32, 32));
             pIcon.GetComponent<Image>().raycastTarget = false;
             
             // Label: "일시정지" (Clean Korean text, 100% supported by Jua SDF font)
-            GameObject pLabel = CreateText(pauseBtnObj.transform, "PauseLabel", "일시정지", 17, TextAlignmentOptions.Center, cuteFont, Color.white, true, new Color(0.6f, 0.1f, 0.3f, 0.8f));
+            GameObject pLabel = CreateText(pauseBtnObj.transform, "PauseLabel", "일시정지", 17, TextAlignmentOptions.Center, cuteFont, Color.white, true, new Color(0.78f, 0.28f, 0.44f, 0.85f));
             SetRect(pLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -21), new Vector2(80, 22));
             pLabel.GetComponent<TMP_Text>().raycastTarget = false;
 
@@ -377,6 +379,27 @@ namespace BlockBlast.Editor
             GameObject skipBtnObj = CreateButton(skillsBar.transform, "BtnSkip", "", cuteFont, new Vector2(1, 0.5f), new Vector2(-215, 0), new Vector2(96, 96), btnSkipUser, 32);
             skipBtnObj.AddComponent<CanvasGroup>(); // For dimming/brightening skip button
             var btnSkip = skipBtnObj.GetComponent<Button>();
+
+            // Stock Badge on Skip Button
+            GameObject skipBadgeObj = new GameObject("SkipStockBadge", typeof(RectTransform), typeof(Image));
+            skipBadgeObj.transform.SetParent(skipBtnObj.transform, false);
+            SetRect(skipBadgeObj, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -8f), new Vector2(104f, 24f));
+            Image badgeBg = skipBadgeObj.GetComponent<Image>();
+            badgeBg.sprite = tabPillSprite;
+            badgeBg.type = Image.Type.Sliced;
+            badgeBg.color = new Color(0.15f, 0.12f, 0.22f, 0.85f);
+
+            GameObject badgeTextObj = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            badgeTextObj.transform.SetParent(skipBadgeObj.transform, false);
+            SetRect(badgeTextObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            TMP_Text skipBadgeTMP = badgeTextObj.GetComponent<TMP_Text>();
+            skipBadgeTMP.font = cuteFont;
+            skipBadgeTMP.fontSize = 12.5f;
+            skipBadgeTMP.fontStyle = FontStyles.Bold;
+            skipBadgeTMP.alignment = TextAlignmentOptions.Center;
+            skipBadgeTMP.color = Color.white;
+            skipBadgeTMP.raycastTarget = false;
+            skipBadgeTMP.text = "1/3 (0/10)";
 
             // 🔄 Spin Button (User-Uploaded 2.5D Marshmallow Jelly Button)
             Sprite btnSpinUser = CuteBlockTextureGenerator.GetOrCreateUserSpinButtonSprite();
@@ -567,8 +590,8 @@ namespace BlockBlast.Editor
             SetRect(mBestVal, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(340, 28));
 
             // Bottom Action Buttons: Restart & Lobby (Positioned with comfortable spacing below the mascot)
-            GameObject restartBtn = CreateButton(dialog.transform, "BtnRestart", LocalizationManager.Get("ingame_restart"), cuteFont, new Vector2(0.5f, 0.5f), new Vector2(0, -265), new Vector2(500, 88), btnPinkSprite, 36);
-            GameObject lobbyBtn = CreateButton(dialog.transform, "BtnLobby", LocalizationManager.Get("ingame_lobby"), cuteFont, new Vector2(0.5f, 0.5f), new Vector2(0, -368), new Vector2(500, 84), btnTealSprite, 34);
+            GameObject restartBtn = CreateButton(dialog.transform, "BtnRestart", LocalizationManager.Get("ingame_restart"), cuteFont, new Vector2(0.5f, 0.5f), new Vector2(0, -265), new Vector2(500, 88), btnPinkSprite, 36, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            GameObject lobbyBtn = CreateButton(dialog.transform, "BtnLobby", LocalizationManager.Get("ingame_lobby"), cuteFont, new Vector2(0.5f, 0.5f), new Vector2(0, -368), new Vector2(500, 84), btnTealSprite, 34, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
 
             // Bind UI References
             uiMgr.SetupReferences(
@@ -578,7 +601,7 @@ namespace BlockBlast.Editor
                 timeRemainingTMP,
                 vignetteImg,
                 btnSkip,
-                null,
+                skipBadgeTMP,
                 btnRotate,
                 comboObj.GetComponent<TMP_Text>(),
                 boardContainer.GetComponent<RectTransform>(),
@@ -618,11 +641,9 @@ namespace BlockBlast.Editor
             pauseMascot.GetComponent<Image>().preserveAspect = true;
 
             // 3 Action Buttons (Shifted up with 36px safe padding from card bottom)
-            GameObject btnResumeObj = CreateButton(pauseDialog.transform, "BtnResume", "계속하기 (Resume)", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 290), new Vector2(540, 88), btnTealSprite, 34);
-            GameObject btnRestartObj = CreateButton(pauseDialog.transform, "BtnRestart", "다시 시작 (Restart)", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 185), new Vector2(540, 88), btnPinkSprite, 34);
-            GameObject btnLobbyObj = CreateButton(pauseDialog.transform, "BtnLobby", "로비로 나가기", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 80), new Vector2(540, 88), tabPillSprite, 32);
-            TMP_Text lobbyBtnTxt = btnLobbyObj.GetComponentInChildren<TMP_Text>();
-            if (lobbyBtnTxt != null) lobbyBtnTxt.color = new Color(0.38f, 0.22f, 0.62f);
+            GameObject btnResumeObj = CreateButton(pauseDialog.transform, "BtnResume", "계속하기 (Resume)", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 290), new Vector2(540, 88), btnTealSprite, 34, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+            GameObject btnRestartObj = CreateButton(pauseDialog.transform, "BtnRestart", "다시 시작 (Restart)", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 185), new Vector2(540, 88), btnPinkSprite, 34, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            GameObject btnLobbyObj = CreateButton(pauseDialog.transform, "BtnLobby", "로비로 나가기", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 80), new Vector2(540, 88), btnLavenderSprite, 32, Color.white, new Color(0.48f, 0.32f, 0.72f, 0.85f));
 
             uiMgr.SetupPauseModal(
                 pauseModalObj,
@@ -632,8 +653,54 @@ namespace BlockBlast.Editor
                 btnLobbyObj.GetComponent<Button>()
             );
 
-            // --- F. Fullscreen Cinematic Main Menu Screen ---
-            GameObject mainMenu = new GameObject("MainMenuScreen", typeof(RectTransform), typeof(CanvasGroup), typeof(MainMenuCinematicController));
+            // --- E3. Restart Confirm Modal (overlay on top of PauseModal) ---
+            GameObject rConfirmModal = new GameObject("RestartConfirmModal", typeof(RectTransform), typeof(Image));
+            rConfirmModal.transform.SetParent(inGameRoot.transform, false);
+            SetRect(rConfirmModal, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(4000f, 0f));
+            Image rConfirmOverlay = rConfirmModal.GetComponent<Image>();
+            rConfirmOverlay.color = new Color(0.05f, 0.03f, 0.12f, 0.75f);
+            rConfirmModal.SetActive(false);
+
+            // Confirm Card
+            GameObject rCard = new GameObject("DialogCard", typeof(RectTransform), typeof(Image));
+            rCard.transform.SetParent(rConfirmModal.transform, false);
+            SetRect(rCard, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(720, 440));
+            Image rCardImg = rCard.GetComponent<Image>();
+            rCardImg.sprite = settingsModalCardSprite;
+            rCardImg.type = Image.Type.Sliced;
+            rCardImg.color = Color.white;
+
+            // Title
+            GameObject rTitle = CreateText(rCard.transform, "Title", "다시 시작할까요?", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
+            SetRect(rTitle, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -58), new Vector2(600, 52));
+
+            // Subtitle
+            GameObject rSub = CreateText(rCard.transform, "Subtitle", "지금까지의 점수가 사라져요 🥺", 26, TextAlignmentOptions.Center, cuteFont, new Color(0.52f, 0.40f, 0.68f));
+            SetRect(rSub, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -128), new Vector2(580, 36));
+
+            // Desc
+            GameObject rDesc = CreateText(rCard.transform, "Desc", "그래도 다시 시작하시겠어요?", 28, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
+            SetRect(rDesc, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -185), new Vector2(600, 36));
+
+            // Buttons
+            GameObject rYesBtn = CreateButton(rCard.transform, "BtnYes", "다시 시작! 🎮", cuteFont, new Vector2(0.5f, 0f), new Vector2(-140, 80), new Vector2(270, 68), btnPinkSprite, 26, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            GameObject rNoBtn  = CreateButton(rCard.transform, "BtnNo",  "계속하기 💪", cuteFont, new Vector2(0.5f, 0f), new Vector2( 140, 80), new Vector2(270, 68), btnTealSprite, 26, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+
+            uiMgr.SetupRestartConfirmModal(rConfirmModal, rYesBtn.GetComponent<Button>(), rNoBtn.GetComponent<Button>());
+
+            // --- E4. White Flash Overlay (full-screen for restart transition) ---
+            GameObject whiteFlash = new GameObject("WhiteFlashOverlay", typeof(RectTransform), typeof(Image));
+            whiteFlash.transform.SetParent(inGameRoot.transform, false);
+            SetRect(whiteFlash, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Image wfImg = whiteFlash.GetComponent<Image>();
+            wfImg.color = new Color(1f, 1f, 1f, 0f);
+            wfImg.raycastTarget = true; // block input during flash
+            whiteFlash.SetActive(false);
+
+            uiMgr.SetupWhiteFlashOverlay(wfImg);
+
+            // --- F. Fullscreen Cinematic Main Menu Screen (Exact 9:16 Ratio matching Lobby) ---
+            GameObject mainMenu = new GameObject("MainMenuScreen", typeof(RectTransform), typeof(CanvasGroup), typeof(RectMask2D), typeof(MainMenuCinematicController));
             mainMenu.transform.SetParent(canvasObj.transform, false);
             SetRect(mainMenu, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(1080f, 0f));
 
@@ -650,12 +717,14 @@ namespace BlockBlast.Editor
             cinematicRootObj.transform.SetParent(mainMenu.transform, false);
             SetRect(cinematicRootObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             RectTransform cinematicRootRT = cinematicRootObj.GetComponent<RectTransform>();
+            cinematicRootRT.localScale = Vector3.one * 1.55f;
+            cinematicRootRT.anchoredPosition = new Vector2(360f, 60f);
 
-            // 1:1 Square Seamless Expanded Dreamy Background (2160 x 2160, never compressed!)
+            // Wide Seamless Dreamy Background (Ample 3000 x 3000 coverage so camera pan/zoom never exposes edges)
             Sprite wideBgSprite = CuteBlockTextureGenerator.GetOrCreateMainMenuWideBackgroundSprite();
             GameObject menuBgObj = new GameObject("MenuBackground", typeof(RectTransform), typeof(Image));
             menuBgObj.transform.SetParent(cinematicRootObj.transform, false);
-            SetRect(menuBgObj, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2160, 2160));
+            SetRect(menuBgObj, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(3000f, 3000f));
             Image menuBgImg = menuBgObj.GetComponent<Image>();
             menuBgImg.sprite = wideBgSprite;
             menuBgImg.color = Color.white;
@@ -680,22 +749,26 @@ namespace BlockBlast.Editor
             Image logoImg = logoObj.GetComponent<Image>();
             logoImg.sprite = logoSprite;
             logoImg.preserveAspect = true;
+            logoObj.GetComponent<RectTransform>().localScale = Vector3.zero;
 
             // Left Popping Mascot (Strawberry Smile) - Clean transparent cutout without black box
             Sprite leftMascotSprite = CuteBlockTextureGenerator.GetOrCreateLeftPoppingMascotSprite();
             GameObject leftMascotObj = CreateImage(cinematicRootObj.transform, "LeftMascot", leftMascotSprite, new Vector2(0.5f, 0.5f), new Vector2(-260, -80), new Vector2(300, 300));
             RectTransform leftMascotRT = leftMascotObj.GetComponent<RectTransform>();
+            leftMascotRT.localScale = Vector3.zero;
 
             // Right Popping Mascot (Mint Soda) - Clean transparent cutout without black box
             Sprite rightMascotSprite = CuteBlockTextureGenerator.GetOrCreateRightPoppingMascotSprite();
             GameObject rightMascotObj = CreateImage(cinematicRootObj.transform, "RightMascot", rightMascotSprite, new Vector2(0.5f, 0.5f), new Vector2(260, -80), new Vector2(300, 300));
             RectTransform rightMascotRT = rightMascotObj.GetComponent<RectTransform>();
+            rightMascotRT.localScale = Vector3.zero;
 
             // Blinking "화면을 터치해주세요" Prompt at Bottom
             GameObject touchPromptObj = new GameObject("TouchPromptGroup", typeof(RectTransform), typeof(CanvasGroup));
             touchPromptObj.transform.SetParent(mainMenu.transform, false);
             SetRect(touchPromptObj, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 140), new Vector2(650, 80));
             CanvasGroup touchPromptCG = touchPromptObj.GetComponent<CanvasGroup>();
+            touchPromptCG.alpha = 0f;
 
             GameObject touchText = CreateText(touchPromptObj.transform, "TouchText", LocalizationManager.Get("intro_touch"), 40, TextAlignmentOptions.Center, cuteFont, new Color(1f, 1f, 1f, 0.95f));
             SetRect(touchText, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
@@ -717,7 +790,49 @@ namespace BlockBlast.Editor
             );
             cinematicCtrl.SetupLanguageLogos(logoImg, langLogoSprites);
 
+            AudioClip sfxMascot = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Audio/item_pick_up_04.wav");
+            if (sfxMascot == null) sfxMascot = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/CelerisLab/CompleteUISFX/inventory_and_item_management/item_pick_up_04.wav");
+            AudioClip sfxPink = sfxMascot;
+            AudioClip sfxMint = sfxMascot;
+            AudioClip sfxLogo = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Audio/item_acquired_04.wav");
+            if (sfxLogo == null) sfxLogo = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/CelerisLab/CompleteUISFX/positive_feedback_and_success/item_acquired_04.wav");
+            cinematicCtrl.SetupCinematicAudio(sfxPink, sfxMint, sfxLogo);
+            cinematicCtrl.ResetToPreIntroState();
+            EditorUtility.SetDirty(cinematicCtrl);
+
             uiMgr.SetupMainMenu(mainMenu, null, null);
+
+            // --- F-1. Boot Splash Screen Overlay (Mallang Games Studio Logo) ---
+            GameObject splashOverlay = new GameObject("SplashScreenOverlay", typeof(RectTransform), typeof(CanvasGroup), typeof(Image), typeof(SplashScreenController));
+            splashOverlay.transform.SetParent(canvasObj.transform, false);
+            SetRect(splashOverlay, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+            Image splashBgImg = splashOverlay.GetComponent<Image>();
+            splashBgImg.color = new Color(0.99f, 0.97f, 0.98f, 1f); // Warm creamy pastel white
+            splashBgImg.raycastTarget = true; // Blocks touches to main menu during splash
+
+            CanvasGroup splashCG = splashOverlay.GetComponent<CanvasGroup>();
+            splashCG.alpha = 1f;
+
+            Sprite studioLogoSprite = CuteBlockTextureGenerator.GetOrCreateMallangGamesStudioLogoSprite();
+            GameObject studioLogoObj = new GameObject("StudioLogo", typeof(RectTransform), typeof(Image));
+            studioLogoObj.transform.SetParent(splashOverlay.transform, false);
+            SetRect(studioLogoObj, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, 860f));
+            Image studioLogoImg = studioLogoObj.GetComponent<Image>();
+            studioLogoImg.sprite = studioLogoSprite;
+            studioLogoImg.preserveAspect = true;
+            studioLogoImg.raycastTarget = false;
+
+            SplashScreenController splashCtrl = splashOverlay.GetComponent<SplashScreenController>();
+            splashCtrl.SetupReferences(splashCG, studioLogoObj.GetComponent<RectTransform>(), studioLogoImg, splashBgImg, cinematicCtrl);
+
+            AudioClip splashSfxClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Audio/item_acquired_06.wav");
+            if (splashSfxClip == null) splashSfxClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/CelerisLab/CompleteUISFX/positive_feedback_and_success/item_acquired_06.wav");
+            if (splashSfxClip != null)
+            {
+                splashCtrl.SetupAudio(splashSfxClip);
+            }
+            EditorUtility.SetDirty(splashOverlay);
 
             // --- G. Cute Mallang Party Lobby Screen ---
             CuteBlockTextureGenerator.EnsureMascotsCutout();
@@ -963,7 +1078,7 @@ namespace BlockBlast.Editor
             }
 
             // Logout Button
-            GameObject pLogoutObj = CreateButton(pCard.transform, "BtnLogout", "로그아웃", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 95), new Vector2(340, 80), btnPinkSprite, 32);
+            GameObject pLogoutObj = CreateButton(pCard.transform, "BtnLogout", "로그아웃", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 95), new Vector2(340, 80), btnLavenderSprite, 32, Color.white, new Color(0.48f, 0.32f, 0.72f, 0.85f));
             Button pLogoutBtn = pLogoutObj.GetComponent<Button>();
 
             // --- Shop Modal (Background Theme Store) ---
@@ -1235,10 +1350,8 @@ namespace BlockBlast.Editor
             GameObject qDesc = CreateText(qCard.transform, "Desc", "정말 말랑블라스트를 종료하시겠어요?", 26, TextAlignmentOptions.Center, cuteFont, new Color(0.45f, 0.35f, 0.60f));
             SetRect(qDesc, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -145), new Vector2(580, 60));
 
-            GameObject qYesBtnObj = CreateButton(qCard.transform, "BtnYes", "종료", cuteFont, new Vector2(0.5f, 0), new Vector2(-130, 80), new Vector2(210, 62), btnPinkSprite, 26);
-            GameObject qNoBtnObj = CreateButton(qCard.transform, "BtnNo", "취소", cuteFont, new Vector2(0.5f, 0), new Vector2(130, 80), new Vector2(210, 62), tabPillSprite, 26);
-            var qNoTxt = qNoBtnObj.GetComponentInChildren<TMP_Text>();
-            if (qNoTxt != null) qNoTxt.color = new Color(0.35f, 0.22f, 0.55f);
+            GameObject qYesBtnObj = CreateButton(qCard.transform, "BtnYes", "종료", cuteFont, new Vector2(0.5f, 0), new Vector2(-130, 80), new Vector2(210, 62), btnPinkSprite, 26, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            GameObject qNoBtnObj = CreateButton(qCard.transform, "BtnNo", "취소", cuteFont, new Vector2(0.5f, 0), new Vector2(130, 80), new Vector2(210, 62), btnTealSprite, 26, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
 
             // --- Help Modal (NEW!) ---
             GameObject hModal = new GameObject("HelpModal", typeof(RectTransform));
@@ -1327,7 +1440,7 @@ namespace BlockBlast.Editor
             }
 
             // Bottom Confirmation Button: "이해했어요! (닫기)" (Shifted up with generous bottom padding)
-            GameObject hConfirmBtnObj = CreateButton(hCard.transform, "BtnConfirm", "이해했어요!", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 75), new Vector2(480, 80), btnPinkSprite, 34);
+            GameObject hConfirmBtnObj = CreateButton(hCard.transform, "BtnConfirm", "이해했어요!", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 75), new Vector2(480, 80), btnPinkSprite, 34, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
 
             // Setup LobbyManager References
             lobbyMgr.SetupReferences(
@@ -1373,7 +1486,7 @@ namespace BlockBlast.Editor
                 qTitle.GetComponent<TMP_Text>(),
                 qDesc.GetComponent<TMP_Text>(),
                 qYesBtnObj.GetComponentInChildren<TMP_Text>(),
-                qNoTxt,
+                qNoBtnObj.GetComponentInChildren<TMP_Text>(),
                 aspectTitle.GetComponent<TMP_Text>(),
                 aspectBtns,
                 aspectBgs,
@@ -1421,7 +1534,7 @@ namespace BlockBlast.Editor
             Debug.Log("<color=#FF7AA2><b>[Block Blast]</b> 10종 이상의 젤리 그래픽 에셋, 주아체 고해상도 폰트가 적용된 프리미엄 씬이 완성되었습니다!</color>");
         }
 
-        private static GameObject CreateButton(Transform parent, string name, string label, TMP_FontAsset fontAsset, Vector2 anchor, Vector2 pos, Vector2 size, Sprite btnSprite, float fontSize = 30)
+        private static GameObject CreateButton(Transform parent, string name, string label, TMP_FontAsset fontAsset, Vector2 anchor, Vector2 pos, Vector2 size, Sprite btnSprite, float fontSize = 30, Color? textCol = null, Color? textShadowCol = null)
         {
             GameObject btnObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             btnObj.transform.SetParent(parent, false);
@@ -1442,17 +1555,19 @@ namespace BlockBlast.Editor
             Button btn = btnObj.GetComponent<Button>();
             ColorBlock cb = btn.colors;
             cb.normalColor = Color.white;
-            cb.highlightedColor = new Color(0.95f, 0.95f, 0.95f, 1f);
-            cb.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+            cb.highlightedColor = new Color(0.96f, 0.96f, 0.96f, 1f);
+            cb.pressedColor = new Color(0.88f, 0.88f, 0.88f, 1f);
             cb.selectedColor = Color.white;
-            cb.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.65f);
+            cb.disabledColor = new Color(0.65f, 0.65f, 0.65f, 0.65f);
             btn.colors = cb;
 
             SetRect(btnObj, anchor, anchor, pos, size);
 
             if (!string.IsNullOrEmpty(label))
             {
-                GameObject textObj = CreateText(btnObj.transform, "Text", label, fontSize, TextAlignmentOptions.Center, fontAsset, Color.white);
+                Color fontColor = textCol ?? Color.white;
+                bool hasShadow = textShadowCol.HasValue;
+                GameObject textObj = CreateText(btnObj.transform, "Text", label, fontSize, TextAlignmentOptions.Center, fontAsset, fontColor, hasShadow, textShadowCol);
                 SetRect(textObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             }
 
@@ -1490,6 +1605,13 @@ namespace BlockBlast.Editor
             t.enableWordWrapping = false;
             t.overflowMode = TextOverflowModes.Overflow;
             t.raycastTarget = false;
+
+            if (addShadow)
+            {
+                var shadow = obj.AddComponent<UnityEngine.UI.Shadow>();
+                shadow.effectColor = shadowCol ?? new Color(0f, 0f, 0f, 0.45f);
+                shadow.effectDistance = new Vector2(0f, -2.5f);
+            }
 
             return obj;
         }
@@ -1604,9 +1726,9 @@ namespace BlockBlast.Editor
             if (audioMgr.bgmLobbyTracks.Count > 0) audioMgr.bgmLobby = audioMgr.bgmLobbyTracks[0];
             audioMgr.bgmInGamePlaylist = FindAudioClipsInFolderSorted("Assets/Sounds/BGM/InGame");
 
-            // 3. Default volume 50% halved
-            audioMgr.sfxVolume = BlockAudioManager.DEFAULT_SFX_VOLUME;
-            audioMgr.bgmVolume = BlockAudioManager.DEFAULT_BGM_VOLUME;
+            // 3. Default volume 50% slider calibration
+            audioMgr.sfxSliderLevel = BlockAudioManager.DEFAULT_SLIDER_PERCENT;
+            audioMgr.bgmSliderLevel = BlockAudioManager.DEFAULT_SLIDER_PERCENT;
 
             EditorUtility.SetDirty(audioMgr);
         }

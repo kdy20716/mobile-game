@@ -17,10 +17,21 @@ namespace MobileRacing.Editor
         private const int Port = 8089;
         private static bool _isRunning = false;
 
+        private static volatile bool _isPlaying = false;
+        private static volatile bool _isCompiling = false;
+        private static volatile string _lastBuildStatus = "idle";
+
         static UnityMcpBridge()
         {
             StartServer();
             EditorApplication.quitting += StopServer;
+            EditorApplication.update += OnEditorUpdate;
+        }
+
+        private static void OnEditorUpdate()
+        {
+            _isPlaying = EditorApplication.isPlaying;
+            _isCompiling = EditorApplication.isCompiling;
         }
 
         [MenuItem("Racing Game/MCP Bridge/Restart MCP Server")]
@@ -85,29 +96,52 @@ namespace MobileRacing.Editor
 
             try
             {
-                if (req.Url.AbsolutePath == "/hierarchy")
+                if (req.Url.AbsolutePath == "/status")
                 {
-                    // Query Hierarchy
-                    var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
-                    string[] names = new string[roots.Length];
-                    for (int i = 0; i < roots.Length; i++) names[i] = roots[i].name;
-                    responseString = $"{{\"scene\":\"{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}\",\"objects\":[\"{string.Join("\",\"", names)}\"]}}";
+                    responseString = $"{{\"isPlaying\":{_isPlaying.ToString().ToLower()},\"isCompiling\":{_isCompiling.ToString().ToLower()},\"lastBuildStatus\":\"{_lastBuildStatus}\"}}";
                 }
-                else if (req.Url.AbsolutePath == "/status")
+                else if (req.Url.AbsolutePath == "/recompile")
                 {
-                    responseString = $"{{\"isPlaying\":{EditorApplication.isPlaying.ToString().ToLower()},\"isCompiling\":{EditorApplication.isCompiling.ToString().ToLower()}}}";
+                    EditorApplication.delayCall += () =>
+                    {
+                        AssetDatabase.Refresh();
+                    };
+                    responseString = "{\"status\":\"ok\",\"message\":\"AssetDatabase refreshed\"}";
                 }
                 else if (req.Url.AbsolutePath == "/generate-blockblast")
                 {
                     EditorApplication.delayCall += () =>
                     {
                         BlockBlast.Editor.BlockBlastSceneBuilder.GenerateBlockBlastScene();
+                        UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
+                        AssetDatabase.SaveAssets();
                     };
                     responseString = "{\"status\":\"ok\",\"message\":\"Generating Block Blast Scene\"}";
                 }
+                else if (req.Url.AbsolutePath == "/build-blockblast")
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        _lastBuildStatus = "building";
+                        try
+                        {
+                            BlockBlast.Editor.BlockBlastBuildUtility.BuildWindows64();
+                            _lastBuildStatus = "success";
+                        }
+                        catch (Exception ex)
+                        {
+                            _lastBuildStatus = $"failed: {ex.Message}";
+                        }
+                    };
+                    responseString = "{\"status\":\"ok\",\"message\":\"Build triggered\"}";
+                }
+                else if (req.Url.AbsolutePath == "/build-status")
+                {
+                    responseString = $"{{\"lastBuildStatus\":\"{_lastBuildStatus}\"}}";
+                }
                 else
                 {
-                    responseString = "{\"status\":\"ok\",\"service\":\"UnityMcpBridge\",\"version\":\"1.0\"}";
+                    responseString = "{\"status\":\"ok\",\"service\":\"UnityMcpBridge\",\"version\":\"1.1\"}";
                 }
             }
             catch (Exception ex)

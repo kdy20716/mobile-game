@@ -281,8 +281,8 @@ namespace BlockBlast
             { "ingame_restart", new[] { "다시 시작", "Restart", "やり直す", "重新开始" } },
             { "ingame_lobby", new[] { "로비로", "To Lobby", "ロビーへ", "返回大厅" } },
             { "ingame_gameover", new[] { "게임 오버", "Game Over", "ゲームオーバー", "游戏结束" } },
-            { "ingame_gameover_no_moves", new[] { "NO MORE MOVES", "NO MORE MOVES", "NO MORE MOVES", "步数用尽" } },
-            { "ingame_gameover_sub", new[] { "더 이상 블록을 놓을 자리가 없어요!", "No more space to place blocks!", "これ以上ブロックを置く場所がありません！", "没有空间放置更多方块了！" } },
+            { "ingame_gameover_no_moves", new[] { "시간 종료!", "TIME'S UP!", "タイムアップ！", "时间到！" } },
+            { "ingame_gameover_sub", new[] { "제한 시간이 모두 끝났어요!", "Time has completely run out!", "制限時間が終了しました！", "时间已经耗尽！" } },
             { "ingame_gameover_score", new[] { "최종 점수", "FINAL SCORE", "最終スコア", "最终得分" } },
 
             // Guide Tips
@@ -291,7 +291,7 @@ namespace BlockBlast
             { "ingame_tip_2", new[] { "연속으로 터뜨려 콤보 보너스!", "Chain clears for combo bonus!", "連続で消してコンボボーナス！", "连续消除触发连击奖励！" } },
             { "ingame_tip_3", new[] { "시간 내에 서둘러 블록을 놓으세요!", "Place blocks before time runs out!", "時間内に素早くブロックを配置！", "时间紧迫，快放置方块！" } },
             { "ingame_tip_4", new[] { "스킵 버튼으로 블록 교체!", "Use skip button to swap blocks!", "スキップボタンでブロック交換！", "使用跳过按钮更换方块！" } },
-            { "ingame_tip_5", new[] { "놓을 자리가 없으면 게임 종료!", "Game over if no space left!", "置く場所がないとゲームオーバー！", "无处放置则游戏结束！" } },
+            { "ingame_tip_5", new[] { "놓을 자리가 없으면 스킵 활용!", "No moves? Use the skip button!", "置く場所がない時はスキップを活用！", "无处放置时请使用跳过按钮！" } },
             { "ingame_tip_6", new[] { "긴 콤보로 최고 점수 도전!", "Aim for high scores with big combos!", "ロングコンボでハイスコアに挑戦！", "挑战超长连击刷新最高记录！" } }
         };
 

@@ -29,10 +29,17 @@ namespace BlockBlast
         [SerializeField] private JellyFireworksEffect fireworksEffect;
         [SerializeField] private BlockBlastUIManager uiManager;
 
+        [Header("Cinematic Audio Clips")]
+        [SerializeField] private AudioClip sfxPinkMascot;
+        [SerializeField] private AudioClip sfxMintMascot;
+        [SerializeField] private AudioClip sfxLogoTitle;
+        [SerializeField] private AudioSource audioSource;
+
         private bool _canTouchToStart = true;
         private bool _hasStarted = false;
         private Coroutine _introCoroutine;
         private Coroutine _idleCoroutine;
+        private Coroutine _continuousFireworksCoroutine;
 
         private void Awake()
         {
@@ -43,9 +50,9 @@ namespace BlockBlast
             const string kAspectKey = "Mallang_AspectRatio_Idx";
             const string kWindowKey = "Mallang_WindowMode_Idx";
             int aspectIdx = PlayerPrefs.GetInt(kAspectKey, 3);
-            int windowIdx = PlayerPrefs.GetInt(kWindowKey, 0);
+            int windowIdx = PlayerPrefs.GetInt(kWindowKey, 1); // Default: 1 (Borderless / FullScreenWindow)
             if (aspectIdx < 0 || aspectIdx > 3) aspectIdx = 3;
-            if (windowIdx < 0 || windowIdx > 2) windowIdx = 0;
+            if (windowIdx < 0 || windowIdx > 2) windowIdx = 1;
 
             FullScreenMode mode = windowIdx == 2 ? FullScreenMode.ExclusiveFullScreen
                                 : windowIdx == 1 ? FullScreenMode.FullScreenWindow
@@ -88,18 +95,78 @@ namespace BlockBlast
                 menuCanvasGroup = GetComponent<CanvasGroup>();
                 if (menuCanvasGroup == null) menuCanvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
+            ResetToPreIntroState();
+            EnsureAudioClips();
             LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
             UpdateLocalizedPrompt();
             UpdateLogo(LocalizationManager.CurrentLanguage);
         }
 
+        public void ResetToPreIntroState()
+        {
+            if (cinematicRoot != null)
+            {
+                cinematicRoot.localScale = Vector3.one * 1.55f;
+                cinematicRoot.anchoredPosition = new Vector2(360f, 60f);
+            }
+            if (leftMascot != null)
+            {
+                leftMascot.anchoredPosition = new Vector2(-260f, -80f);
+                leftMascot.localScale = Vector3.zero;
+            }
+            if (rightMascot != null)
+            {
+                rightMascot.anchoredPosition = new Vector2(260f, -80f);
+                rightMascot.localScale = Vector3.zero;
+            }
+            if (logoTitle != null)
+            {
+                logoTitle.localScale = Vector3.zero;
+            }
+            if (touchPromptGroup != null)
+            {
+                touchPromptGroup.alpha = 0f;
+            }
+        }
+
+        public void EnsureAudioClips()
+        {
+            var pickupClip = Resources.Load<AudioClip>("Audio/item_pick_up_04");
+            if (pickupClip != null)
+            {
+                sfxPinkMascot = pickupClip;
+                sfxMintMascot = pickupClip;
+            }
+            else
+            {
+                if (sfxPinkMascot == null) sfxPinkMascot = Resources.Load<AudioClip>("Audio/item_pick_up_04");
+                if (sfxMintMascot == null) sfxMintMascot = Resources.Load<AudioClip>("Audio/item_pick_up_04");
+            }
+            if (sfxLogoTitle == null) sfxLogoTitle = Resources.Load<AudioClip>("Audio/item_acquired_04");
+        }
+
         private void OnDestroy()
         {
             LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
+            if (_continuousFireworksCoroutine != null)
+            {
+                StopCoroutine(_continuousFireworksCoroutine);
+                _continuousFireworksCoroutine = null;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_continuousFireworksCoroutine != null)
+            {
+                StopCoroutine(_continuousFireworksCoroutine);
+                _continuousFireworksCoroutine = null;
+            }
         }
 
         private void OnEnable()
         {
+            ResetToPreIntroState();
             UpdateLocalizedPrompt();
             UpdateLogo(LocalizationManager.CurrentLanguage);
         }
@@ -146,8 +213,43 @@ namespace BlockBlast
             }
         }
 
+        public void SetupCinematicAudio(AudioClip pink, AudioClip mint, AudioClip logo)
+        {
+            sfxPinkMascot = pink;
+            sfxMintMascot = mint;
+            sfxLogoTitle = logo;
+        }
+
+        private void PlayCinematicSfx(AudioClip clip)
+        {
+            if (clip == null)
+            {
+                EnsureAudioClips();
+            }
+            if (clip == null) return;
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayCustomSFX(clip, 1.0f);
+                return;
+            }
+
+            if (audioSource == null)
+            {
+                audioSource = GetComponent<AudioSource>();
+                if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+            }
+            audioSource.spatialBlend = 0f;
+            audioSource.PlayOneShot(clip, BlockAudioManager.DEFAULT_SFX_VOLUME);
+        }
+
+        private bool _introStarted = false;
+
         private void Start()
         {
+            ResetToPreIntroState();
+            EnsureAudioClips();
             UpdateLocalizedPrompt();
             UpdateLogo(LocalizationManager.CurrentLanguage);
             int best = PlayerPrefs.GetInt("BlockBlast_Best", 0);
@@ -156,6 +258,25 @@ namespace BlockBlast
                 bestScoreText.text = $"최고 점수: {best}";
             }
 
+            // If a splash screen is active, wait for it to complete.
+            // Otherwise (or if splash is disabled/missing), start the cinematic intro immediately.
+            if (SplashScreenController.Instance != null && SplashScreenController.Instance.IsActive)
+            {
+                return;
+            }
+
+            PlayIntro();
+        }
+
+        public void PlayIntro()
+        {
+            if (_introStarted) return;
+            _introStarted = true;
+
+            ResetToPreIntroState();
+            EnsureAudioClips();
+
+            if (_introCoroutine != null) StopCoroutine(_introCoroutine);
             _introCoroutine = StartCoroutine(CinematicIntroRoutine());
 
             if (BlockAudioManager.Instance != null)
@@ -240,27 +361,24 @@ namespace BlockBlast
             }
             if (touchPromptGroup != null) touchPromptGroup.alpha = 0f;
 
-            yield return new WaitForSeconds(0.25f);
+            yield return new WaitForSeconds(0.2f);
 
-            // 2. Step 1: Left Mascot Pop ("뿅!") suddenly + Fireworks at Top-Left Corner!
-            if (fireworksEffect != null)
-            {
-                fireworksEffect.TriggerFireworks(new Vector2(-380f, 680f), 35, 1.35f);
-            }
+            // 2. Step 1: Left Mascot Dashes In ("슈우웅~ 퐁!") with Sparkle Trails & Fireworks!
             if (leftMascot != null)
             {
-                yield return StartCoroutine(PopIn(leftMascot, 0.28f));
+                Color pinkTrail = new Color(1.00f, 0.45f, 0.72f);
+                yield return StartCoroutine(FlyInMascot(leftMascot, new Vector2(-650f, -480f), new Vector2(-260f, -80f), pinkTrail, isLeft: true, duration: 0.44f));
                 yield return StartCoroutine(PunchViewport(new Vector2(0f, 15f), 0.16f));
             }
 
-            yield return new WaitForSeconds(0.45f);
+            yield return new WaitForSeconds(0.35f);
 
             // 3. Step 2: Camera Pan Right to Right Mascot Spawn Area
             // Smoothly pan viewport from (360, 60) to (-360, 60), centering the right mascot in close-up view!
             if (cinematicRoot != null)
             {
                 float panElapsed = 0f;
-                float panDur = 0.55f;
+                float panDur = 0.52f;
                 Vector2 fromPos = cinematicRoot.anchoredPosition;
                 Vector2 toPos = new Vector2(-360f, 60f);
                 while (panElapsed < panDur)
@@ -273,18 +391,15 @@ namespace BlockBlast
                 cinematicRoot.anchoredPosition = toPos;
             }
 
-            // Right Mascot Pop ("뿅!") suddenly + Fireworks at Top-Right Corner!
-            if (fireworksEffect != null)
-            {
-                fireworksEffect.TriggerFireworks(new Vector2(380f, 680f), 35, 1.35f);
-            }
+            // Right Mascot Dashes In ("슈우웅~ 퐁!") with Mint Sparkle Trails & Fireworks!
             if (rightMascot != null)
             {
-                yield return StartCoroutine(PopIn(rightMascot, 0.28f));
+                Color mintTrail = new Color(0.28f, 0.95f, 0.80f);
+                yield return StartCoroutine(FlyInMascot(rightMascot, new Vector2(650f, -480f), new Vector2(260f, -80f), mintTrail, isLeft: false, duration: 0.44f));
                 yield return StartCoroutine(PunchViewport(new Vector2(0f, 15f), 0.16f));
             }
 
-            yield return new WaitForSeconds(0.45f);
+            yield return new WaitForSeconds(0.35f);
 
             // 4. Step 3: Camera Zooms Out to Center
             // Smoothly zoom out viewport from 1.55x to 1.0x and position to (0, 0)!
@@ -317,9 +432,10 @@ namespace BlockBlast
             // 5. Step 4: Center Logo pops in ("뿅!") in the center + Fireworks burst simultaneously from BOTH top-left and top-right!
             if (fireworksEffect != null)
             {
-                fireworksEffect.TriggerFireworks(new Vector2(-380f, 680f), 38, 1.35f);
-                fireworksEffect.TriggerFireworks(new Vector2(380f, 680f), 38, 1.35f);
+                fireworksEffect.TriggerFireworks(new Vector2(-380f, 680f), 45, 1.35f);
+                fireworksEffect.TriggerFireworks(new Vector2(380f, 680f), 45, 1.35f);
             }
+            PlayCinematicSfx(sfxLogoTitle);
             if (logoTitle != null)
             {
                 yield return StartCoroutine(PopIn(logoTitle, 0.35f));
@@ -327,8 +443,85 @@ namespace BlockBlast
 
             yield return new WaitForSeconds(0.3f);
 
-            // 5. Step 4: Start Idle Breathing Animation
+            // 6. Step 5: Start Idle Breathing Animation & 2-Second Periodic Fireworks Loop
             _idleCoroutine = StartCoroutine(IdleBreathingRoutine());
+            if (_continuousFireworksCoroutine != null) StopCoroutine(_continuousFireworksCoroutine);
+            _continuousFireworksCoroutine = StartCoroutine(ContinuousFireworksRoutine());
+        }
+
+        private IEnumerator FlyInMascot(RectTransform mascot, Vector2 fromPos, Vector2 toPos, Color trailColor, bool isLeft, float duration = 0.44f)
+        {
+            if (mascot == null) yield break;
+
+            mascot.anchoredPosition = fromPos;
+            mascot.localScale = Vector3.one * 0.35f;
+            mascot.localRotation = Quaternion.identity;
+
+            float elapsed = 0f;
+            float trailTimer = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                // Smooth dash fly-in with playful upward curve
+                float easeT = EaseOutCubic(t);
+                float arc = Mathf.Sin(t * Mathf.PI) * 95f;
+                Vector2 curPos = Vector2.Lerp(fromPos, toPos, easeT) + new Vector2(0f, arc);
+                mascot.anchoredPosition = curPos;
+
+                // Scale smoothly up to slightly oversized then settle
+                float scale = Mathf.Lerp(0.35f, 1.12f, easeT);
+                mascot.localScale = Vector3.one * scale;
+
+                // Playful tilt in flying direction
+                float tilt = Mathf.Sin(t * Mathf.PI) * (isLeft ? -22f : 22f);
+                mascot.localRotation = Quaternion.Euler(0f, 0f, tilt);
+
+                // Spawn light sparkle star trail along trajectory
+                trailTimer += Time.deltaTime;
+                if (trailTimer >= 0.045f)
+                {
+                    trailTimer = 0f;
+                    if (fireworksEffect != null)
+                    {
+                        fireworksEffect.SpawnTrailParticle(curPos, trailColor, 55f);
+                    }
+                }
+
+                yield return null;
+            }
+
+            mascot.anchoredPosition = toPos;
+            mascot.localRotation = Quaternion.identity;
+
+            // Touchdown: Jelly Elastic Squash & Stretch bounce + Fireworks pop from top!
+            if (fireworksEffect != null)
+            {
+                Vector2 topBurstPos = isLeft ? new Vector2(-380f, 680f) : new Vector2(380f, 680f);
+                fireworksEffect.TriggerFireworks(topBurstPos, 45, 1.35f);
+            }
+            PlayCinematicSfx(isLeft ? sfxPinkMascot : sfxMintMascot);
+
+            // Squash & stretch elastic landing bounce
+            float bounceElapsed = 0f;
+            float bounceDuration = 0.32f;
+            while (bounceElapsed < bounceDuration)
+            {
+                bounceElapsed += Time.deltaTime;
+                float bt = Mathf.Clamp01(bounceElapsed / bounceDuration);
+                float bounce = ElasticOut(bt);
+                mascot.localScale = Vector3.one * bounce;
+                yield return null;
+            }
+
+            mascot.localScale = Vector3.one;
+        }
+
+        private float EaseOutCubic(float x)
+        {
+            return 1f - Mathf.Pow(1f - x, 3f);
         }
 
         private IEnumerator PopIn(RectTransform rt, float duration = 0.28f)
@@ -421,6 +614,26 @@ namespace BlockBlast
             }
         }
 
+        private IEnumerator ContinuousFireworksRoutine()
+        {
+            // Initial 2-second delay after logo intro burst
+            yield return new WaitForSeconds(2.0f);
+
+            while (!_hasStarted)
+            {
+                if (fireworksEffect != null)
+                {
+                    // Staggered burst: Left top fireworks then Right top fireworks
+                    fireworksEffect.TriggerFireworks(new Vector2(-380f, 680f), 38, 1.3f);
+                    yield return new WaitForSeconds(0.2f);
+                    if (_hasStarted) yield break;
+                    fireworksEffect.TriggerFireworks(new Vector2(380f, 680f), 38, 1.3f);
+                }
+
+                yield return new WaitForSeconds(1.8f); // 0.2s + 1.8s = exactly 2.0s period
+            }
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
             TriggerStartGame(eventData.position);
@@ -436,9 +649,14 @@ namespace BlockBlast
                 BlockAudioManager.Instance.StopIntroBGM(0.2f);
             }
 
-            // Immediately cancel cinematic intro or idle coroutine on click
+            // Immediately cancel cinematic intro, idle coroutine, and continuous fireworks on click
             if (_introCoroutine != null) StopCoroutine(_introCoroutine);
             if (_idleCoroutine != null) StopCoroutine(_idleCoroutine);
+            if (_continuousFireworksCoroutine != null)
+            {
+                StopCoroutine(_continuousFireworksCoroutine);
+                _continuousFireworksCoroutine = null;
+            }
 
             StartCoroutine(TransitionToGameRoutine(screenPos));
         }

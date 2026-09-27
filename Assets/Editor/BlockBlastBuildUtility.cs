@@ -21,10 +21,10 @@ namespace BlockBlast.Editor
             PlayerSettings.companyName = "MallangGames";
             PlayerSettings.bundleVersion = "1.2.0";
 
-            // 2. 9:16 Resolution & Window Mode (Steam Default)
+            // 2. 9:16 Resolution & Window Mode (Steam Default: Borderless Window)
             PlayerSettings.defaultScreenWidth = 720;
             PlayerSettings.defaultScreenHeight = 1280;
-            PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+            PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
             PlayerSettings.resizableWindow = true;
             PlayerSettings.runInBackground = true;
             PlayerSettings.visibleInBackground = true;

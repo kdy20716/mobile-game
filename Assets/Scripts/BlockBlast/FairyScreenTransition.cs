@@ -134,7 +134,7 @@ namespace BlockBlast
             float elapsed = 0f;
             while (elapsed < halfDur)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Time.unscaledDeltaTime;
                 float t = elapsed / halfDur;
                 _dissolveGroup.alpha = Mathf.SmoothStep(0f, 1f, t);
                 yield return null;
@@ -143,14 +143,14 @@ namespace BlockBlast
 
             // 3. 화면 교체 (로비 ➔ 인게임, 메인 ➔ 로비 등)
             onHalfway?.Invoke();
-            yield return new WaitForSeconds(0.04f);
+            yield return new WaitForSecondsRealtime(0.04f);
 
             // 4. Dissolve Out (부드럽게 걷히며 새 화면 등장)
             elapsed = 0f;
             float outDur = duration * 0.55f;
             while (elapsed < outDur)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Time.unscaledDeltaTime;
                 float t = elapsed / outDur;
                 _dissolveGroup.alpha = Mathf.SmoothStep(1f, 0f, t);
                 yield return null;
@@ -226,7 +226,7 @@ namespace BlockBlast
             for (int i = _activeSparkles.Count - 1; i >= 0; i--)
             {
                 CornerSparkle s = _activeSparkles[i];
-                s.time += Time.deltaTime;
+                s.time += Time.unscaledDeltaTime;
                 float progress = s.time / sparkleDuration; // Exactly 1.0 second
 
                 if (progress >= 1f)
@@ -238,11 +238,11 @@ namespace BlockBlast
                 else
                 {
                     // Move & gentle drift
-                    s.rt.anchoredPosition += s.velocity * Time.deltaTime;
-                    s.velocity *= (1f - 1.8f * Time.deltaTime);
+                    s.rt.anchoredPosition += s.velocity * Time.unscaledDeltaTime;
+                    s.velocity *= (1f - 1.8f * Time.unscaledDeltaTime);
 
                     // Rotate
-                    s.rt.Rotate(0, 0, s.rotSpeed * Time.deltaTime);
+                    s.rt.Rotate(0, 0, s.rotSpeed * Time.unscaledDeltaTime);
 
                     // Smooth scale & 1-second alpha fadeout
                     float scale = 1f - Mathf.Pow(progress, 2.5f);

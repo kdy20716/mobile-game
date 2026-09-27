@@ -12,6 +12,12 @@ namespace BlockBlast.Editor
         private const string Folder = "Assets/Textures/BlockBlastCute";
         private const string BackupFolder = "Assets/Textures/BlockBlastCute_Backup";
 
+        // Adorable 2.5D Marshmallow Pastel Palette
+        public static readonly Color PastelPink = new Color(1.0f, 0.65f, 0.77f, 1f);      // #FFA6C4 Soft Strawberry Milk
+        public static readonly Color PastelMint = new Color(0.52f, 0.91f, 0.82f, 1f);      // #85E8D1 Soft Ice Mint Latte
+        public static readonly Color PastelLavender = new Color(0.79f, 0.68f, 0.98f, 1f);  // #C9ADFA Soft Sweet Lavender
+        public static readonly Color PastelButter = new Color(1.0f, 0.86f, 0.52f, 1f);    // #FFDC85 Soft Honey Butter
+
         public static TMP_FontAsset GetOrCreateJuaFontAsset()
         {
             EnsureFolder();
@@ -1336,6 +1342,33 @@ namespace BlockBlast.Editor
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
+        public static Sprite GetOrCreate3DRoundJellyButtonSprite(string name, Color mainCol, int size = 128)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/{name}.png";
+
+            Texture2D tex = Generate3DRoundJellyButtonTexture(size, mainCol);
+            byte[] bytes = tex.EncodeToPNG();
+            SafeWriteAllBytes(path, bytes);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritesheet = new SpriteMetaData[0];
+                importer.spriteBorder = Vector4.zero;
+                importer.alphaIsTransparency = true;
+                importer.spritePixelsPerUnit = 100;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.isReadable = true;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
         public static Sprite GetOrCreateBackgroundSprite()
         {
             EnsureFolder();
@@ -1522,51 +1555,197 @@ namespace BlockBlast.Editor
             return tex;
         }
 
-        // 3. 3D Glossy Jelly Button (9-sliceable, completely clean with NO white lines)
+        // 3. 3D Glossy Jelly / Marshmallow Pastel Button (9-sliceable, completely clean, adorable)
         private static Texture2D Generate3DJellyButtonTexture(int width, int height, Color baseCol)
         {
             Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            float radius = height * 0.44f;
+            float bevelHeight = 8f;
+            float radius = (height - bevelHeight) * 0.46f;
 
-            Color darkShadow = Color.Lerp(baseCol, new Color(0.12f, 0.05f, 0.12f), 0.35f);
-            Color topGlow = Color.Lerp(baseCol, Color.white, 0.32f);
+            // Convert baseCol to HSV to compute harmonious, sweet tone-on-tone colors without ANY muddy blacks!
+            Color.RGBToHSV(baseCol, out float h, out float s, out float v);
+
+            // Rich tone-on-tone base cushion shadow (richer saturation, slightly deeper value, NEVER black)
+            Color shadowCol = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.25f + 0.10f), Mathf.Clamp01(v * 0.80f));
+            // Soft outer border/stroke for clean separation against light backgrounds
+            Color strokeCol = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.35f + 0.15f), Mathf.Clamp01(v * 0.72f));
+            // Milky cream top highlight
+            Color topGlow = Color.Lerp(baseCol, Color.white, 0.16f);
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    float cx = Mathf.Clamp(x, radius, width - radius);
-                    float cy = Mathf.Clamp(y, radius, height - radius);
-                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy));
+                    // Top Face Pill
+                    float topCx = Mathf.Clamp(x, radius, width - radius);
+                    float topCy = Mathf.Clamp(y, radius + bevelHeight, height - radius);
+                    float topDist = Vector2.Distance(new Vector2(x, y), new Vector2(topCx, topCy));
 
-                    if (dist > radius)
-                    {
-                        tex.SetPixel(x, y, Color.clear);
-                    }
-                    else
-                    {
-                        float alpha = Mathf.Clamp01((radius - dist) / 2.0f);
-                        float normY = (float)y / height;
+                    // Bottom Base Extrusion
+                    float extY = y + bevelHeight;
+                    float extCy = Mathf.Clamp(extY, radius + bevelHeight, height - radius);
+                    float extDist = Vector2.Distance(new Vector2(x, extY), new Vector2(topCx, extCy));
 
-                        // Smooth vertical 3D jelly volume: deeper at bottom, bright and rich at top (NO horizontal lines)
-                        Color c;
-                        if (normY < 0.5f)
+                    // 1. Calculate Base Cushion Layer
+                    Color botColor = shadowCol;
+                    float botAlpha = 0f;
+                    if (y < radius + bevelHeight && extDist <= radius + 1.2f)
+                    {
+                        botAlpha = Mathf.Clamp01((radius - extDist) / 1.2f);
+                        if (extDist > radius - 2.0f)
                         {
-                            c = Color.Lerp(darkShadow, baseCol, Mathf.SmoothStep(0f, 0.5f, normY));
+                            float strokeT = (extDist - (radius - 2.0f)) / 2.0f;
+                            botColor = Color.Lerp(shadowCol, strokeCol, strokeT * 0.70f);
+                        }
+                    }
+
+                    // 2. Calculate Top Face Layer
+                    Color topColor = Color.clear;
+                    float topAlpha = 0f;
+                    if (topDist <= radius + 1.2f)
+                    {
+                        topAlpha = Mathf.Clamp01((radius - topDist) / 1.2f);
+
+                        float faceNormY = Mathf.Clamp01((y - bevelHeight) / (height - bevelHeight));
+                        topColor = Color.Lerp(baseCol, topGlow, Mathf.SmoothStep(0f, 1f, faceNormY));
+
+                        // Soft top rim highlight (gentle gloss along top curve)
+                        if (y > height - 16 && topDist < radius - 1.5f)
+                        {
+                            float rimT = Mathf.Clamp01((y - (height - 16)) / 14f);
+                            topColor = Color.Lerp(topColor, Color.white, rimT * 0.25f);
+                        }
+
+                        // Soft outer stroke on face edge
+                        if (topDist > radius - 2.0f)
+                        {
+                            float strokeT = (topDist - (radius - 2.0f)) / 2.0f;
+                            topColor = Color.Lerp(topColor, strokeCol, strokeT * 0.55f);
+                        }
+                    }
+
+                    // 3. Composite Top Face over Base Cushion
+                    Color finalCol;
+                    if (topAlpha >= 1f)
+                    {
+                        finalCol = topColor;
+                    }
+                    else if (topAlpha > 0f)
+                    {
+                        if (botAlpha > 0f && y <= topCy)
+                        {
+                            finalCol = Color.Lerp(botColor, topColor, topAlpha);
+                            finalCol.a = Mathf.Max(botAlpha, topAlpha);
                         }
                         else
                         {
-                            c = Color.Lerp(baseCol, topGlow, Mathf.SmoothStep(0.5f, 1f, normY));
+                            finalCol = topColor;
+                            finalCol.a = topAlpha;
+                        }
+                    }
+                    else if (botAlpha > 0f)
+                    {
+                        finalCol = botColor;
+                        finalCol.a = botAlpha;
+                    }
+                    else
+                    {
+                        finalCol = Color.clear;
+                    }
+
+                    tex.SetPixel(x, y, finalCol);
+                }
+            }
+
+            tex.Apply();
+            return tex;
+        }
+
+        private static Texture2D Generate3DRoundJellyButtonTexture(int size, Color baseCol)
+        {
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float bevelHeight = 10f;
+            float radius = (size - bevelHeight) * 0.46f;
+            Vector2 topCenter = new Vector2(size * 0.5f, size * 0.5f + bevelHeight * 0.5f);
+
+            Color.RGBToHSV(baseCol, out float h, out float s, out float v);
+            Color shadowCol = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.25f + 0.10f), Mathf.Clamp01(v * 0.80f));
+            Color strokeCol = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.35f + 0.15f), Mathf.Clamp01(v * 0.72f));
+            Color topGlow = Color.Lerp(baseCol, Color.white, 0.16f);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float topDist = Vector2.Distance(new Vector2(x, y), topCenter);
+                    float extY = y + bevelHeight;
+                    float extDist = Vector2.Distance(new Vector2(x, extY), topCenter);
+
+                    // Base Cushion
+                    Color botColor = shadowCol;
+                    float botAlpha = 0f;
+                    if (y < topCenter.y && extDist <= radius + 1.2f)
+                    {
+                        botAlpha = Mathf.Clamp01((radius - extDist) / 1.2f);
+                        if (extDist > radius - 2.0f)
+                        {
+                            float strokeT = (extDist - (radius - 2.0f)) / 2.0f;
+                            botColor = Color.Lerp(shadowCol, strokeCol, strokeT * 0.70f);
+                        }
+                    }
+
+                    // Top Face
+                    Color topColor = Color.clear;
+                    float topAlpha = 0f;
+                    if (topDist <= radius + 1.2f)
+                    {
+                        topAlpha = Mathf.Clamp01((radius - topDist) / 1.2f);
+                        float faceNormY = Mathf.Clamp01((y - bevelHeight) / (size - bevelHeight));
+                        topColor = Color.Lerp(baseCol, topGlow, Mathf.SmoothStep(0f, 1f, faceNormY));
+
+                        if (y > size - 20 && topDist < radius - 2f)
+                        {
+                            float rimT = Mathf.Clamp01((y - (size - 20)) / 18f);
+                            topColor = Color.Lerp(topColor, Color.white, rimT * 0.25f);
                         }
 
-                        // Soft pill-shaped contour shading near boundary
-                        float innerDist = dist / radius;
-                        float edgeShade = Mathf.SmoothStep(0.72f, 1.0f, innerDist);
-                        c = Color.Lerp(c, darkShadow, edgeShade * 0.22f);
-
-                        c.a *= alpha;
-                        tex.SetPixel(x, y, c);
+                        if (topDist > radius - 2.0f)
+                        {
+                            float strokeT = (topDist - (radius - 2.0f)) / 2.0f;
+                            topColor = Color.Lerp(topColor, strokeCol, strokeT * 0.55f);
+                        }
                     }
+
+                    // Composite
+                    Color finalCol;
+                    if (topAlpha >= 1f)
+                    {
+                        finalCol = topColor;
+                    }
+                    else if (topAlpha > 0f)
+                    {
+                        if (botAlpha > 0f && y <= topCenter.y)
+                        {
+                            finalCol = Color.Lerp(botColor, topColor, topAlpha);
+                            finalCol.a = Mathf.Max(botAlpha, topAlpha);
+                        }
+                        else
+                        {
+                            finalCol = topColor;
+                            finalCol.a = topAlpha;
+                        }
+                    }
+                    else if (botAlpha > 0f)
+                    {
+                        finalCol = botColor;
+                        finalCol.a = botAlpha;
+                    }
+                    else
+                    {
+                        finalCol = Color.clear;
+                    }
+
+                    tex.SetPixel(x, y, finalCol);
                 }
             }
 
@@ -2305,6 +2484,19 @@ namespace BlockBlast.Editor
                 GetOrCreateLanguageLogoSprite(BlockBlast.GameLanguage.JA),
                 GetOrCreateLanguageLogoSprite(BlockBlast.GameLanguage.ZH)
             };
+        }
+
+        // ==========================================
+        // 10-1. Mallang Games Studio Logo
+        // ==========================================
+        public static Sprite GetOrCreateMallangGamesStudioLogoSprite()
+        {
+            string path = "Assets/Textures/MallangGames_Studio_Logo.png";
+            if (File.Exists(path))
+            {
+                return ForceGetOrImportSingleSprite(path);
+            }
+            return GetOrCreateMallangBlastLogoSprite();
         }
 
         // ==========================================

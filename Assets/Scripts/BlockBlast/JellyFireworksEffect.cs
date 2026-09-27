@@ -62,6 +62,52 @@ namespace BlockBlast
             }
         }
 
+        public void SpawnTrailParticle(Vector2 localPos, Color col, float size = 55f)
+        {
+            EnsureFallbackSprites();
+            GameObject pObj = new GameObject("TrailParticle", typeof(RectTransform), typeof(Image));
+            pObj.transform.SetParent(transform, false);
+
+            RectTransform rt = pObj.GetComponent<RectTransform>();
+            rt.anchoredPosition = localPos + Random.insideUnitCircle * 15f;
+            rt.sizeDelta = new Vector2(size, size);
+
+            Image img = pObj.GetComponent<Image>();
+            img.sprite = sparkleStarSprite != null ? sparkleStarSprite : glowOrbSprite;
+            img.raycastTarget = false;
+            img.color = col;
+
+            StartCoroutine(AnimateTrailRoutine(rt, img, col));
+        }
+
+        private IEnumerator AnimateTrailRoutine(RectTransform rt, Image img, Color baseCol)
+        {
+            float duration = 0.45f;
+            float elapsed = 0f;
+            Vector2 drift = new Vector2(Random.Range(-25f, 25f), Random.Range(-35f, 15f));
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                if (rt != null)
+                {
+                    rt.anchoredPosition += drift * Time.deltaTime;
+                    float s = Mathf.Lerp(1.15f, 0.2f, t);
+                    rt.localScale = new Vector3(s, s, 1f);
+                    rt.Rotate(0f, 0f, 180f * Time.deltaTime);
+                }
+                if (img != null)
+                {
+                    float a = Mathf.Lerp(0.95f, 0f, t);
+                    img.color = new Color(baseCol.r, baseCol.g, baseCol.b, a);
+                }
+                yield return null;
+            }
+
+            if (rt != null) Destroy(rt.gameObject);
+        }
+
         public void TriggerFireworks(Vector2 localPos, int count = 42, float speedMultiplier = 1.25f)
         {
             EnsureFallbackSprites();
@@ -85,7 +131,7 @@ namespace BlockBlast
 
             RectTransform rt = ringObj.GetComponent<RectTransform>();
             rt.anchoredPosition = localPos;
-            rt.sizeDelta = new Vector2(120f, 120f); // 2.5x scale (was 48f)
+            rt.sizeDelta = new Vector2(180f, 180f); // 1.5x scaled up (was 120f)
 
             Image img = ringObj.GetComponent<Image>();
             img.sprite = shockwaveRingSprite;
@@ -121,7 +167,7 @@ namespace BlockBlast
 
             RectTransform rt = flashObj.GetComponent<RectTransform>();
             rt.anchoredPosition = localPos;
-            rt.sizeDelta = new Vector2(200f, 200f); // 2.5x scale (was 80f)
+            rt.sizeDelta = new Vector2(300f, 300f); // 1.5x scaled up (was 200f)
 
             Image img = flashObj.GetComponent<Image>();
             img.sprite = glowOrbSprite;
@@ -174,25 +220,25 @@ namespace BlockBlast
             // Particle Type: 0 = Glow Orb (65%), 1 = Sparkle Star (25%), 2 = Fairy Dust Glimmer (10%)
             float typeRoll = Random.value;
             Sprite chosenSprite = glowOrbSprite;
-            float size = Random.Range(45f, 85f); // 2.5x scale (was 18f ~ 34f)
+            float size = Random.Range(68f, 128f); // 1.5x scaled up (was 45f ~ 85f)
             bool isStar = false;
             bool isFairyDust = false;
 
             if (typeRoll < 0.65f)
             {
                 chosenSprite = glowOrbSprite;
-                size = Random.Range(45f, 85f); // 2.5x scale
+                size = Random.Range(68f, 128f); // 1.5x scaled up
             }
             else if (typeRoll < 0.90f)
             {
                 chosenSprite = sparkleStarSprite != null ? sparkleStarSprite : glowOrbSprite;
-                size = Random.Range(55f, 100f); // 2.5x scale (was 22f ~ 40f)
+                size = Random.Range(85f, 150f); // 1.5x scaled up (was 55f ~ 100f)
                 isStar = true;
             }
             else
             {
                 chosenSprite = glowOrbSprite;
-                size = Random.Range(22f, 38f); // 2.5x scale (was 9f ~ 15f)
+                size = Random.Range(33f, 58f); // 1.5x scaled up (was 22f ~ 38f)
                 isFairyDust = true;
                 if (Random.value < 0.5f) chosenCol = Color.white;
                 img.color = chosenCol;

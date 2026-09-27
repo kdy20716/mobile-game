@@ -134,10 +134,10 @@ namespace BlockBlast
 
             if (hasRemainingBlocks && !anyCanFit)
             {
-                Debug.Log("[BlockBlast] No more moves in any rotation! Game Over triggered.");
+                Debug.Log("[BlockBlast] No more moves in current hand. Waiting for Skip or timer expiration.");
                 if (BlockBlastUIManager.Instance != null)
                 {
-                    BlockBlastUIManager.Instance.ShowGameOver();
+                    BlockBlastUIManager.Instance.NotifyNoMovesAvailable();
                 }
             }
         }

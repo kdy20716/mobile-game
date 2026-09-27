@@ -9,8 +9,14 @@ namespace BlockBlast
     {
         public static BlockAudioManager Instance { get; private set; }
 
-        public const float DEFAULT_SFX_VOLUME = 0.42f; // 50% reduced comfortable default
-        public const float DEFAULT_BGM_VOLUME = 0.22f; // further reduced for comfortable listening
+        public const float BASE_SFX_VOLUME = 0.22f; // Comfortable, gentle default (at 50% slider)
+        public const float BASE_BGM_VOLUME = 0.12f; // Soothing, comfortable background default (at 50% slider)
+        public const float DEFAULT_SLIDER_PERCENT = 0.50f; // Slider bar default: 50%
+        public const float MAX_SFX_VOLUME = BASE_SFX_VOLUME * 2f; // 0.44f
+        public const float MAX_BGM_VOLUME = BASE_BGM_VOLUME * 2f; // 0.24f
+
+        public const float DEFAULT_SFX_VOLUME = BASE_SFX_VOLUME;
+        public const float DEFAULT_BGM_VOLUME = BASE_BGM_VOLUME;
 
         public enum BGMState
         {
@@ -52,9 +58,12 @@ namespace BlockBlast
         [Tooltip("인게임 배경 음악 플레이리스트 (InGame - 번호순 정렬 및 무한 루프)")]
         public List<AudioClip> bgmInGamePlaylist = new List<AudioClip>();
 
-        [Header("Volume Settings (50% Default Reduction)")]
-        [Range(0f, 1f)] public float sfxVolume = DEFAULT_SFX_VOLUME;
-        [Range(0f, 1f)] public float bgmVolume = DEFAULT_BGM_VOLUME;
+        [Header("Volume Settings (50% UI Slider Calibrated)")]
+        [Range(0f, 1f)] public float sfxSliderLevel = DEFAULT_SLIDER_PERCENT;
+        [Range(0f, 1f)] public float bgmSliderLevel = DEFAULT_SLIDER_PERCENT;
+
+        public float sfxVolume => Mathf.Clamp01(sfxSliderLevel * MAX_SFX_VOLUME);
+        public float bgmVolume => Mathf.Clamp01(bgmSliderLevel * MAX_BGM_VOLUME);
 
         private AudioSource _sfxSource;
         private AudioSource _bgmSource;
@@ -84,20 +93,20 @@ namespace BlockBlast
             _bgmSource = gameObject.AddComponent<AudioSource>();
             _bgmSource.playOnAwake = false;
 
-            // Enforce reduced volume default on existing and future sessions
-            if (!PlayerPrefs.HasKey("Sound_Volume_Halved_V5"))
+            // Enforce 50% default slider level on settings bar while keeping current audio volume intact
+            if (!PlayerPrefs.HasKey("Sound_Volume_Calibrated_50Percent_V8"))
             {
-                sfxVolume = DEFAULT_SFX_VOLUME;
-                bgmVolume = DEFAULT_BGM_VOLUME;
-                PlayerPrefs.SetFloat("SFX_Volume", sfxVolume);
-                PlayerPrefs.SetFloat("BGM_Volume", bgmVolume);
-                PlayerPrefs.SetInt("Sound_Volume_Halved_V5", 1);
+                sfxSliderLevel = DEFAULT_SLIDER_PERCENT; // 0.5f (50%)
+                bgmSliderLevel = DEFAULT_SLIDER_PERCENT; // 0.5f (50%)
+                PlayerPrefs.SetFloat("SFX_Slider_Level", sfxSliderLevel);
+                PlayerPrefs.SetFloat("BGM_Slider_Level", bgmSliderLevel);
+                PlayerPrefs.SetInt("Sound_Volume_Calibrated_50Percent_V8", 1);
                 PlayerPrefs.Save();
             }
             else
             {
-                sfxVolume = PlayerPrefs.GetFloat("SFX_Volume", DEFAULT_SFX_VOLUME);
-                bgmVolume = PlayerPrefs.GetFloat("BGM_Volume", DEFAULT_BGM_VOLUME);
+                sfxSliderLevel = PlayerPrefs.GetFloat("SFX_Slider_Level", DEFAULT_SLIDER_PERCENT);
+                bgmSliderLevel = PlayerPrefs.GetFloat("BGM_Slider_Level", DEFAULT_SLIDER_PERCENT);
             }
 
             ReloadClipsFromEditorAssets();
@@ -106,8 +115,14 @@ namespace BlockBlast
         private void Start()
         {
             ReloadClipsFromEditorAssets();
-            // Initial state: Start playing Intro BGM if on Intro screen
-            PlayIntroBGM();
+
+            // Do not play Intro BGM while splash screen is active!
+            // MainMenuCinematicController will call PlayIntroBGM() when the splash screen finishes or is skipped.
+            bool isSplashActive = SplashScreenController.Instance != null && SplashScreenController.Instance.IsActive;
+            if (!isSplashActive)
+            {
+                PlayIntroBGM();
+            }
         }
 
         private void Update()
@@ -245,6 +260,14 @@ namespace BlockBlast
             }
         }
 
+        public void PlayCustomSFX(AudioClip clip, float volumeMultiplier = 1.0f)
+        {
+            if (clip != null && _sfxSource != null)
+            {
+                _sfxSource.PlayOneShot(clip, Mathf.Clamp01(sfxVolume * volumeMultiplier));
+            }
+        }
+
         // Backward compatibility wrappers
         public void PlayUIClick()
         {
@@ -379,18 +402,20 @@ namespace BlockBlast
             _bgmSource.volume = bgmVolume;
         }
 
-        public void SetBGMVolume(float volume)
+        public void SetBGMVolume(float sliderValue)
         {
-            bgmVolume = Mathf.Clamp01(volume);
+            bgmSliderLevel = Mathf.Clamp01(sliderValue);
             if (_bgmSource != null) _bgmSource.volume = bgmVolume;
-            PlayerPrefs.SetFloat("BGM_Volume", bgmVolume);
+            PlayerPrefs.SetFloat("BGM_Slider_Level", bgmSliderLevel);
+            PlayerPrefs.Save();
         }
 
-        public void SetSFXVolume(float volume)
+        public void SetSFXVolume(float sliderValue)
         {
-            sfxVolume = Mathf.Clamp01(volume);
+            sfxSliderLevel = Mathf.Clamp01(sliderValue);
             if (_sfxSource != null) _sfxSource.volume = sfxVolume;
-            PlayerPrefs.SetFloat("SFX_Volume", sfxVolume);
+            PlayerPrefs.SetFloat("SFX_Slider_Level", sfxSliderLevel);
+            PlayerPrefs.Save();
         }
 
         public void ReloadClipsFromEditorAssets()

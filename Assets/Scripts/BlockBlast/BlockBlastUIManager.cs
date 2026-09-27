@@ -48,6 +48,14 @@ namespace BlockBlast
         [SerializeField] private Button btnPauseRestart;
         [SerializeField] private Button btnPauseLobby;
 
+        [Header("Restart Confirm Modal")]
+        [SerializeField] private GameObject restartConfirmModal;
+        [SerializeField] private Button btnRestartConfirmYes;
+        [SerializeField] private Button btnRestartConfirmNo;
+
+        [Header("White Flash Overlay")]
+        [SerializeField] private Image whiteFlashOverlay;
+
         [Header("In-Game Root")]
         [SerializeField] private GameObject inGameRoot;
 
@@ -58,6 +66,14 @@ namespace BlockBlast
         public void ShowInGameUI(bool show)
         {
             if (inGameRoot != null) inGameRoot.SetActive(show);
+            if (!show)
+            {
+                Time.timeScale = 1f;
+                _isTimerActive = false;
+                _wasTimerActiveBeforePause = false;
+                if (pauseModal != null) pauseModal.SetActive(false);
+                if (gameOverModal != null) gameOverModal.SetActive(false);
+            }
         }
 
         private static readonly string[] GuideTips = new string[]
@@ -77,9 +93,10 @@ namespace BlockBlast
         private float _turnRemainingTime = 180f;
         private bool _isTimerActive = false;
 
-        private bool _isSkipReady = true;
-        private int _skipRequiredLines = 10;
-        private int _skipCurrentLines = 0;
+        public const int MAX_SKIP_STOCK = 3;
+        public const int LINES_PER_SKIP_CHARGE = 10;
+        private int _skipStock = 1;
+        private int _skipLinesProgress = 0;
         private Coroutine _tipCoroutine;
         private int _currentTipIndex = 0;
 
@@ -240,7 +257,7 @@ namespace BlockBlast
 
             if (btnSkip != null)
             {
-                btnSkip.onClick.AddListener(OnSkipClicked);
+                btnSkip.onClick.AddListener(TryUseSkip);
             }
 
             if (btnRotate != null)
@@ -324,38 +341,75 @@ namespace BlockBlast
 
         private void Update()
         {
-            // Global PC Keyboard Hotkeys
+            // 1. Guard: Only process in-game hotkeys and game timer when in-game UI is active!
+            if (inGameRoot == null || !inGameRoot.activeInHierarchy) return;
+
+            // 2. Global PC Keyboard Hotkeys
             bool isEscPressed = false;
             bool isRotatePressed = false;
+            bool isSkipPressed = false;
 
 #if ENABLE_INPUT_SYSTEM
             if (UnityEngine.InputSystem.Keyboard.current != null)
             {
                 isEscPressed = UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame;
                 isRotatePressed = UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame || UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
+                isSkipPressed = UnityEngine.InputSystem.Keyboard.current.sKey.wasPressedThisFrame;
             }
 #else
             isEscPressed = Input.GetKeyDown(KeyCode.Escape);
             isRotatePressed = Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Space);
+            isSkipPressed = Input.GetKeyDown(KeyCode.S);
 #endif
 
-            if (isEscPressed)
+            // 3. When Pause Modal is active, game timer is frozen; ESC resumes the game
+            if (pauseModal != null && pauseModal.activeSelf)
             {
-                if (pauseModal != null && pauseModal.activeSelf)
+                if (isEscPressed)
                 {
                     ClosePauseModal();
                 }
-                else if (gameOverModal == null || !gameOverModal.activeSelf)
+                return;
+            }
+
+            // 4. In-Game ESC Handling
+            if (isEscPressed)
+            {
+                if (gameOverModal == null || !gameOverModal.activeSelf)
                 {
                     OpenPauseModal();
                 }
+                return;
+            }
+
+            // Right-click cancels drag smoothly without pausing
+            bool isRightClick = false;
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Mouse.current != null)
+            {
+                isRightClick = UnityEngine.InputSystem.Mouse.current.rightButton.wasPressedThisFrame;
+            }
+#else
+            isRightClick = Input.GetMouseButtonDown(1);
+#endif
+            if (isRightClick && DraggableBlockUI.CurrentlyDraggedBlock != null)
+            {
+                DraggableBlockUI.CurrentlyDraggedBlock.CancelDrag(immediate: false);
             }
 
             if (isRotatePressed)
             {
-                if (btnRotate != null && btnRotate.interactable && (pauseModal == null || !pauseModal.activeSelf) && (gameOverModal == null || !gameOverModal.activeSelf))
+                if (btnRotate != null && btnRotate.interactable && (gameOverModal == null || !gameOverModal.activeSelf))
                 {
                     btnRotate.onClick.Invoke();
+                }
+            }
+
+            if (isSkipPressed)
+            {
+                if (gameOverModal == null || !gameOverModal.activeSelf)
+                {
+                    TryUseSkip();
                 }
             }
 
@@ -489,15 +543,30 @@ namespace BlockBlast
             if (bestScoreText != null) bestScoreText.text = _bestScore.ToString();
         }
 
-        private void OnSkipClicked()
+        public void TryUseSkip()
         {
-            if (!_isSkipReady) return;
+            if (_skipStock <= 0)
+            {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                return;
+            }
 
-            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlaySkip();
+            // Cancel and discard any currently dragged block immediately
+            DraggableBlockUI.CancelAllActiveDrags(immediate: true);
 
-            _isSkipReady = false;
-            _skipCurrentLines = 0;
+            _skipStock--;
             UpdateSkipUI();
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlaySkip();
+            }
+
+            if (btnSkip != null)
+            {
+                StopCoroutine("PunchSkipButtonAnim");
+                StartCoroutine("PunchSkipButtonAnim");
+            }
 
             if (BlockSpawner.Instance != null)
             {
@@ -505,29 +574,85 @@ namespace BlockBlast
             }
         }
 
+        private IEnumerator PunchSkipButtonAnim()
+        {
+            if (btnSkip == null) yield break;
+            Transform tr = btnSkip.transform;
+            Vector3 origScale = Vector3.one;
+            float elapsed = 0f;
+            float dur = 0.22f;
+            while (elapsed < dur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = elapsed / dur;
+                float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.22f;
+                tr.localScale = origScale * s;
+                yield return null;
+            }
+            tr.localScale = origScale;
+        }
+
+        public void NotifyNoMovesAvailable()
+        {
+            // If the player has skip stocks, gently pulse the skip button to prompt them to use it
+            if (_skipStock > 0 && btnSkip != null)
+            {
+                StopCoroutine("PulseSkipPromptRoutine");
+                StartCoroutine("PulseSkipPromptRoutine");
+            }
+        }
+
+        private IEnumerator PulseSkipPromptRoutine()
+        {
+            if (btnSkip == null) yield break;
+            Transform tr = btnSkip.transform;
+            Vector3 origScale = Vector3.one;
+            for (int pulse = 0; pulse < 2; pulse++)
+            {
+                float elapsed = 0f;
+                float dur = 0.22f;
+                while (elapsed < dur)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / dur;
+                    float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.22f;
+                    tr.localScale = origScale * s;
+                    yield return null;
+                }
+            }
+            tr.localScale = origScale;
+        }
+
         private void UpdateSkipUI()
         {
+            bool canSkip = (_skipStock > 0);
+
             if (btnSkip != null)
             {
-                btnSkip.interactable = _isSkipReady;
+                btnSkip.interactable = canSkip;
                 var cg = btnSkip.GetComponent<CanvasGroup>();
                 if (cg != null)
                 {
-                    cg.alpha = _isSkipReady ? 1.0f : 0.45f;
+                    cg.alpha = canSkip ? 1.0f : 0.45f;
                 }
             }
 
             if (skipBadgeText != null)
             {
-                if (_isSkipReady)
+                if (_skipStock >= MAX_SKIP_STOCK)
                 {
-                    skipBadgeText.text = "READY";
-                    skipBadgeText.color = new Color(0.1f, 0.4f, 0.1f);
+                    skipBadgeText.text = "3/3 MAX";
+                    skipBadgeText.color = new Color(0.12f, 0.72f, 0.45f, 1f); // Vibrant Mint Green
+                }
+                else if (_skipStock > 0)
+                {
+                    skipBadgeText.text = $"{_skipStock}/3 ({_skipLinesProgress}/10)";
+                    skipBadgeText.color = new Color(0.35f, 0.22f, 0.62f, 1f); // Deep Purple
                 }
                 else
                 {
-                    skipBadgeText.text = $"{_skipCurrentLines}/{_skipRequiredLines}";
-                    skipBadgeText.color = new Color(0.4f, 0.1f, 0.1f);
+                    skipBadgeText.text = $"0/3 ({_skipLinesProgress}/10)";
+                    skipBadgeText.color = new Color(0.85f, 0.25f, 0.35f, 1f); // Muted Crimson
                 }
             }
         }
@@ -536,18 +661,22 @@ namespace BlockBlast
         {
             TriggerShake();
 
-            // Progressive Skip Cooldown
-            if (!_isSkipReady)
+            // 🎲 Skip Stock System: +1 stock every 10 lines, up to max 3
+            if (_skipStock < MAX_SKIP_STOCK)
             {
-                _skipCurrentLines += totalLines;
-                if (_skipCurrentLines >= _skipRequiredLines)
+                _skipLinesProgress += totalLines;
+                while (_skipLinesProgress >= LINES_PER_SKIP_CHARGE && _skipStock < MAX_SKIP_STOCK)
                 {
-                    _isSkipReady = true;
-                    _skipCurrentLines = 0;
-                    _skipRequiredLines += 10; // 10 -> 20 -> 30...
+                    _skipLinesProgress -= LINES_PER_SKIP_CHARGE;
+                    _skipStock++;
                 }
-                UpdateSkipUI();
+
+                if (_skipStock >= MAX_SKIP_STOCK)
+                {
+                    _skipLinesProgress = 0;
+                }
             }
+            UpdateSkipUI();
 
             if (comboPopupText != null)
             {
@@ -636,10 +765,16 @@ namespace BlockBlast
 
         public void RestartGame()
         {
+            DraggableBlockUI.CancelAllActiveDrags(immediate: true);
+
             _score = 0;
-            _isSkipReady = true;
-            _skipRequiredLines = 10;
-            _skipCurrentLines = 0;
+            _skipStock = 1;
+            _skipLinesProgress = 0;
+
+            Time.timeScale = 1f;
+            _wasTimerActiveBeforePause = false;
+            if (pauseModal != null) pauseModal.SetActive(false);
+            if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
 
             UpdateScoreUI();
             UpdateSkipUI();
@@ -665,8 +800,137 @@ namespace BlockBlast
                 BlockSpawner.Instance.SpawnNewHand();
             }
 
+            // Restart ingame BGM from the very beginning
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayInGameBGM();
+            }
+
             _isTimerActive = true;
             ResetTurnTimer();
+        }
+
+        /// <summary>완전 재시작: 하얀 플래시 후 BGM 포함 완전 리셋</summary>
+        public void RestartGameWithFlash()
+        {
+            StartCoroutine(RestartWithWhiteFlash());
+        }
+
+        private IEnumerator RestartWithWhiteFlash()
+        {
+            // 1. Stop time and close modals immediately
+            _isTimerActive = false;
+            Time.timeScale = 0f;
+            if (pauseModal != null) pauseModal.SetActive(false);
+            if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
+
+            // 2. Stop BGM with instant stop
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.StopBGM(0f);
+            }
+
+            // 3. Fade IN white overlay (unscaled time so timeScale=0 doesn't block it)
+            if (whiteFlashOverlay != null)
+            {
+                whiteFlashOverlay.gameObject.SetActive(true);
+                float elapsed = 0f;
+                float fadeDur = 0.35f;
+                Color c = Color.white;
+                c.a = 0f;
+                whiteFlashOverlay.color = c;
+                while (elapsed < fadeDur)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    c.a = Mathf.Clamp01(elapsed / fadeDur);
+                    whiteFlashOverlay.color = c;
+                    yield return null;
+                }
+                c.a = 1f;
+                whiteFlashOverlay.color = c;
+            }
+
+            // 4. Brief white hold
+            float holdStart = Time.unscaledTime;
+            while (Time.unscaledTime - holdStart < 0.25f) yield return null;
+
+            // 5. Full reset under the white screen
+            Time.timeScale = 1f;
+            RestartGame();
+
+            // 6. Fade OUT white overlay
+            if (whiteFlashOverlay != null)
+            {
+                float elapsed = 0f;
+                float fadeDur = 0.45f;
+                Color c = whiteFlashOverlay.color;
+                while (elapsed < fadeDur)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    c.a = Mathf.Clamp01(1f - elapsed / fadeDur);
+                    whiteFlashOverlay.color = c;
+                    yield return null;
+                }
+                c.a = 0f;
+                whiteFlashOverlay.color = c;
+                whiteFlashOverlay.gameObject.SetActive(false);
+            }
+        }
+
+        public void OpenRestartConfirmModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (restartConfirmModal != null)
+            {
+                restartConfirmModal.SetActive(true);
+            }
+        }
+
+        public void CloseRestartConfirmModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (restartConfirmModal != null)
+            {
+                restartConfirmModal.SetActive(false);
+            }
+        }
+
+        public void SetupRestartConfirmModal(GameObject modal, Button yesBtn, Button noBtn)
+        {
+            restartConfirmModal = modal;
+            btnRestartConfirmYes = yesBtn;
+            btnRestartConfirmNo = noBtn;
+
+            if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
+
+            if (btnRestartConfirmYes != null)
+            {
+                btnRestartConfirmYes.onClick.RemoveAllListeners();
+                btnRestartConfirmYes.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                    RestartGameWithFlash();
+                });
+            }
+
+            if (btnRestartConfirmNo != null)
+            {
+                btnRestartConfirmNo.onClick.RemoveAllListeners();
+                btnRestartConfirmNo.onClick.AddListener(() =>
+                {
+                    CloseRestartConfirmModal();
+                });
+            }
+        }
+
+        public void SetupWhiteFlashOverlay(Image overlay)
+        {
+            whiteFlashOverlay = overlay;
+            if (whiteFlashOverlay != null)
+            {
+                whiteFlashOverlay.color = new Color(1f, 1f, 1f, 0f);
+                whiteFlashOverlay.gameObject.SetActive(false);
+            }
         }
 
         public void StartGameFromMenu()
@@ -679,6 +943,16 @@ namespace BlockBlast
             {
                 inGameRoot.SetActive(true);
             }
+            if (pauseModal != null)
+            {
+                pauseModal.SetActive(false);
+            }
+            if (gameOverModal != null)
+            {
+                gameOverModal.SetActive(false);
+            }
+            Time.timeScale = 1f;
+            _wasTimerActiveBeforePause = false;
             RestartGame();
         }
 
@@ -689,18 +963,25 @@ namespace BlockBlast
             menuBestScoreText = menuBest;
         }
 
+        public bool IsPaused => pauseModal != null && pauseModal.activeSelf;
         private bool _wasTimerActiveBeforePause = false;
 
         public void OpenPauseModal()
         {
+            DraggableBlockUI.CancelAllActiveDrags(immediate: true);
+
             _wasTimerActiveBeforePause = _isTimerActive;
             _isTimerActive = false;
+            Time.timeScale = 0f;
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (pauseModal != null) pauseModal.SetActive(true);
         }
 
         public void ClosePauseModal()
         {
+            DraggableBlockUI.CancelAllActiveDrags(immediate: true);
+
+            Time.timeScale = 1f;
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (pauseModal != null) pauseModal.SetActive(false);
             if (_wasTimerActiveBeforePause)
@@ -745,8 +1026,8 @@ namespace BlockBlast
                 btnPauseRestart.onClick.AddListener(() =>
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
-                    ClosePauseModal();
-                    RestartGame();
+                    // Show confirmation dialog — don't close pause modal yet
+                    OpenRestartConfirmModal();
                 });
             }
 
