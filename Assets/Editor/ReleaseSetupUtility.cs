@@ -36,7 +36,7 @@ namespace BlockBlast.Editor
             }
 
             // 3. App Icon Setup (Dedicated AppIcon.png)
-            string pinkMascotPath = "Assets/Textures/BlockBlastCute_Backup/Block_Pink_Mascot.png";
+            string pinkMascotPath = "Assets/Textures/BlockBlastCute/Block_Pink_Mascot.png";
             string iconPath = "Assets/Textures/AppIcon.png";
             if (!System.IO.File.Exists(iconPath) && System.IO.File.Exists(pinkMascotPath))
             {

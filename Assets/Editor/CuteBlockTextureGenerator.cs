@@ -10,7 +10,6 @@ namespace BlockBlast.Editor
     public static class CuteBlockTextureGenerator
     {
         private const string Folder = "Assets/Textures/BlockBlastCute";
-        private const string BackupFolder = "Assets/Textures/BlockBlastCute_Backup";
 
         // Adorable 2.5D Marshmallow Pastel Palette
         public static readonly Color PastelPink = new Color(1.0f, 0.65f, 0.77f, 1f);      // #FFA6C4 Soft Strawberry Milk
@@ -829,29 +828,29 @@ namespace BlockBlast.Editor
         public static Sprite GetOrCreateMintMascotSprite()
         {
             EnsureFolder();
-            string bakPath = $"{BackupFolder}/Block_Mint_Mascot.png";
-            if (File.Exists(bakPath)) return ForceGetOrImportSingleSprite(bakPath);
-            string path = $"{Folder}/Jelly_Mascot_Mint.png";
+            string path = $"{Folder}/Block_Mint_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+            path = $"{Folder}/Jelly_Mascot_Mint.png";
             return ForceGetOrImportSingleSprite(path) ?? GetOrCreateMascotSprite();
         }
 
         public static Sprite GetOrCreateGoldMascotSprite()
         {
             EnsureFolder();
-            string bakPath = $"{BackupFolder}/Block_Gold_Mascot.png";
-            if (File.Exists(bakPath)) return ForceGetOrImportSingleSprite(bakPath);
+            string path = $"{Folder}/Block_Gold_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
             EnsureMascotsCutout();
-            string path = $"{Folder}/Jelly_Mascot_Gold.png";
+            path = $"{Folder}/Jelly_Mascot_Gold.png";
             return ForceGetOrImportSingleSprite(path) ?? GetOrCreateCrownSprite();
         }
 
         public static Sprite GetOrCreatePurpleMascotSprite()
         {
             EnsureFolder();
-            string bakPath = $"{BackupFolder}/Block_Purple_Mascot.png";
-            if (File.Exists(bakPath)) return ForceGetOrImportSingleSprite(bakPath);
+            string path = $"{Folder}/Block_Purple_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
             EnsureMascotsCutout();
-            string path = $"{Folder}/Jelly_Mascot_Purple.png";
+            path = $"{Folder}/Jelly_Mascot_Purple.png";
             return ForceGetOrImportSingleSprite(path) ?? GetOrCreateDiceSprite();
         }
 
@@ -1136,20 +1135,20 @@ namespace BlockBlast.Editor
         public static void EnsureMascotsCutout()
         {
             EnsureFolder();
-            string bakGold = $"{BackupFolder}/Block_Gold_Mascot.png";
+            string gold = $"{Folder}/Block_Gold_Mascot.png";
             string dstGold = $"{Folder}/Jelly_Mascot_Gold.png";
-            if (File.Exists(bakGold))
+            if (File.Exists(gold) && !File.Exists(dstGold))
             {
-                File.Copy(bakGold, dstGold, true);
+                File.Copy(gold, dstGold, true);
                 AssetDatabase.ImportAsset(dstGold, ImportAssetOptions.ForceUpdate);
                 ForceGetOrImportSingleSprite(dstGold);
             }
 
-            string bakPurple = $"{BackupFolder}/Block_Purple_Mascot.png";
+            string purple = $"{Folder}/Block_Purple_Mascot.png";
             string dstPurple = $"{Folder}/Jelly_Mascot_Purple.png";
-            if (File.Exists(bakPurple))
+            if (File.Exists(purple) && !File.Exists(dstPurple))
             {
-                File.Copy(bakPurple, dstPurple, true);
+                File.Copy(purple, dstPurple, true);
                 AssetDatabase.ImportAsset(dstPurple, ImportAssetOptions.ForceUpdate);
                 ForceGetOrImportSingleSprite(dstPurple);
             }
@@ -1405,9 +1404,9 @@ namespace BlockBlast.Editor
         public static Sprite GetOrCreateMascotSprite()
         {
             EnsureFolder();
-            string bakPath = $"{BackupFolder}/Block_Pink_Mascot.png";
-            if (File.Exists(bakPath)) return ForceGetOrImportSingleSprite(bakPath);
-            string path = $"{Folder}/Jelly_Mascot_Smile.png";
+            string path = $"{Folder}/Block_Pink_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+            path = $"{Folder}/Jelly_Mascot_Smile.png";
             return ForceGetOrImportSingleSprite(path);
         }
 
@@ -2505,9 +2504,9 @@ namespace BlockBlast.Editor
         public static Sprite GetOrCreateLeftPoppingMascotSprite()
         {
             EnsureFolder();
-            string bakPath = $"{BackupFolder}/Block_Pink_Mascot.png";
-            if (File.Exists(bakPath)) return ForceGetOrImportSingleSprite(bakPath);
-            string path = $"{Folder}/Jelly_Mascot_Left_Pop.png";
+            string path = $"{Folder}/Block_Pink_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+            path = $"{Folder}/Jelly_Mascot_Left_Pop.png";
             return ForceGetOrImportSingleSprite(path);
         }
 
@@ -2517,9 +2516,9 @@ namespace BlockBlast.Editor
         public static Sprite GetOrCreateRightPoppingMascotSprite()
         {
             EnsureFolder();
-            string bakPath = $"{BackupFolder}/Block_Mint_Mascot.png";
-            if (File.Exists(bakPath)) return ForceGetOrImportSingleSprite(bakPath);
-            string path = $"{Folder}/Jelly_Mascot_Right_Pop.png";
+            string path = $"{Folder}/Block_Mint_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+            path = $"{Folder}/Jelly_Mascot_Right_Pop.png";
             return ForceGetOrImportSingleSprite(path);
         }
 

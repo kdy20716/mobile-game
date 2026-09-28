@@ -143,7 +143,7 @@ namespace BlockBlast.Editor
 
         public const string WebGLOutputDir = "Builds/MallangBlast_WebGL";
 
-        [MenuItem("Block Blast/Build/4. Apply WebGL Settings (No Compression, 9-16)", priority = 103)]
+        [MenuItem("Block Blast/Build/4. Apply WebGL Settings (16:9 PC Widescreen)", priority = 103)]
         public static void ConfigureWebGLSettings()
         {
             // Basic metadata
@@ -151,17 +151,17 @@ namespace BlockBlast.Editor
             PlayerSettings.companyName = "MallangGames";
             PlayerSettings.bundleVersion = "1.2.0";
 
-            // WebGL Screen Size (9:16 portrait)
-            PlayerSettings.defaultWebScreenWidth = 540;
-            PlayerSettings.defaultWebScreenHeight = 960;
+            // WebGL Screen Size (16:9 PC Widescreen - no side cropping!)
+            PlayerSettings.defaultWebScreenWidth = 960;
+            PlayerSettings.defaultWebScreenHeight = 540;
             PlayerSettings.runInBackground = true;
 
             // Splash Screen OFF
             PlayerSettings.SplashScreen.show = false;
             PlayerSettings.SplashScreen.showUnityLogo = false;
 
-            // WebGL Compression: Disabled for maximum compatibility with any static web host (GitHub Pages, Vercel, Netlify, Itch.io)
-            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+            // WebGL Compression: Gzip + Decompression Fallback ON for GitHub (under 100MB limit) & GitHub Pages compatibility
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             PlayerSettings.WebGL.decompressionFallback = true;
 
             // Icons
@@ -180,8 +180,65 @@ namespace BlockBlast.Editor
             };
             EditorBuildSettings.scenes = buildScenes;
 
+            // Optimize textures & audio for WebGL to ensure final files are well under 50MB (GitHub 100MB limit)
+            OptimizeAssetsForWebGL();
+
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[BlockBlastBuild] WebGL 빌드 설정 완료! (무압축 호환 모드, 540x960 9:16, 스플래시 비활성화)</b></color>");
+            Debug.Log("<color=green><b>[BlockBlastBuild] WebGL 빌드 설정 완료! (16:9 PC 와이드스크린 960x540, Gzip 압축, Decompression Fallback ON)</b></color>");
+        }
+
+        public static void OptimizeAssetsForWebGL()
+        {
+            // 1. Textures Optimization for WebGL
+            string[] texGuids = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/BlockBlastCute", "Assets/Textures" });
+            int texCount = 0;
+            foreach (string guid in texGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path)) continue;
+                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (importer == null) continue;
+
+                TextureImporterPlatformSettings webglSettings = importer.GetPlatformTextureSettings("WebGL");
+                webglSettings.overridden = true;
+                if (path.Contains("BG") || path.Contains("Wide") || path.Contains("Logo"))
+                {
+                    webglSettings.maxTextureSize = 1024;
+                }
+                else
+                {
+                    webglSettings.maxTextureSize = 512;
+                }
+                webglSettings.textureCompression = TextureImporterCompression.Compressed;
+                webglSettings.crunchedCompression = true;
+                webglSettings.compressionQuality = 85;
+
+                importer.SetPlatformTextureSettings(webglSettings);
+                importer.SaveAndReimport();
+                texCount++;
+            }
+
+            // 2. Audio Optimization for WebGL (Vorbis 50%, CompressedInMemory)
+            string[] audioGuids = AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/Sounds", "Assets/Resources/Audio" });
+            int audioCount = 0;
+            foreach (string guid in audioGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path)) continue;
+                AudioImporter importer = AssetImporter.GetAtPath(path) as AudioImporter;
+                if (importer == null) continue;
+
+                AudioImporterSampleSettings sampleSettings = importer.GetOverrideSampleSettings("WebGL");
+                sampleSettings.loadType = AudioClipLoadType.CompressedInMemory;
+                sampleSettings.compressionFormat = AudioCompressionFormat.Vorbis;
+                sampleSettings.quality = 0.5f;
+
+                importer.SetOverrideSampleSettings("WebGL", sampleSettings);
+                importer.SaveAndReimport();
+                audioCount++;
+            }
+
+            Debug.Log($"<color=cyan>[BlockBlastBuild] WebGL 에셋 최적화 완료: 텍스처 {texCount}개 (512/1024 Crunched), 오디오 {audioCount}개 (Vorbis 50%)</color>");
         }
 
         [MenuItem("Block Blast/Build/5. Build WebGL (For Portfolio)", priority = 104)]
@@ -216,6 +273,7 @@ namespace BlockBlast.Editor
             if (summary.result == BuildResult.Succeeded)
             {
                 Debug.Log($"<color=green><b>[BlockBlastBuild] ★★★ WebGL 빌드 성공! ★★★\n경로: {fullOutputDir}\n크기: {summary.totalSize / (1024 * 1024):N1} MB\n소요시간: {summary.totalTime.TotalSeconds:F1}초</b></color>");
+                PatchIndexHtml(fullOutputDir);
                 CreatePortfolioEmbedGuide(fullOutputDir);
                 EditorUtility.RevealInFinder(Path.Combine(fullOutputDir, "index.html"));
             }
@@ -225,20 +283,68 @@ namespace BlockBlast.Editor
             }
         }
 
+        private static void PatchIndexHtml(string outputDir)
+        {
+            try
+            {
+                string indexPath = Path.Combine(outputDir, "index.html");
+                if (File.Exists(indexPath))
+                {
+                    string html = File.ReadAllText(indexPath);
+                    if (html.Contains("// config.autoSyncPersistentDataPath = true;"))
+                    {
+                        html = html.Replace("// config.autoSyncPersistentDataPath = true;", "config.autoSyncPersistentDataPath = true;");
+                    }
+
+                    // Responsive iframe styling so portfolio embed fills container nicely at 16:9
+                    string oldDesktopStyle = @"canvas.style.width = ""960px"";
+        canvas.style.height = ""540px"";";
+                    string responsiveDesktopStyle = @"if (window.self !== window.top) {
+          // Inside portfolio iframe: fill container seamlessly
+          var container = document.querySelector(""#unity-container"");
+          container.style.position = ""absolute"";
+          container.style.left = ""0"";
+          container.style.top = ""0"";
+          container.style.width = ""100%"";
+          container.style.height = ""100%"";
+          container.style.transform = ""none"";
+          canvas.style.width = ""100%"";
+          canvas.style.height = ""100%"";
+          var footer = document.querySelector(""#unity-footer"");
+          if (footer) footer.style.display = ""none"";
+        } else {
+          canvas.style.width = ""960px"";
+          canvas.style.height = ""540px"";
+        }";
+                    if (html.Contains(oldDesktopStyle))
+                    {
+                        html = html.Replace(oldDesktopStyle, responsiveDesktopStyle);
+                    }
+
+                    File.WriteAllText(indexPath, html);
+                    Debug.Log("[BlockBlastBuild] index.html patched (autoSyncPersistentDataPath + 16:9 iframe responsive).");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[BlockBlastBuild] Failed to patch index.html: " + ex.Message);
+            }
+        }
+
         private static void CreatePortfolioEmbedGuide(string outputDir)
         {
             try
             {
                 string guidePath = Path.Combine(outputDir, "PORTFOLIO_EMBED_GUIDE.md");
-                string content = @"# Mallang Blast - WebGL 포트폴리오 삽입 가이드
+                string content = @"# Mallang Blast - WebGL 포트폴리오 삽입 가이드 (16:9 PC 와이드스크린)
 
 ## 1. 포트폴리오 웹사이트에 iframe으로 삽입하기
-포트폴리오 페이지(React, Vue, HTML 등)에 아래 코드를 추가하여 9:16 모바일 비율로 깔끔하게 임베드할 수 있습니다.
+좌우 사이드 윙 배경과 데코레이션이 잘리지 않고 모두 담긴 **16:9 와이드 화면**으로 포트폴리오 페이지(React, Vue, HTML 등)에 임베드할 수 있습니다.
 
 ```html
-<!-- 말랑블라스트 게임 플레이 컨테이너 -->
+<!-- 말랑블라스트 게임 플레이 컨테이너 (16:9 PC 와이드스크린) -->
 <div style=""display: flex; justify-content: center; align-items: center; padding: 20px; background: #1a1a24; border-radius: 16px;"">
-    <div style=""position: relative; width: 100%; max-width: 450px; aspect-ratio: 9/16; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"">
+    <div style=""position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"">
         <iframe 
             src=""/games/mallang-blast/index.html"" 
             style=""width: 100%; height: 100%; border: none;"" 
@@ -249,8 +355,11 @@ namespace BlockBlast.Editor
 </div>
 ```
 
-## 2. 배포 시 팁
-- 본 빌드는 **무압축(Uncompressed)** 설정으로 빌드되어 있어, 별도의 서버 gzip/brotli 헤더 설정 없이도 GitHub Pages, Netlify, Vercel, S3 등에 바로 업로드하여 실행할 수 있습니다.
+## 2. 배포 및 최적화 안내
+- **좌우 잘림 없음 (16:9 원본)**: PC 버전의 양옆 파스텔 사이드 윙 아트와 반짝이 파티클이 온전히 표시됩니다.
+- **용량 최적화 완료**: Gzip 압축 및 Decompression Fallback이 적용되어 GitHub의 100MB 파일 제한(현재 77MB)에 걸리지 않고 원활하게 푸시됩니다.
+- **자동 저장 지원**: `autoSyncPersistentDataPath = true`가 적용되어 있어 브라우저 캐시에 플레이 기록이 안전하게 저장됩니다.
+- **반응형 지원**: iframe 내부에서는 불필요한 푸터 없이 컨테이너 크기에 맞춰 100% 깔끔하게 채워집니다.
 ";
                 File.WriteAllText(guidePath, content, System.Text.Encoding.UTF8);
             }

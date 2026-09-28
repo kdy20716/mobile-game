@@ -19,11 +19,7 @@ namespace BlockBlast.Editor
                 "Assets/Textures/BlockBlastCute/Block_Star_Bomb.png",
                 "Assets/Textures/BlockBlastCute/Jelly_Tile_Base.png",
                 "Assets/Textures/BlockBlastCute/Jelly_MainMenu_Wide_BG.png",
-                "Assets/Textures/MallangGames_Studio_Logo.png",
-                "Assets/Textures/BlockBlastCute_Backup/Block_Pink_Mascot.png",
-                "Assets/Textures/BlockBlastCute_Backup/Block_Mint_Mascot.png",
-                "Assets/Textures/BlockBlastCute_Backup/Block_Gold_Mascot.png",
-                "Assets/Textures/BlockBlastCute_Backup/Block_Purple_Mascot.png",
+                "Assets/Textures/MallangGames_Studio_Logo.png"
             };
 
             int updatedCount = 0;
