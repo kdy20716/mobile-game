@@ -261,6 +261,11 @@ namespace BlockBlast.Editor
             var spawner = mgrObj.AddComponent<BlockSpawner>();
             var audioMgr = mgrObj.AddComponent<BlockAudioManager>();
             BindAudioClips(audioMgr);
+
+            CuteCursorGenerator.GenerateCursorTextures(out Texture2D normalCursor, out Texture2D clickCursor);
+            var cursorMgr = mgrObj.AddComponent<CuteCursorManager>();
+            cursorMgr.Setup(normalCursor, clickCursor, new Vector2(3f, 3f));
+
             var uiMgr = canvasObj.AddComponent<BlockBlastUIManager>();
 
             gridMgr.SetupPastelBlockSprites(pinkBlockSprite, mintBlockSprite, goldBlockSprite, purpleBlockSprite, blueBlockSprite, starBombBlockSprite);
@@ -380,26 +385,7 @@ namespace BlockBlast.Editor
             skipBtnObj.AddComponent<CanvasGroup>(); // For dimming/brightening skip button
             var btnSkip = skipBtnObj.GetComponent<Button>();
 
-            // Stock Badge on Skip Button
-            GameObject skipBadgeObj = new GameObject("SkipStockBadge", typeof(RectTransform), typeof(Image));
-            skipBadgeObj.transform.SetParent(skipBtnObj.transform, false);
-            SetRect(skipBadgeObj, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -8f), new Vector2(104f, 24f));
-            Image badgeBg = skipBadgeObj.GetComponent<Image>();
-            badgeBg.sprite = tabPillSprite;
-            badgeBg.type = Image.Type.Sliced;
-            badgeBg.color = new Color(0.15f, 0.12f, 0.22f, 0.85f);
-
-            GameObject badgeTextObj = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-            badgeTextObj.transform.SetParent(skipBadgeObj.transform, false);
-            SetRect(badgeTextObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            TMP_Text skipBadgeTMP = badgeTextObj.GetComponent<TMP_Text>();
-            skipBadgeTMP.font = cuteFont;
-            skipBadgeTMP.fontSize = 12.5f;
-            skipBadgeTMP.fontStyle = FontStyles.Bold;
-            skipBadgeTMP.alignment = TextAlignmentOptions.Center;
-            skipBadgeTMP.color = Color.white;
-            skipBadgeTMP.raycastTarget = false;
-            skipBadgeTMP.text = "1/3 (0/10)";
+            TMP_Text skipBadgeTMP = null;
 
             // 🔄 Spin Button (User-Uploaded 2.5D Marshmallow Jelly Button)
             Sprite btnSpinUser = CuteBlockTextureGenerator.GetOrCreateUserSpinButtonSprite();
@@ -675,7 +661,7 @@ namespace BlockBlast.Editor
             SetRect(rTitle, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -58), new Vector2(600, 52));
 
             // Subtitle
-            GameObject rSub = CreateText(rCard.transform, "Subtitle", "지금까지의 점수가 사라져요 🥺", 26, TextAlignmentOptions.Center, cuteFont, new Color(0.52f, 0.40f, 0.68f));
+            GameObject rSub = CreateText(rCard.transform, "Subtitle", "지금까지의 점수가 사라져요...", 26, TextAlignmentOptions.Center, cuteFont, new Color(0.52f, 0.40f, 0.68f));
             SetRect(rSub, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -128), new Vector2(580, 36));
 
             // Desc
@@ -683,21 +669,57 @@ namespace BlockBlast.Editor
             SetRect(rDesc, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -185), new Vector2(600, 36));
 
             // Buttons
-            GameObject rYesBtn = CreateButton(rCard.transform, "BtnYes", "다시 시작! 🎮", cuteFont, new Vector2(0.5f, 0f), new Vector2(-140, 80), new Vector2(270, 68), btnPinkSprite, 26, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
-            GameObject rNoBtn  = CreateButton(rCard.transform, "BtnNo",  "계속하기 💪", cuteFont, new Vector2(0.5f, 0f), new Vector2( 140, 80), new Vector2(270, 68), btnTealSprite, 26, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+            GameObject rYesBtn = CreateButton(rCard.transform, "BtnYes", "다시 시작!", cuteFont, new Vector2(0.5f, 0f), new Vector2(-140, 80), new Vector2(270, 68), btnPinkSprite, 28, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            GameObject rNoBtn  = CreateButton(rCard.transform, "BtnNo",  "계속하기", cuteFont, new Vector2(0.5f, 0f), new Vector2( 140, 80), new Vector2(270, 68), btnTealSprite, 28, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
 
             uiMgr.SetupRestartConfirmModal(rConfirmModal, rYesBtn.GetComponent<Button>(), rNoBtn.GetComponent<Button>());
+
+            // --- E3-B. Lobby Confirm Modal (overlay on top of PauseModal) ---
+            GameObject lConfirmModal = new GameObject("LobbyConfirmModal", typeof(RectTransform), typeof(Image));
+            lConfirmModal.transform.SetParent(inGameRoot.transform, false);
+            SetRect(lConfirmModal, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(4000f, 0f));
+            Image lConfirmOverlay = lConfirmModal.GetComponent<Image>();
+            lConfirmOverlay.color = new Color(0.05f, 0.03f, 0.12f, 0.75f);
+            lConfirmModal.SetActive(false);
+
+            // Confirm Card
+            GameObject lCard = new GameObject("DialogCard", typeof(RectTransform), typeof(Image));
+            lCard.transform.SetParent(lConfirmModal.transform, false);
+            SetRect(lCard, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(720, 440));
+            Image lCardImg = lCard.GetComponent<Image>();
+            lCardImg.sprite = settingsModalCardSprite;
+            lCardImg.type = Image.Type.Sliced;
+            lCardImg.color = Color.white;
+
+            // Title
+            GameObject lTitle = CreateText(lCard.transform, "Title", "로비로 이동할까요?", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
+            SetRect(lTitle, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -58), new Vector2(600, 52));
+
+            // Subtitle
+            GameObject lSub = CreateText(lCard.transform, "Subtitle", "진행 중인 게임 내용이 저장되지 않아요.", 26, TextAlignmentOptions.Center, cuteFont, new Color(0.52f, 0.40f, 0.68f));
+            SetRect(lSub, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -128), new Vector2(580, 36));
+
+            // Desc
+            GameObject lDesc = CreateText(lCard.transform, "Desc", "정말 로비로 나가시겠어요?", 28, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
+            SetRect(lDesc, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -185), new Vector2(600, 36));
+
+            // Buttons
+            GameObject lYesBtn = CreateButton(lCard.transform, "BtnYes", "로비로 이동", cuteFont, new Vector2(0.5f, 0f), new Vector2(-140, 80), new Vector2(270, 68), btnLavenderSprite, 28, Color.white, new Color(0.48f, 0.32f, 0.72f, 0.85f));
+            GameObject lNoBtn  = CreateButton(lCard.transform, "BtnNo",  "계속하기", cuteFont, new Vector2(0.5f, 0f), new Vector2( 140, 80), new Vector2(270, 68), btnTealSprite, 28, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+
+            uiMgr.SetupLobbyConfirmModal(lConfirmModal, lYesBtn.GetComponent<Button>(), lNoBtn.GetComponent<Button>());
 
             // --- E4. White Flash Overlay (full-screen for restart transition) ---
             GameObject whiteFlash = new GameObject("WhiteFlashOverlay", typeof(RectTransform), typeof(Image));
             whiteFlash.transform.SetParent(inGameRoot.transform, false);
-            SetRect(whiteFlash, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            SetRect(whiteFlash, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(4000f, 0f));
             Image wfImg = whiteFlash.GetComponent<Image>();
             wfImg.color = new Color(1f, 1f, 1f, 0f);
             wfImg.raycastTarget = true; // block input during flash
             whiteFlash.SetActive(false);
 
             uiMgr.SetupWhiteFlashOverlay(wfImg);
+            EditorUtility.SetDirty(uiMgr);
 
             // --- F. Fullscreen Cinematic Main Menu Screen (Exact 9:16 Ratio matching Lobby) ---
             GameObject mainMenu = new GameObject("MainMenuScreen", typeof(RectTransform), typeof(CanvasGroup), typeof(RectMask2D), typeof(MainMenuCinematicController));

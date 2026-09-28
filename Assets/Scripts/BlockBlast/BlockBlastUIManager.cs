@@ -53,6 +53,11 @@ namespace BlockBlast
         [SerializeField] private Button btnRestartConfirmYes;
         [SerializeField] private Button btnRestartConfirmNo;
 
+        [Header("Lobby Confirm Modal")]
+        [SerializeField] private GameObject lobbyConfirmModal;
+        [SerializeField] private Button btnLobbyConfirmYes;
+        [SerializeField] private Button btnLobbyConfirmNo;
+
         [Header("White Flash Overlay")]
         [SerializeField] private Image whiteFlashOverlay;
 
@@ -72,6 +77,8 @@ namespace BlockBlast
                 _isTimerActive = false;
                 _wasTimerActiveBeforePause = false;
                 if (pauseModal != null) pauseModal.SetActive(false);
+                if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
+                if (lobbyConfirmModal != null) lobbyConfirmModal.SetActive(false);
                 if (gameOverModal != null) gameOverModal.SetActive(false);
             }
         }
@@ -106,6 +113,46 @@ namespace BlockBlast
             else Destroy(gameObject);
 
             _bestScore = PlayerPrefs.GetInt("BlockBlast_Best", 0);
+            AutoBindConfirmModalsAndOverlays();
+        }
+
+        private void AutoBindConfirmModalsAndOverlays()
+        {
+            if (inGameRoot == null)
+            {
+                var ig = transform.Find("InGameRoot");
+                if (ig != null) inGameRoot = ig.gameObject;
+            }
+
+            if (inGameRoot != null)
+            {
+                if (restartConfirmModal == null)
+                {
+                    var t = inGameRoot.transform.Find("RestartConfirmModal");
+                    if (t != null) restartConfirmModal = t.gameObject;
+                }
+                if (restartConfirmModal != null)
+                {
+                    if (btnRestartConfirmYes == null) btnRestartConfirmYes = restartConfirmModal.transform.Find("DialogCard/BtnYes")?.GetComponent<Button>();
+                    if (btnRestartConfirmNo == null) btnRestartConfirmNo = restartConfirmModal.transform.Find("DialogCard/BtnNo")?.GetComponent<Button>();
+                }
+
+                if (lobbyConfirmModal == null)
+                {
+                    var t = inGameRoot.transform.Find("LobbyConfirmModal");
+                    if (t != null) lobbyConfirmModal = t.gameObject;
+                }
+                if (lobbyConfirmModal != null)
+                {
+                    if (btnLobbyConfirmYes == null) btnLobbyConfirmYes = lobbyConfirmModal.transform.Find("DialogCard/BtnYes")?.GetComponent<Button>();
+                    if (btnLobbyConfirmNo == null) btnLobbyConfirmNo = lobbyConfirmModal.transform.Find("DialogCard/BtnNo")?.GetComponent<Button>();
+                }
+
+                if (whiteFlashOverlay == null)
+                {
+                    whiteFlashOverlay = inGameRoot.transform.Find("WhiteFlashOverlay")?.GetComponent<Image>();
+                }
+            }
         }
 
         private void OnEnable()
@@ -147,6 +194,44 @@ namespace BlockBlast
                 if (title != null) title.text = LocalizationManager.Get("ingame_pause");
                 var sub = pauseModal.transform.Find("Dialog/Subtitle")?.GetComponent<TMP_Text>();
                 if (sub != null) sub.text = LocalizationManager.Get("ingame_pause_sub");
+            }
+            if (restartConfirmModal != null)
+            {
+                var title = restartConfirmModal.transform.Find("DialogCard/Title")?.GetComponent<TMP_Text>();
+                if (title != null) title.text = LocalizationManager.Get("confirm_restart_title");
+                var sub = restartConfirmModal.transform.Find("DialogCard/Subtitle")?.GetComponent<TMP_Text>();
+                if (sub != null) sub.text = LocalizationManager.Get("confirm_restart_sub");
+                var desc = restartConfirmModal.transform.Find("DialogCard/Desc")?.GetComponent<TMP_Text>();
+                if (desc != null) desc.text = LocalizationManager.Get("confirm_restart_desc");
+                if (btnRestartConfirmYes != null)
+                {
+                    var txt = btnRestartConfirmYes.GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = LocalizationManager.Get("confirm_restart_yes");
+                }
+                if (btnRestartConfirmNo != null)
+                {
+                    var txt = btnRestartConfirmNo.GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = LocalizationManager.Get("confirm_restart_no");
+                }
+            }
+            if (lobbyConfirmModal != null)
+            {
+                var title = lobbyConfirmModal.transform.Find("DialogCard/Title")?.GetComponent<TMP_Text>();
+                if (title != null) title.text = LocalizationManager.Get("confirm_lobby_title");
+                var sub = lobbyConfirmModal.transform.Find("DialogCard/Subtitle")?.GetComponent<TMP_Text>();
+                if (sub != null) sub.text = LocalizationManager.Get("confirm_lobby_sub");
+                var desc = lobbyConfirmModal.transform.Find("DialogCard/Desc")?.GetComponent<TMP_Text>();
+                if (desc != null) desc.text = LocalizationManager.Get("confirm_lobby_desc");
+                if (btnLobbyConfirmYes != null)
+                {
+                    var txt = btnLobbyConfirmYes.GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = LocalizationManager.Get("confirm_lobby_yes");
+                }
+                if (btnLobbyConfirmNo != null)
+                {
+                    var txt = btnLobbyConfirmNo.GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = LocalizationManager.Get("confirm_lobby_no");
+                }
             }
             if (gameOverModal != null)
             {
@@ -218,6 +303,15 @@ namespace BlockBlast
 
         private void Start()
         {
+            if (skipBadgeText != null)
+            {
+                skipBadgeText.gameObject.SetActive(false);
+                if (skipBadgeText.transform.parent != null && skipBadgeText.transform.parent.name == "SkipStockBadge")
+                {
+                    skipBadgeText.transform.parent.gameObject.SetActive(false);
+                }
+            }
+
             UpdateScoreUI();
             UpdateTurnMaxTime();
             UpdateTimerUI();
@@ -316,25 +410,69 @@ namespace BlockBlast
 
             if (btnPauseRestart != null)
             {
+                btnPauseRestart.onClick.RemoveAllListeners();
                 btnPauseRestart.onClick.AddListener(() =>
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
-                    ClosePauseModal();
-                    RestartGame();
+                    OpenRestartConfirmModal();
+                });
+            }
+
+            if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
+
+            if (btnRestartConfirmYes != null)
+            {
+                btnRestartConfirmYes.onClick.RemoveAllListeners();
+                btnRestartConfirmYes.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    RestartGameWithFlash();
+                });
+            }
+
+            if (btnRestartConfirmNo != null)
+            {
+                btnRestartConfirmNo.onClick.RemoveAllListeners();
+                btnRestartConfirmNo.onClick.AddListener(() =>
+                {
+                    CloseRestartConfirmModal();
                 });
             }
 
             if (btnPauseLobby != null)
             {
+                btnPauseLobby.onClick.RemoveAllListeners();
                 btnPauseLobby.onClick.AddListener(() =>
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    OpenLobbyConfirmModal();
+                });
+            }
+
+            if (lobbyConfirmModal != null) lobbyConfirmModal.SetActive(false);
+
+            if (btnLobbyConfirmYes != null)
+            {
+                btnLobbyConfirmYes.onClick.RemoveAllListeners();
+                btnLobbyConfirmYes.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    CloseLobbyConfirmModal();
                     ClosePauseModal();
                     _isTimerActive = false;
                     if (LobbyManager.Instance != null)
                     {
                         LobbyManager.Instance.ReturnToLobby();
                     }
+                });
+            }
+
+            if (btnLobbyConfirmNo != null)
+            {
+                btnLobbyConfirmNo.onClick.RemoveAllListeners();
+                btnLobbyConfirmNo.onClick.AddListener(() =>
+                {
+                    CloseLobbyConfirmModal();
                 });
             }
         }
@@ -362,7 +500,25 @@ namespace BlockBlast
             isSkipPressed = Input.GetKeyDown(KeyCode.S);
 #endif
 
-            // 3. When Pause Modal is active, game timer is frozen; ESC resumes the game
+            // 3. Confirm Modals active: ESC closes them and returns to Pause Modal
+            if (restartConfirmModal != null && restartConfirmModal.activeSelf)
+            {
+                if (isEscPressed)
+                {
+                    CloseRestartConfirmModal();
+                }
+                return;
+            }
+            if (lobbyConfirmModal != null && lobbyConfirmModal.activeSelf)
+            {
+                if (isEscPressed)
+                {
+                    CloseLobbyConfirmModal();
+                }
+                return;
+            }
+
+            // 4. When Pause Modal is active, game timer is frozen; ESC resumes the game
             if (pauseModal != null && pauseModal.activeSelf)
             {
                 if (isEscPressed)
@@ -775,6 +931,7 @@ namespace BlockBlast
             _wasTimerActiveBeforePause = false;
             if (pauseModal != null) pauseModal.SetActive(false);
             if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
+            if (lobbyConfirmModal != null) lobbyConfirmModal.SetActive(false);
 
             UpdateScoreUI();
             UpdateSkipUI();
@@ -823,6 +980,7 @@ namespace BlockBlast
             Time.timeScale = 0f;
             if (pauseModal != null) pauseModal.SetActive(false);
             if (restartConfirmModal != null) restartConfirmModal.SetActive(false);
+            if (lobbyConfirmModal != null) lobbyConfirmModal.SetActive(false);
 
             // 2. Stop BGM with instant stop
             if (BlockAudioManager.Instance != null)
@@ -833,6 +991,7 @@ namespace BlockBlast
             // 3. Fade IN white overlay (unscaled time so timeScale=0 doesn't block it)
             if (whiteFlashOverlay != null)
             {
+                whiteFlashOverlay.transform.SetAsLastSibling();
                 whiteFlashOverlay.gameObject.SetActive(true);
                 float elapsed = 0f;
                 float fadeDur = 0.35f;
@@ -861,6 +1020,7 @@ namespace BlockBlast
             // 6. Fade OUT white overlay
             if (whiteFlashOverlay != null)
             {
+                whiteFlashOverlay.transform.SetAsLastSibling();
                 float elapsed = 0f;
                 float fadeDur = 0.45f;
                 Color c = whiteFlashOverlay.color;
@@ -882,6 +1042,7 @@ namespace BlockBlast
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (restartConfirmModal != null)
             {
+                restartConfirmModal.transform.SetAsLastSibling();
                 restartConfirmModal.SetActive(true);
             }
         }
@@ -919,6 +1080,59 @@ namespace BlockBlast
                 btnRestartConfirmNo.onClick.AddListener(() =>
                 {
                     CloseRestartConfirmModal();
+                });
+            }
+        }
+
+        public void OpenLobbyConfirmModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (lobbyConfirmModal != null)
+            {
+                lobbyConfirmModal.transform.SetAsLastSibling();
+                lobbyConfirmModal.SetActive(true);
+            }
+        }
+
+        public void CloseLobbyConfirmModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (lobbyConfirmModal != null)
+            {
+                lobbyConfirmModal.SetActive(false);
+            }
+        }
+
+        public void SetupLobbyConfirmModal(GameObject modal, Button yesBtn, Button noBtn)
+        {
+            lobbyConfirmModal = modal;
+            btnLobbyConfirmYes = yesBtn;
+            btnLobbyConfirmNo = noBtn;
+
+            if (lobbyConfirmModal != null) lobbyConfirmModal.SetActive(false);
+
+            if (btnLobbyConfirmYes != null)
+            {
+                btnLobbyConfirmYes.onClick.RemoveAllListeners();
+                btnLobbyConfirmYes.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    CloseLobbyConfirmModal();
+                    ClosePauseModal();
+                    _isTimerActive = false;
+                    if (LobbyManager.Instance != null)
+                    {
+                        LobbyManager.Instance.ReturnToLobby();
+                    }
+                });
+            }
+
+            if (btnLobbyConfirmNo != null)
+            {
+                btnLobbyConfirmNo.onClick.RemoveAllListeners();
+                btnLobbyConfirmNo.onClick.AddListener(() =>
+                {
+                    CloseLobbyConfirmModal();
                 });
             }
         }
@@ -1037,12 +1251,7 @@ namespace BlockBlast
                 btnPauseLobby.onClick.AddListener(() =>
                 {
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
-                    ClosePauseModal();
-                    _isTimerActive = false;
-                    if (LobbyManager.Instance != null)
-                    {
-                        LobbyManager.Instance.ReturnToLobby();
-                    }
+                    OpenLobbyConfirmModal();
                 });
             }
         }

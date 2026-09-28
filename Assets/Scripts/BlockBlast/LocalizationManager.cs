@@ -248,6 +248,20 @@ namespace BlockBlast
             { "help_title", new[] { "말랑블라스트 가이드", "Mallang Blast Guide", "マランブラストガイド", "玩法说明" } },
             { "help_subtitle", new[] { "달콤하고 쉬운 말랑이 블록 퍼즐 룰!", "Sweet & Easy Mallang Block Puzzle Rules!", "甘くて簡単なマランブロックパズルルール！", "甜蜜简单的软萌方块拼图规则！" } },
             { "help_confirm", new[] { "이해했어요!", "Got It!", "理解した！", "确认" } },
+
+            // Restart Confirm Modal
+            { "confirm_restart_title", new[] { "다시 시작할까요?", "Restart Game?", "最初から遊ぶ？", "重新开始？" } },
+            { "confirm_restart_sub", new[] { "지금까지의 점수가 사라져요.", "Your current score will be lost.", "現在のスコアがリセットされます。", "当前的得分将被重置。" } },
+            { "confirm_restart_desc", new[] { "그래도 다시 시작하시겠어요?", "Are you sure you want to restart?", "本当にやり直しますか？", "确定要重新开始吗？" } },
+            { "confirm_restart_yes", new[] { "다시 시작", "Restart", "最初から", "重新开始" } },
+            { "confirm_restart_no", new[] { "계속하기", "Resume", "続ける", "继续游戏" } },
+
+            // Lobby Confirm Modal
+            { "confirm_lobby_title", new[] { "로비로 이동할까요?", "Return to Lobby?", "ロビーに戻る？", "返回大厅？" } },
+            { "confirm_lobby_sub", new[] { "진행 중인 게임 내용이 저장되지 않아요.", "Your current game will not be saved.", "進行中のゲームは保存されません。", "进行中的游戏进度将不会保存。" } },
+            { "confirm_lobby_desc", new[] { "정말 로비로 나가시겠어요?", "Are you sure you want to exit to lobby?", "本当にロビーに戻りますか？", "确定要返回大厅吗？" } },
+            { "confirm_lobby_yes", new[] { "로비로 이동", "Exit to Lobby", "ロビーに戻る", "返回大厅" } },
+            { "confirm_lobby_no", new[] { "계속하기", "Resume", "続ける", "继续游戏" } },
             { "help_step_1_title", new[] { "말랑 젤리 블록 놓기", "Place Jelly Blocks", "ゼリーブロックを配置", "放置软萌果冻方块" } },
             { "help_step_1_desc", new[] { "하단 3개의 블록을 터치 & 드래그하여 보드판에 올려놓아요.", "Touch & drag 3 bottom blocks onto the board.", "下の3つのブロックをドラッグしてボードに置きます。", "触摸并拖动底部的3个方块到棋盘上。" } },
             { "help_step_2_title", new[] { "가로 / 세로 줄 폭파", "Clear Rows & Columns", "縦横のラインを爆破", "消除整行或整列" } },

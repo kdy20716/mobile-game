@@ -422,10 +422,11 @@ namespace BlockBlast
 
         private void UpdateRipples()
         {
+            float dt = Time.unscaledDeltaTime;
             for (int i = _activeRipples.Count - 1; i >= 0; i--)
             {
                 RippleItem r = _activeRipples[i];
-                r.time += Time.deltaTime;
+                r.time += dt;
                 float progress = r.time / rippleDuration;
 
                 if (progress >= 1f)
@@ -450,10 +451,11 @@ namespace BlockBlast
 
         private void UpdateSparkles()
         {
+            float dt = Time.unscaledDeltaTime;
             for (int i = _activeSparkles.Count - 1; i >= 0; i--)
             {
                 SparkleItem s = _activeSparkles[i];
-                s.time += Time.deltaTime;
+                s.time += dt;
                 float progress = s.time / sparkleDuration;
 
                 if (progress >= 1f)
@@ -465,14 +467,14 @@ namespace BlockBlast
                 else
                 {
                     // Move & gentle deceleration
-                    s.rt.anchoredPosition += s.velocity * Time.deltaTime;
-                    s.velocity *= (1f - 4.5f * Time.deltaTime);
+                    s.rt.anchoredPosition += s.velocity * dt;
+                    s.velocity *= Mathf.Clamp01(1f - 4.5f * dt);
 
                     // Gentle fairy upward float
-                    s.rt.anchoredPosition += Vector2.up * (25f * Time.deltaTime);
+                    s.rt.anchoredPosition += Vector2.up * (25f * dt);
 
                     // Rotate
-                    s.rt.Rotate(0, 0, s.rotSpeed * Time.deltaTime);
+                    s.rt.Rotate(0, 0, s.rotSpeed * dt);
 
                     // Shrink & fade
                     float scale = 1f - Mathf.Pow(progress, 2f);
@@ -485,10 +487,11 @@ namespace BlockBlast
 
         private void UpdateTrails()
         {
+            float dt = Time.unscaledDeltaTime;
             for (int i = _activeTrails.Count - 1; i >= 0; i--)
             {
                 TrailItem t = _activeTrails[i];
-                t.time += Time.deltaTime;
+                t.time += dt;
                 float progress = t.time / trailDuration;
 
                 if (progress >= 1f)
@@ -500,8 +503,8 @@ namespace BlockBlast
                 else
                 {
                     // Gentle drift
-                    t.rt.anchoredPosition += t.drift * Time.deltaTime;
-                    t.rt.Rotate(0, 0, t.rotSpeed * Time.deltaTime);
+                    t.rt.anchoredPosition += t.drift * dt;
+                    t.rt.Rotate(0, 0, t.rotSpeed * dt);
 
                     // Scale down to 0
                     float scale = Mathf.Lerp(1f, 0f, progress);
