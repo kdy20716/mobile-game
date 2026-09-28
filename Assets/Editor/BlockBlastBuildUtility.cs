@@ -249,6 +249,8 @@ namespace BlockBlast.Editor
                 EditorApplication.isPlaying = false;
             }
 
+            AssetDatabase.Refresh();
+
             ConfigureWebGLSettings();
 
             string fullOutputDir = Path.GetFullPath(WebGLOutputDir);

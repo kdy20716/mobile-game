@@ -162,6 +162,16 @@ namespace BlockBlast
 
             if (isTouchBegan)
             {
+                // Mobile WebGL audio recovery: ensure BGM starts playing upon first user touch
+                if (_currentBgmState == BGMState.Lobby && (!_bgmSource.isPlaying || _bgmSource.time <= 0f))
+                {
+                    PlayLobbyBGM();
+                }
+                else if (_currentBgmState == BGMState.Intro && (!_bgmSource.isPlaying || _bgmSource.time <= 0f))
+                {
+                    PlayIntroBGM();
+                }
+
                 // Check if the pointer is touching a DraggableBlockUI in hand slots
                 bool isOverDraggableBlock = false;
                 if (EventSystem.current != null)
@@ -334,11 +344,11 @@ namespace BlockBlast
 
             if (targetTrack != null)
             {
-                if (_bgmSource.clip != targetTrack || !_bgmSource.isPlaying)
+                _bgmSource.clip = targetTrack;
+                _bgmSource.loop = true;
+                _bgmSource.volume = bgmVolume;
+                if (!_bgmSource.isPlaying || _bgmSource.time <= 0f)
                 {
-                    _bgmSource.clip = targetTrack;
-                    _bgmSource.loop = true;
-                    _bgmSource.volume = bgmVolume;
                     _bgmSource.Play();
                 }
             }
