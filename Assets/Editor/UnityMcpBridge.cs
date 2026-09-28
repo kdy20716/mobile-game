@@ -23,6 +23,7 @@ namespace MobileRacing.Editor
 
         static UnityMcpBridge()
         {
+            if (UnityEditorInternal.InternalEditorUtility.inBatchMode || Environment.CommandLine.Contains("-batchmode")) return;
             StartServer();
             EditorApplication.quitting += StopServer;
             EditorApplication.update += OnEditorUpdate;
