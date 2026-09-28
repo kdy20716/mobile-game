@@ -196,6 +196,8 @@ namespace BlockBlast.Editor
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 if (string.IsNullOrEmpty(path)) continue;
+                // BlockBlastCute 블록 마스코트 이미지는 압축 제외 (배경색 보호)
+                if (path.Contains("BlockBlastCute")) continue;
                 TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
                 if (importer == null) continue;
 
