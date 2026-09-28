@@ -276,7 +276,10 @@ namespace BlockBlast.Editor
                 Debug.Log($"<color=green><b>[BlockBlastBuild] ★★★ WebGL 빌드 성공! ★★★\n경로: {fullOutputDir}\n크기: {summary.totalSize / (1024 * 1024):N1} MB\n소요시간: {summary.totalTime.TotalSeconds:F1}초</b></color>");
                 PatchIndexHtml(fullOutputDir);
                 CreatePortfolioEmbedGuide(fullOutputDir);
-                EditorUtility.RevealInFinder(Path.Combine(fullOutputDir, "index.html"));
+                if (!Application.isBatchMode)
+                {
+                    EditorUtility.RevealInFinder(Path.Combine(fullOutputDir, "index.html"));
+                }
             }
             else
             {
