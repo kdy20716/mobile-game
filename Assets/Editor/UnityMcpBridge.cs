@@ -118,6 +118,28 @@ namespace MobileRacing.Editor
                     };
                     responseString = "{\"status\":\"ok\",\"message\":\"Generating Block Blast Scene\"}";
                 }
+                else if (req.Url.AbsolutePath == "/check-webgl")
+                {
+                    bool supported = BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+                    responseString = $"{{\"webglSupported\":{supported.ToString().ToLower()}}}";
+                }
+                else if (req.Url.AbsolutePath == "/build-webgl")
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        _lastBuildStatus = "building_webgl";
+                        try
+                        {
+                            BlockBlast.Editor.BlockBlastBuildUtility.BuildWebGL();
+                            _lastBuildStatus = "success_webgl";
+                        }
+                        catch (Exception ex)
+                        {
+                            _lastBuildStatus = $"failed_webgl: {ex.Message}";
+                        }
+                    };
+                    responseString = "{\"status\":\"ok\",\"message\":\"WebGL Build triggered\"}";
+                }
                 else if (req.Url.AbsolutePath == "/build-blockblast")
                 {
                     EditorApplication.delayCall += () =>
@@ -141,7 +163,7 @@ namespace MobileRacing.Editor
                 }
                 else
                 {
-                    responseString = "{\"status\":\"ok\",\"service\":\"UnityMcpBridge\",\"version\":\"1.1\"}";
+                    responseString = "{\"status\":\"ok\",\"service\":\"UnityMcpBridge\",\"version\":\"1.2\"}";
                 }
             }
             catch (Exception ex)
@@ -149,11 +171,19 @@ namespace MobileRacing.Editor
                 responseString = $"{{\"error\":\"{ex.Message}\"}}";
             }
 
-            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
-            res.ContentLength64 = buffer.Length;
-            using (var output = res.OutputStream)
+            try
             {
-                output.Write(buffer, 0, buffer.Length);
+                byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+                res.ContentLength64 = buffer.Length;
+                using (var output = res.OutputStream)
+                {
+                    output.Write(buffer, 0, buffer.Length);
+                }
+                res.Close();
+            }
+            catch
+            {
+                // ignore write errors
             }
         }
     }

@@ -1,3 +1,4 @@
+#if UNITY_STANDALONE && !DISABLESTEAMWORKS
 using System;
 using UnityEngine;
 using Steamworks;
@@ -154,3 +155,16 @@ namespace BlockBlast
         }
     }
 }
+#else
+using UnityEngine;
+
+namespace BlockBlast
+{
+    public class SteamManager : MonoBehaviour
+    {
+        public static SteamManager Instance => null;
+        public static bool Initialized => false;
+        public static string GetCurrentSteamLanguage() => null;
+    }
+}
+#endif
