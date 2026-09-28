@@ -180,8 +180,8 @@ namespace BlockBlast.Editor
             };
             EditorBuildSettings.scenes = buildScenes;
 
-            // Optimize textures & audio for WebGL to ensure final files are well under 50MB (GitHub 100MB limit)
-            OptimizeAssetsForWebGL();
+            // WebGL 최적화 설정은 이미 메타 파일에 반영되어 있으므로 빌드 시 재임포트 루프 생략
+            // OptimizeAssetsForWebGL();
 
             AssetDatabase.SaveAssets();
             Debug.Log("<color=green><b>[BlockBlastBuild] WebGL 빌드 설정 완료! (16:9 PC 와이드스크린 960x540, Gzip 압축, Decompression Fallback ON)</b></color>");
