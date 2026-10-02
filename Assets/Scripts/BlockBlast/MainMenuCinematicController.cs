@@ -35,8 +35,9 @@ namespace BlockBlast
         [SerializeField] private AudioClip sfxLogoTitle;
         [SerializeField] private AudioSource audioSource;
 
-        private bool _canTouchToStart = true;
+        private bool _canTouchToStart = false;
         private bool _hasStarted = false;
+        private float _inputAllowedTime = 0f;
         private Coroutine _introCoroutine;
         private Coroutine _idleCoroutine;
         private Coroutine _continuousFireworksCoroutine;
@@ -102,8 +103,18 @@ namespace BlockBlast
             UpdateLogo(LocalizationManager.CurrentLanguage);
         }
 
+        public bool CanAcceptStartInput()
+        {
+            if (_hasStarted) return false;
+            if (!_canTouchToStart) return false;
+            if (Time.time < _inputAllowedTime) return false;
+            if (SplashScreenController.Instance != null && SplashScreenController.Instance.IsActive) return false;
+            return true;
+        }
+
         public void ResetToPreIntroState()
         {
+            _canTouchToStart = false;
             if (cinematicRoot != null)
             {
                 cinematicRoot.localScale = Vector3.one * 1.55f;
@@ -275,6 +286,7 @@ namespace BlockBlast
 
             ResetToPreIntroState();
             EnsureAudioClips();
+            _inputAllowedTime = Time.time + 0.4f;
 
             if (_introCoroutine != null) StopCoroutine(_introCoroutine);
             _introCoroutine = StartCoroutine(CinematicIntroRoutine());
@@ -287,8 +299,8 @@ namespace BlockBlast
 
         private void Update()
         {
-            // Allow instant tap/click or ESC key anywhere at any time to start game immediately
-            if (_hasStarted) return;
+            // Do not accept any start input while splash screen is active or before intro is ready
+            if (!CanAcceptStartInput()) return;
 
 #if ENABLE_INPUT_SYSTEM
             if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -636,12 +648,13 @@ namespace BlockBlast
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (!CanAcceptStartInput()) return;
             TriggerStartGame(eventData.position);
         }
 
         public void TriggerStartGame(Vector2 screenPos)
         {
-            if (_hasStarted) return;
+            if (!CanAcceptStartInput()) return;
             _hasStarted = true;
 
             if (BlockAudioManager.Instance != null)

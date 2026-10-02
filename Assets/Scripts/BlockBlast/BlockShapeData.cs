@@ -26,6 +26,8 @@ namespace BlockBlast
         {
             int oldR = Rows;
             int oldC = Cols;
+            // UI 좌표계(row0=화면 상단) 기준 시계방향 90도
+            // rotated[c, oldR-1-r] = matrix[r, c]
             int[,] rotated = new int[oldC, oldR];
 
             for (int r = 0; r < oldR; r++)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -27,16 +28,14 @@ namespace BlockBlast
         [SerializeField] private Sprite mintBlockSprite;
         [SerializeField] private Sprite goldBlockSprite;
         [SerializeField] private Sprite purpleBlockSprite;
-        [SerializeField] private Sprite blueBlockSprite;
         [SerializeField] private Sprite starBombBlockSprite;
 
-        public void SetupPastelBlockSprites(Sprite pink, Sprite mint, Sprite gold, Sprite purple, Sprite blue, Sprite bomb)
+        public void SetupPastelBlockSprites(Sprite pink, Sprite mint, Sprite gold, Sprite purple, Sprite bomb)
         {
             pinkBlockSprite = pink;
             mintBlockSprite = mint;
             goldBlockSprite = gold;
             purpleBlockSprite = purple;
-            blueBlockSprite = blue;
             starBombBlockSprite = bomb;
 
             pinkMascotSprite = pink;
@@ -52,9 +51,8 @@ namespace BlockBlast
             if (isBomb) return starBombBlockSprite ?? bombIconSprite;
             Color.RGBToHSV(col, out float h, out float s, out float v);
             if (h >= 0.88f || h <= 0.08f) return pinkBlockSprite;
-            if (h >= 0.35f && h <= 0.58f) return mintBlockSprite;
             if (h >= 0.09f && h <= 0.22f) return goldBlockSprite;
-            if (h > 0.50f && h < 0.68f) return blueBlockSprite;
+            if (h >= 0.25f && h < 0.68f) return mintBlockSprite;
             return purpleBlockSprite ?? pinkBlockSprite;
         }
 
@@ -105,11 +103,27 @@ namespace BlockBlast
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
 
+            EnsureBlockSprites();
             InitializeGridCells();
+        }
+
+        private void EnsureBlockSprites()
+        {
+            if (pinkBlockSprite == null || pinkBlockSprite.name.Contains("Mascot"))
+            {
+#if UNITY_EDITOR
+                pinkBlockSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/BlockBlastCute/Block_Pink.png");
+                mintBlockSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/BlockBlastCute/Block_Mint.png");
+                goldBlockSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/BlockBlastCute/Block_Gold.png");
+                purpleBlockSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/BlockBlastCute/Block_Purple.png");
+                starBombBlockSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/BlockBlastCute/Block_Star_Bomb.png");
+#endif
+            }
         }
 
         private void Start()
         {
+            EnsureBlockSprites();
             InitializeGridCells();
         }
 
@@ -373,6 +387,12 @@ namespace BlockBlast
                 }
 
                 int points = Mathf.RoundToInt((cellsToClear.Count * 20) * (CurrentCombo * 1.5f));
+                // Gold Mascot Ability: Extra bonus score per cleared line (+100 pts per line, +25 per upgrade level)
+                if (PlayerPrefs.GetInt("Selected_Mascot_Idx", 0) == 2)
+                {
+                    int lvl = LobbyManager.GetMascotLevel(2);
+                    points += totalLines * (100 + (lvl - 1) * 25);
+                }
                 OnScoreAdded?.Invoke(points);
                 OnLinesCleared?.Invoke(CurrentCombo, totalLines);
                 OnFeverAdded?.Invoke(totalLines * 25f + (bombExploded ? 30f : 0f));
@@ -381,6 +401,56 @@ namespace BlockBlast
             {
                 CurrentCombo = 0;
             }
+        }
+
+        public void ClearAllBlocksWithExplosion(Action onComplete = null)
+        {
+            StartCoroutine(ClearAllBlocksRoutine(onComplete));
+        }
+
+        private IEnumerator ClearAllBlocksRoutine(Action onComplete)
+        {
+            CurrentCombo++;
+            List<BlockCellUI> cellsToClear = new List<BlockCellUI>();
+            for (int r = 0; r < GridSize; r++)
+            {
+                for (int c = 0; c < GridSize; c++)
+                {
+                    if (_cells[r, c] != null && _cells[r, c].IsOccupied)
+                    {
+                        cellsToClear.Add(_cells[r, c]);
+                    }
+                }
+            }
+
+            float delay = 0f;
+            foreach (var cell in cellsToClear)
+            {
+                cell.PlayClearAnim(delay);
+                delay += 0.005f;
+            }
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayBomb();
+                BlockAudioManager.Instance.PlayClear(Mathf.Max(3, CurrentCombo));
+            }
+
+            int points = Mathf.Max(100, cellsToClear.Count * 50);
+            OnScoreAdded?.Invoke(points);
+            OnFeverAdded?.Invoke(50f);
+
+            yield return new WaitForSeconds(delay + 0.3f);
+
+            for (int r = 0; r < GridSize; r++)
+            {
+                for (int c = 0; c < GridSize; c++)
+                {
+                    if (_cells[r, c] != null) _cells[r, c].SetEmpty();
+                }
+            }
+
+            onComplete?.Invoke();
         }
 
         public void ResetBoard()

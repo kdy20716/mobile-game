@@ -219,27 +219,10 @@ namespace BlockBlast.Editor
                 texCount++;
             }
 
-            // 2. Audio Optimization for WebGL (Vorbis 50%, CompressedInMemory)
-            string[] audioGuids = AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/Sounds", "Assets/Resources/Audio" });
-            int audioCount = 0;
-            foreach (string guid in audioGuids)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(path)) continue;
-                AudioImporter importer = AssetImporter.GetAtPath(path) as AudioImporter;
-                if (importer == null) continue;
+            // 2. Audio Optimization for WebGL (SFX: DecompressOnLoad + ADPCM, BGM: Streaming + Vorbis 50%)
+            AudioSettingsFixer.FixAllAudioSettings();
 
-                AudioImporterSampleSettings sampleSettings = importer.GetOverrideSampleSettings("WebGL");
-                sampleSettings.loadType = AudioClipLoadType.CompressedInMemory;
-                sampleSettings.compressionFormat = AudioCompressionFormat.Vorbis;
-                sampleSettings.quality = 0.5f;
-
-                importer.SetOverrideSampleSettings("WebGL", sampleSettings);
-                importer.SaveAndReimport();
-                audioCount++;
-            }
-
-            Debug.Log($"<color=cyan>[BlockBlastBuild] WebGL 에셋 최적화 완료: 텍스처 {texCount}개 (512/1024 Crunched), 오디오 {audioCount}개 (Vorbis 50%)</color>");
+            Debug.Log($"<color=cyan>[BlockBlastBuild] WebGL 에셋 최적화 완료: 텍스처 {texCount}개 (512/1024 Crunched), 오디오 설정 최적화 완료</color>");
         }
 
         [MenuItem("Block Blast/Build/5. Build WebGL (For Portfolio)", priority = 104)]
@@ -370,6 +353,149 @@ namespace BlockBlast.Editor
             catch (Exception ex)
             {
                 Debug.LogWarning($"[BlockBlastBuild] Guide creation skipped: {ex.Message}");
+            }
+        }
+
+        public const string AndroidOutputDir = "Builds/MallangBlast_Android";
+
+        [MenuItem("Block Blast/Build/6. Apply Android Settings (Portrait & com.MallangGames.MallangBlast)", priority = 105)]
+        public static void ConfigureAndroidSettings()
+        {
+            // 1. Basic Metadata
+            PlayerSettings.productName = "Mallang Blast";
+            PlayerSettings.companyName = "MallangGames";
+            PlayerSettings.bundleVersion = "1.2.0";
+
+            // 2. Portrait Orientation Lock
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            PlayerSettings.allowedAutorotateToPortrait = true;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+            PlayerSettings.allowedAutorotateToLandscapeRight = false;
+
+            // 3. Android Application Identifier (Package Name)
+            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.MallangGames.MallangBlast");
+
+            // 4. Internet Permission
+            PlayerSettings.Android.forceInternetPermission = true;
+
+            // 5. Scripting Backend & Architectures for Google Play (IL2CPP + ARM64 + ARMv7)
+            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+
+            // 6. Build Scenes
+            EditorBuildSettingsScene[] buildScenes = new EditorBuildSettingsScene[]
+            {
+                new EditorBuildSettingsScene(ScenePath, true)
+            };
+            EditorBuildSettings.scenes = buildScenes;
+
+            // 7. App Icon Setup for Android
+            string iconPath = "Assets/Textures/AppIcon.png";
+            Texture2D iconTex = AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath);
+            if (iconTex != null)
+            {
+                Texture2D[] icons = new Texture2D[] { iconTex };
+                PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Android, icons);
+            }
+
+            // 8. Splash Screen
+            PlayerSettings.SplashScreen.show = false;
+            PlayerSettings.SplashScreen.showUnityLogo = false;
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[BlockBlastBuild] Android 모바일 빌드 설정 완료! (세로 Portrait 고정, com.MallangGames.MallangBlast, 인터넷 권한 허용, IL2CPP 64비트)</b></color>");
+        }
+
+        [MenuItem("Block Blast/Build/7. Build Android AAB (For Google Play Store)", priority = 106)]
+        public static void BuildAndroidAAB()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                EditorApplication.isPlaying = false;
+            }
+
+            ConfigureAndroidSettings();
+            EditorUserBuildSettings.buildAppBundle = true; // Google Play Store용 AAB 생성
+
+            string fullOutputDir = Path.GetFullPath(AndroidOutputDir);
+            if (!Directory.Exists(fullOutputDir))
+            {
+                Directory.CreateDirectory(fullOutputDir);
+            }
+
+            string aabFullPath = Path.Combine(fullOutputDir, "MallangBlast.aab");
+
+            BuildPlayerOptions options = new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = aabFullPath,
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            };
+
+            Debug.Log($"<color=cyan>[BlockBlastBuild] Android Google Play용 AAB 빌드 시작: {aabFullPath}</color>");
+
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            BuildSummary summary = report.summary;
+
+            if (summary.result == BuildResult.Succeeded)
+            {
+                Debug.Log($"<color=green><b>[BlockBlastBuild] ★★★ Android AAB 빌드 성공! ★★★\n경로: {aabFullPath}\n크기: {summary.totalSize / (1024 * 1024):N1} MB\n소요시간: {summary.totalTime.TotalSeconds:F1}초</b></color>");
+                if (!Application.isBatchMode)
+                {
+                    EditorUtility.RevealInFinder(aabFullPath);
+                }
+            }
+            else
+            {
+                Debug.LogError($"<color=red>[BlockBlastBuild] Android AAB 빌드 실패! 결과: {summary.result}, 에러 수: {summary.totalErrors}</color>");
+            }
+        }
+
+        [MenuItem("Block Blast/Build/8. Build Android APK (For Test Device)", priority = 107)]
+        public static void BuildAndroidAPK()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                EditorApplication.isPlaying = false;
+            }
+
+            ConfigureAndroidSettings();
+            EditorUserBuildSettings.buildAppBundle = false; // 테스트용 APK 생성
+
+            string fullOutputDir = Path.GetFullPath(AndroidOutputDir);
+            if (!Directory.Exists(fullOutputDir))
+            {
+                Directory.CreateDirectory(fullOutputDir);
+            }
+
+            string apkFullPath = Path.Combine(fullOutputDir, "MallangBlast.apk");
+
+            BuildPlayerOptions options = new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = apkFullPath,
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            };
+
+            Debug.Log($"<color=cyan>[BlockBlastBuild] Android 테스트용 APK 빌드 시작: {apkFullPath}</color>");
+
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            BuildSummary summary = report.summary;
+
+            if (summary.result == BuildResult.Succeeded)
+            {
+                Debug.Log($"<color=green><b>[BlockBlastBuild] ★★★ Android APK 빌드 성공! ★★★\n경로: {apkFullPath}\n크기: {summary.totalSize / (1024 * 1024):N1} MB\n소요시간: {summary.totalTime.TotalSeconds:F1}초</b></color>");
+                if (!Application.isBatchMode)
+                {
+                    EditorUtility.RevealInFinder(apkFullPath);
+                }
+            }
+            else
+            {
+                Debug.LogError($"<color=red>[BlockBlastBuild] Android APK 빌드 실패! 결과: {summary.result}, 에러 수: {summary.totalErrors}</color>");
             }
         }
     }

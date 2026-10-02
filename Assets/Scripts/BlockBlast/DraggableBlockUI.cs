@@ -27,6 +27,11 @@ namespace BlockBlast
         private bool _isDragging = false;
         private bool _isDragCanceled = false;
 
+        private int _dragPointerId = -1;
+        private Vector2 _lastScreenPosition;
+        private Sprite _cachedGemSprite;
+        private Sprite _cachedBombSprite;
+
         public event Action<int> OnBlockPlaced; // slotIndex
 
         private void Awake()
@@ -81,6 +86,8 @@ namespace BlockBlast
             SlotIndex = slotIdx;
             _parentCanvas = canvas;
             _originalParent = transform.parent;
+            _cachedGemSprite = gemSprite;
+            _cachedBombSprite = bombSprite;
             if (_rectTransform != null)
             {
                 _originalAnchoredPosition = _rectTransform.anchoredPosition;
@@ -91,6 +98,8 @@ namespace BlockBlast
 
         public void RebuildVisuals(Sprite gemSprite, Sprite bombSprite)
         {
+            _cachedGemSprite = gemSprite;
+            _cachedBombSprite = bombSprite;
             bool isDragging = (CurrentlyDraggedBlock == this);
             Vector2 savedPos = _rectTransform != null ? _rectTransform.anchoredPosition : Vector2.zero;
 
@@ -108,6 +117,21 @@ namespace BlockBlast
                 StopCoroutine("RotateJellyAnim");
                 StartCoroutine("RotateJellyAnim");
             }
+        }
+
+        public void RotateSelf()
+        {
+            if (_isPlaced || Shape == null) return;
+
+            Shape.Rotate90Clockwise();
+            RebuildVisuals(_cachedGemSprite, _cachedBombSprite);
+
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayRotate();
+            }
+
+            UpdateSnapPreviewAtPosition(_lastScreenPosition);
         }
 
         private IEnumerator RotateJellyAnim()
@@ -136,10 +160,10 @@ namespace BlockBlast
             rootHitbox.raycastTarget = true;
 
             // Maximum allowable visual bounding box inside the slot card to prevent ANY protrusion on rotation
-            float maxFitWidth = 220f;
-            float maxFitHeight = 175f;
+            float maxFitWidth = 240f;
+            float maxFitHeight = 195f;
 
-            float cellSize = 50f;
+            float cellSize = 62f;
             float spacing = 4f;
 
             float totalWidth = Shape.Cols * cellSize + (Shape.Cols - 1) * spacing;
@@ -212,6 +236,51 @@ namespace BlockBlast
             }
         }
 
+        private void Update()
+        {
+            if (!_isDragging || _isPlaced || CurrentlyDraggedBlock != this) return;
+            if (Time.timeScale <= 0f || (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsPaused)) return;
+
+            bool shouldRotate = false;
+
+            // 1. Mobile Multi-Touch: while dragging with one finger, tapping anywhere with another finger spins the block!
+            // PC 키보드(R/Space)/마우스(RMB) 회전은 BlockBlastUIManager.Update()에서 단독 처리 (중복 방지)
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Touchscreen.current != null)
+            {
+                var touches = UnityEngine.InputSystem.Touchscreen.current.touches;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    if (t.touchId.ReadValue() != _dragPointerId &&
+                        t.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
+                    {
+                        shouldRotate = true;
+                        break;
+                    }
+                }
+            }
+#else
+            if (Input.touchCount > 0)
+            {
+                for (int i = 0; i < Input.touchCount; i++)
+                {
+                    Touch t = Input.GetTouch(i);
+                    if (t.fingerId != _dragPointerId && t.phase == TouchPhase.Began)
+                    {
+                        shouldRotate = true;
+                        break;
+                    }
+                }
+            }
+#endif
+
+            if (shouldRotate)
+            {
+                RotateSelf();
+            }
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
             if (_isPlaced) return;
@@ -220,6 +289,8 @@ namespace BlockBlast
             _isDragging = true;
             _isDragCanceled = false;
             CurrentlyDraggedBlock = this;
+            _dragPointerId = eventData.pointerId;
+            _lastScreenPosition = eventData.position;
 
             if (BlockAudioManager.Instance != null)
             {
@@ -248,6 +319,8 @@ namespace BlockBlast
             _isDragging = true;
             _isDragCanceled = false;
             CurrentlyDraggedBlock = this;
+            _dragPointerId = eventData.pointerId;
+            _lastScreenPosition = eventData.position;
             UpdateDragPosition(eventData.position);
         }
 
@@ -281,6 +354,7 @@ namespace BlockBlast
                 return;
             }
 
+            _lastScreenPosition = eventData.position;
             UpdateDragPosition(eventData.position);
             UpdateSnapPreviewAtPosition(eventData.position);
         }
@@ -288,6 +362,8 @@ namespace BlockBlast
         public void OnEndDrag(PointerEventData eventData)
         {
             if (_isPlaced) return;
+
+            _dragPointerId = -1;
 
             // If drag was canceled or game is paused, NEVER place on board!
             if (_isDragCanceled || !_isDragging || Time.timeScale <= 0f || (BlockBlastUIManager.Instance != null && BlockBlastUIManager.Instance.IsPaused))
@@ -375,6 +451,7 @@ namespace BlockBlast
             }
             _isDragging = false;
             _isDragCanceled = false;
+            _dragPointerId = -1;
         }
 
         public void CancelDrag(bool immediate = false)

@@ -19,6 +19,10 @@ namespace BlockBlast
         [Tooltip("체크를 끄면 스플래시 화면을 거치지 않고 바로 타이틀 화면으로 진입합니다.")]
         [SerializeField] private bool enableSplashScreen = true;
 
+        [Header("Skip Settings")]
+        [Tooltip("스플래시 화면 중 클릭으로 스킵 허용 여부 (기본 false: 스플래시 중 클릭해도 스킵되거나 로비로 넘어가지 않습니다)")]
+        [SerializeField] private bool allowClickToSkip = false;
+
         [Header("UI References")]
         [SerializeField] private CanvasGroup splashCanvasGroup;
         [SerializeField] private RectTransform logoTransform;
@@ -119,6 +123,8 @@ namespace BlockBlast
 
         private bool DetectUserInput()
         {
+            if (!allowClickToSkip) return false;
+
 #if ENABLE_INPUT_SYSTEM
             if (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame) return true;
             if (UnityEngine.InputSystem.Touchscreen.current != null && UnityEngine.InputSystem.Touchscreen.current.primaryTouch.press.wasPressedThisFrame) return true;

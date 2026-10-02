@@ -15,8 +15,16 @@ namespace BlockBlast.Editor
                 "Assets/Textures/BlockBlastCute/Block_Mint_Mascot.png",
                 "Assets/Textures/BlockBlastCute/Block_Gold_Mascot.png",
                 "Assets/Textures/BlockBlastCute/Block_Purple_Mascot.png",
-                "Assets/Textures/BlockBlastCute/Block_Blue_Mascot.png",
+                "Assets/Textures/BlockBlastCute/Block_Pink.png",
+                "Assets/Textures/BlockBlastCute/Block_Mint.png",
+                "Assets/Textures/BlockBlastCute/Block_Gold.png",
+                "Assets/Textures/BlockBlastCute/Block_Purple.png",
                 "Assets/Textures/BlockBlastCute/Block_Star_Bomb.png",
+                "Assets/Textures/BlockBlastCute/Avatar_Pink.png",
+                "Assets/Textures/BlockBlastCute/Avatar_Mint.png",
+                "Assets/Textures/BlockBlastCute/Avatar_Gold.png",
+                "Assets/Textures/BlockBlastCute/Avatar_Purple.png",
+                "Assets/Textures/BlockBlastCute/UI_Circle_White_Plate.png",
                 "Assets/Textures/BlockBlastCute/Jelly_Tile_Base.png",
                 "Assets/Textures/BlockBlastCute/Jelly_MainMenu_Wide_BG.png",
                 "Assets/Textures/MallangGames_Studio_Logo.png"
@@ -34,7 +42,9 @@ namespace BlockBlast.Editor
 
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
-                importer.mipmapEnabled = false; // No mipmap blur for UI sprites
+                bool isBlockOrTile = path.Contains("Block_") || path.Contains("Avatar_");
+                importer.mipmapEnabled = isBlockOrTile; // Enables smooth anti-aliased downsampling on mobile displays
+                if (isBlockOrTile) importer.mipMapBias = -0.3f;
                 importer.filterMode = FilterMode.Bilinear;
                 importer.anisoLevel = 16;
                 importer.maxTextureSize = 2048;

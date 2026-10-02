@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.IO;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using TMPro;
@@ -309,7 +310,6 @@ namespace BlockBlast.Editor
                 }
             }
 
-            GetOrCreateBlueMascotSprite();
             GetOrCreateRedMascotSprite();
 
             Debug.Log("<color=#FF66CC><b>[말랑블라스트]</b> 모든 색상의 젤리 마스코트 캐릭터들을 정밀 BFS 누끼 및 임포트 완료했습니다!</color>");
@@ -479,6 +479,7 @@ namespace BlockBlast.Editor
             {
                 bool dirty = false;
                 if (!importer.isReadable) { importer.isReadable = true; dirty = true; }
+                if (importer.crunchedCompression) { importer.crunchedCompression = false; dirty = true; }
                 if (importer.textureCompression != TextureImporterCompression.Uncompressed)
                 {
                     importer.textureCompression = TextureImporterCompression.Uncompressed;
@@ -488,11 +489,18 @@ namespace BlockBlast.Editor
             }
         }
 
-        public static Sprite GetOrCreatePastelBlockSprite(string name, Color pastelCol, string overlayFileName = null, float overlayScale = 0.86f)
+        public static Sprite GetOrCreatePastelBlockSprite(string name, Color pastelCol, string overlayFileName = null, float overlayScale = 0.86f, bool forceRecreate = false)
         {
+            if (string.Equals(name, "Block_Blue", System.StringComparison.OrdinalIgnoreCase))
+            {
+                string delPath = $"{Folder}/Block_Blue.png";
+                if (File.Exists(delPath)) AssetDatabase.DeleteAsset(delPath);
+                return null;
+            }
+
             EnsureFolder();
             string path = $"{Folder}/{name}.png";
-            if (File.Exists(path))
+            if (File.Exists(path) && !forceRecreate)
             {
                 return ForceGetOrImportSingleSprite(path);
             }
@@ -500,25 +508,40 @@ namespace BlockBlast.Editor
             Texture2D overlayTex = null;
             if (!string.IsNullOrEmpty(overlayFileName))
             {
-                string ovPath = $"{Folder}/{overlayFileName}";
-                EnsureTextureReadable(ovPath);
-                overlayTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ovPath);
-                if (overlayTex != null)
+                string backupPath = $"Assets/Textures/BlockBlastCute_Backup/{overlayFileName}";
+                string ovPath = File.Exists(backupPath) ? backupPath : $"{Folder}/{overlayFileName}";
+                if (File.Exists(ovPath))
                 {
-                    Color c0 = overlayTex.GetPixel(0, 0);
-                    // If corners have an opaque background, cut it out cleanly with flood fill
-                    if (c0.a > 0.8f && (c0.r + c0.g + c0.b) / 3f > 0.8f)
+                    try
                     {
-                        Texture2D cutoutTex = PreciseFloodFillCutout(overlayTex);
-                        byte[] bytesCutout = cutoutTex.EncodeToPNG();
-                        SafeWriteAllBytes(ovPath, bytesCutout);
-                        AssetDatabase.ImportAsset(ovPath, ImportAssetOptions.ForceUpdate);
-                        overlayTex = cutoutTex;
+                        byte[] fileBytes = File.ReadAllBytes(ovPath);
+                        Texture2D rawTex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                        if (rawTex.LoadImage(fileBytes))
+                        {
+                            Color c0 = rawTex.GetPixel(0, 0);
+                            // If corners have an opaque background, cut it out cleanly with flood fill
+                            if (c0.a > 0.8f && (c0.r + c0.g + c0.b) / 3f > 0.8f)
+                            {
+                                Texture2D cutoutTex = PreciseFloodFillCutout(rawTex);
+                                byte[] bytesCutout = cutoutTex.EncodeToPNG();
+                                SafeWriteAllBytes(ovPath, bytesCutout);
+                                AssetDatabase.ImportAsset(ovPath, ImportAssetOptions.ForceUpdate);
+                                overlayTex = cutoutTex;
+                            }
+                            else
+                            {
+                                overlayTex = rawTex;
+                            }
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[CuteBlockTextureGenerator] Failed loading overlay {overlayFileName}: {ex.Message}");
                     }
                 }
             }
 
-            Texture2D blockTex = GeneratePastelBlockTexture(512, pastelCol, overlayTex, overlayScale);
+            Texture2D blockTex = GeneratePastelBlockTexture(2048, pastelCol, overlayTex, overlayScale);
             byte[] bytes = blockTex.EncodeToPNG();
             SafeWriteAllBytes(path, bytes);
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
@@ -527,17 +550,29 @@ namespace BlockBlast.Editor
             if (importer != null)
             {
                 importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
                 importer.spritePixelsPerUnit = 100;
                 importer.filterMode = FilterMode.Bilinear;
-                importer.anisoLevel = 4;
-                importer.mipmapEnabled = false; // Never blur 2D sprites with low-res mips
+                importer.anisoLevel = 16;
+                importer.maxTextureSize = 2048;
+                importer.mipmapEnabled = true; // Enables clean anti-aliased downsampling on mobile displays
+                importer.mipMapBias = -0.3f; // Crisp, sharp rendering without aliasing
                 importer.textureCompression = TextureImporterCompression.Uncompressed; // 100% loss-free crisp rendering!
                 importer.isReadable = true;
                 importer.SaveAndReimport();
             }
 
-            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            Sprite loadedSp = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (loadedSp == null)
+            {
+                var assets = AssetDatabase.LoadAllAssetsAtPath(path);
+                foreach (var a in assets)
+                {
+                    if (a is Sprite s) return s;
+                }
+            }
+            return loadedSp;
         }
 
         public static Sprite GetOrCreateEmptyCellSprite()
@@ -569,12 +604,18 @@ namespace BlockBlast.Editor
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             Color[] pixels = new Color[size * size];
 
-            float radius = size * 0.22f;
+            float radius = size * 0.20f;
 
-            // Make background significantly brighter and more distinct from character
-            Color topCol = Color.Lerp(pastelCol, Color.white, 0.55f);    // much brighter top
-            Color botCol = Color.Lerp(pastelCol, Color.white, 0.30f);    // brighter bottom
-            Color borderCol = Color.Lerp(pastelCol, Color.black, 0.38f); // deeper border for pop
+            // Soft marshmallow pastel gradient
+            Color topCol = Color.Lerp(pastelCol, Color.white, 0.45f);
+            Color botCol = Color.Lerp(pastelCol, Color.white, 0.18f);
+            Color borderCol = Color.Lerp(pastelCol, Color.black, 0.28f);
+
+            int bevelMinX = Mathf.RoundToInt(size * 0.012f);
+            int bevelMaxX = Mathf.RoundToInt(size * 0.035f);
+            int bevelMinY = Mathf.RoundToInt(size * 0.012f);
+            int bevelMaxY = size - bevelMinY;
+            float borderDist = Mathf.Max(6f, size * 0.014f);
 
             for (int y = 0; y < size; y++)
             {
@@ -592,33 +633,40 @@ namespace BlockBlast.Editor
                         float t = (float)y / size;
                         Color baseCol = Color.Lerp(botCol, topCol, t);
 
-                        // 3D glossy highlight on top-left (stronger for visibility)
-                        float hlDist = Mathf.Sqrt((x - size * 0.35f) * (x - size * 0.35f) + (y - size * 0.72f) * (y - size * 0.72f));
+                        // 3D glossy highlight on top-left
+                        float hlDist = Mathf.Sqrt((x - size * 0.32f) * (x - size * 0.32f) + (y - size * 0.74f) * (y - size * 0.74f));
                         float hl = Mathf.Clamp01(1f - hlDist / (size * 0.45f));
-                        baseCol = Color.Lerp(baseCol, Color.white, hl * 0.45f);
+                        baseCol = Color.Lerp(baseCol, Color.white, hl * 0.38f);
 
                         // Inner bevel highlight: top and left inner edge
-                        if (x >= 4 && x <= 14 && y >= 8 && y <= size - 8)
+                        if (x >= bevelMinX && x <= bevelMaxX && y >= bevelMinY && y <= bevelMaxY)
                         {
-                            baseCol = Color.Lerp(baseCol, Color.white, 0.35f);
+                            baseCol = Color.Lerp(baseCol, Color.white, 0.28f);
                         }
-                        if (y >= size - 14 && y <= size - 4 && x >= 8 && x <= size - 8)
+                        if (y >= size - bevelMaxX && y <= size - bevelMinX && x >= bevelMinY && x <= size - bevelMinY)
                         {
-                            baseCol = Color.Lerp(baseCol, Color.white, 0.40f);
+                            baseCol = Color.Lerp(baseCol, Color.white, 0.32f);
                         }
 
                         // Bottom shadow band for 3D depth
-                        if (y < size * 0.12f)
+                        if (y < size * 0.10f)
                         {
-                            float shadowT = 1f - (y / (size * 0.12f));
-                            baseCol = Color.Lerp(baseCol, Color.Lerp(pastelCol, Color.black, 0.3f), shadowT * 0.4f);
+                            float shadowT = 1f - (y / (size * 0.10f));
+                            baseCol = Color.Lerp(baseCol, Color.Lerp(pastelCol, Color.black, 0.25f), shadowT * 0.35f);
                         }
 
-                        // Border antialiasing / stroke
-                        if (dist > -5f)
+                        // Border antialiasing
+                        if (dist > -borderDist)
                         {
-                            float borderT = Mathf.Clamp01((dist + 5f) / 5f);
-                            baseCol = Color.Lerp(baseCol, borderCol, borderT * 0.9f);
+                            float borderT = Mathf.Clamp01((dist + borderDist) / borderDist);
+                            baseCol = Color.Lerp(baseCol, borderCol, borderT * 0.85f);
+                        }
+
+                        // Outside edge smooth anti-aliasing
+                        if (dist > -1.5f)
+                        {
+                            float alpha = Mathf.Clamp01(-dist / 1.5f);
+                            baseCol.a = alpha;
                         }
 
                         pixels[idx] = baseCol;
@@ -626,141 +674,86 @@ namespace BlockBlast.Editor
                 }
             }
 
-            tex.SetPixels(pixels);
-
-            // === STEP 1: Composite overlay at larger size with white sticker outline ===
+            // High-resolution mascot compositing directly on block with tight bounding-box centering
             if (overlayTex != null)
             {
-                // Use larger scale for better visibility (minimum 0.88, respect caller scale but boost it)
-                float effectiveScale = Mathf.Max(overlayScale, 0.88f);
-                // If default 0.86 was passed, upgrade to 0.92 for new mascot blocks
-                if (Mathf.Approximately(overlayScale, 0.86f)) effectiveScale = 0.92f;
+                int ovW = overlayTex.width;
+                int ovH = overlayTex.height;
+                Color[] ovPixels = overlayTex.GetPixels();
 
-                int ovSize = Mathf.RoundToInt(size * effectiveScale);
-                int startX = (size - ovSize) / 2;
-                int startY = (size - ovSize) / 2;
-                float stepU = 1f / Mathf.Max(1, ovSize - 1);
-                float stepV = 1f / Mathf.Max(1, ovSize - 1);
-                float subOffset = 0.25f;
-
-                // First pass: sample mascot pixels into a buffer
-                Color[] mascotBuf = new Color[size * size];
-                for (int i = 0; i < mascotBuf.Length; i++) mascotBuf[i] = Color.clear;
-
-                for (int oy = 0; oy < ovSize; oy++)
+                // Find tight bounding box of non-transparent mascot pixels
+                int minX = ovW, maxX = 0, minY = ovH, maxY = 0;
+                bool hasPixels = false;
+                for (int y = 0; y < ovH; y += 2)
                 {
-                    for (int ox = 0; ox < ovSize; ox++)
+                    int row = y * ovW;
+                    for (int x = 0; x < ovW; x += 2)
                     {
-                        float u = (float)ox * stepU;
-                        float v = (float)oy * stepV;
-
-                        // 4-point supersampling for crisp lines
-                        Color s1 = overlayTex.GetPixelBilinear(u - stepU * subOffset, v - stepV * subOffset);
-                        Color s2 = overlayTex.GetPixelBilinear(u + stepU * subOffset, v - stepV * subOffset);
-                        Color s3 = overlayTex.GetPixelBilinear(u - stepU * subOffset, v + stepV * subOffset);
-                        Color s4 = overlayTex.GetPixelBilinear(u + stepU * subOffset, v + stepV * subOffset);
-
-                        Color oc = new Color(
-                            (s1.r + s2.r + s3.r + s4.r) * 0.25f,
-                            (s1.g + s2.g + s3.g + s4.g) * 0.25f,
-                            (s1.b + s2.b + s3.b + s4.b) * 0.25f,
-                            (s1.a + s2.a + s3.a + s4.a) * 0.25f
-                        );
-
-                        int px = startX + ox;
-                        int py = startY + oy;
-                        if (px >= 0 && px < size && py >= 0 && py < size)
+                        if (ovPixels[row + x].a > 0.05f)
                         {
-                            mascotBuf[py * size + px] = oc;
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                            hasPixels = true;
                         }
                     }
                 }
 
-                // Second pass: draw white sticker outline (expand mascot silhouette by 5px white ring)
-                int outlineRadius = Mathf.RoundToInt(size * 0.012f); // ~6px for 512
-                outlineRadius = Mathf.Max(outlineRadius, 4);
-                Color[] outlineBuf = new Color[size * size];
-                for (int i = 0; i < outlineBuf.Length; i++) outlineBuf[i] = Color.clear;
-
-                for (int py = 0; py < size; py++)
+                if (hasPixels)
                 {
-                    for (int px = 0; px < size; px++)
-                    {
-                        // Skip if already inside mascot
-                        if (mascotBuf[py * size + px].a > 0.3f) continue;
+                    float cx = (minX + maxX) * 0.5f;
+                    float cy = (minY + maxY) * 0.5f;
+                    float contentW = (maxX - minX + 1);
+                    float contentH = (maxY - minY + 1);
+                    float maxDim = Mathf.Max(contentW, contentH);
 
-                        // Check neighbors within outline radius
-                        bool nearMascot = false;
-                        for (int dy = -outlineRadius; dy <= outlineRadius && !nearMascot; dy++)
+                    // Mascot fills 85% of block so character expression is clear and prominent
+                    float targetDim = size * 0.85f;
+                    float scale = targetDim / maxDim;
+
+                    float invScale = 1f / scale;
+                    float blockCenter = size * 0.5f;
+
+                    for (int py = 0; py < size; py++)
+                    {
+                        float ovY = cy + (py - blockCenter) * invScale;
+                        if (ovY < 0f || ovY >= ovH) continue;
+                        float v = ovY / ovH;
+                        int rowIdx = py * size;
+
+                        for (int px = 0; px < size; px++)
                         {
-                            for (int dx = -outlineRadius; dx <= outlineRadius && !nearMascot; dx++)
+                            float ovX = cx + (px - blockCenter) * invScale;
+                            if (ovX < 0f || ovX >= ovW) continue;
+                            float u = ovX / ovW;
+
+                            Color mc = overlayTex.GetPixelBilinear(u, v);
+                            if (mc.a <= 0.001f) continue;
+
+                            int idx = rowIdx + px;
+                            Color bg = pixels[idx];
+                            if (bg.a <= 0.001f) continue;
+
+                            // Standard Porter-Duff alpha blend
+                            float outA = mc.a + bg.a * (1f - mc.a);
+                            if (outA > 0f)
                             {
-                                if (dx * dx + dy * dy > outlineRadius * outlineRadius) continue;
-                                int nx = px + dx;
-                                int ny = py + dy;
-                                if (nx >= 0 && nx < size && ny >= 0 && ny < size)
-                                {
-                                    if (mascotBuf[ny * size + nx].a > 0.3f)
-                                        nearMascot = true;
-                                }
+                                Color outC = (mc * mc.a + bg * bg.a * (1f - mc.a)) / outA;
+                                outC.a = Mathf.Min(outA, bg.a);
+                                pixels[idx] = outC;
                             }
                         }
-
-                        if (nearMascot)
-                        {
-                            outlineBuf[py * size + px] = new Color(1f, 1f, 1f, 0.95f);
-                        }
                     }
                 }
-
-                // Third pass: composite outline onto block, then mascot on top
-                // Draw white outline first (under mascot)
-                for (int py2 = 0; py2 < size; py2++)
-                {
-                    for (int px2 = 0; px2 < size; px2++)
-                    {
-                        int idx2 = py2 * size + px2;
-                        Color oc = outlineBuf[idx2];
-                        if (oc.a > 0.1f && pixels[idx2].a > 0.1f)
-                        {
-                            pixels[idx2] = Color.Lerp(pixels[idx2], new Color(1f, 1f, 1f, 1f), oc.a * 0.92f);
-                        }
-                    }
-                }
-
-                // Draw mascot on top of outline
-                for (int py3 = 0; py3 < size; py3++)
-                {
-                    for (int px3 = 0; px3 < size; px3++)
-                    {
-                        int idx3 = py3 * size + px3;
-                        Color oc = mascotBuf[idx3];
-                        if (oc.a > 0.02f && pixels[idx3].a > 0.1f)
-                        {
-                            // Solidify mascot body (opaque)
-                            float a = (oc.a >= 0.85f) ? 1.0f : Mathf.SmoothStep(0f, 1f, oc.a * 1.4f);
-
-                            // Boost dark lines (eyes, outlines)
-                            float brightness = (oc.r + oc.g + oc.b) / 3f;
-                            if (brightness < 0.35f && oc.a > 0.3f) a = 1.0f;
-
-                            Color blended = new Color(
-                                oc.r * a + pixels[idx3].r * (1f - a),
-                                oc.g * a + pixels[idx3].g * (1f - a),
-                                oc.b * a + pixels[idx3].b * (1f - a),
-                                pixels[idx3].a
-                            );
-                            pixels[idx3] = blended;
-                        }
-                    }
-                }
-
-                tex.SetPixels(pixels);
             }
 
+            tex.SetPixels(pixels);
             tex.Apply();
             return tex;
         }
+
+
 
 
         private static Texture2D GenerateEmptyCellTexture(int size)
@@ -825,6 +818,15 @@ namespace BlockBlast.Editor
             return Mathf.Sqrt(cx * cx + cy * cy) - radius;
         }
 
+        public static Sprite GetOrCreatePinkMascotSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Block_Pink_Mascot.png";
+            if (File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+            path = $"{Folder}/Jelly_Mascot_Left_Pop.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateMascotSprite();
+        }
+
         public static Sprite GetOrCreateMintMascotSprite()
         {
             EnsureFolder();
@@ -852,6 +854,14 @@ namespace BlockBlast.Editor
             EnsureMascotsCutout();
             path = $"{Folder}/Jelly_Mascot_Purple.png";
             return ForceGetOrImportSingleSprite(path) ?? GetOrCreateDiceSprite();
+        }
+
+        public static Sprite GetOrCreateSpecialMascotSprite()
+        {
+            EnsureFolder();
+            EnsureSpecialMascotCutout();
+            string path = $"{Folder}/Block_Special_Mascot.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateMascotSprite();
         }
 
         public static Sprite GetOrCreateSideWingLeftSprite()
@@ -1151,6 +1161,207 @@ namespace BlockBlast.Editor
                 File.Copy(purple, dstPurple, true);
                 AssetDatabase.ImportAsset(dstPurple, ImportAssetOptions.ForceUpdate);
                 ForceGetOrImportSingleSprite(dstPurple);
+            }
+
+            EnsureSpecialMascotCutout();
+        }
+
+        public static void EnsureSpecialMascotCutout()
+        {
+            EnsureFolder();
+            string backupFolder = "Assets/Textures/BlockBlastCute_Backup";
+            if (!Directory.Exists(backupFolder)) Directory.CreateDirectory(backupFolder);
+
+            string rawJpg = $"{Folder}/Block_Special_Mascot_Raw.jpg";
+            string dstPng = $"{Folder}/Block_Special_Mascot.png";
+            string dstBackupPng = $"{backupFolder}/Block_Special_Mascot.png";
+            string dstJelly = $"{Folder}/Jelly_Mascot_Special.png";
+
+            if (File.Exists(rawJpg) && (!File.Exists(dstPng) || !File.Exists(dstBackupPng)))
+            {
+                byte[] rawBytes = File.ReadAllBytes(rawJpg);
+                Texture2D srcTex = new Texture2D(2, 2);
+                srcTex.LoadImage(rawBytes);
+
+                int sw = srcTex.width;
+                int sh = srcTex.height;
+                Color[] srcPixels = srcTex.GetPixels();
+
+                // BFS flood-fill from border
+                bool[] isBg = new bool[sw * sh];
+                Queue<int> q = new Queue<int>();
+
+                for (int x = 0; x < sw; x++)
+                {
+                    TryEnqueueBg(x, 0, sw, sh, srcPixels, isBg, q);
+                    TryEnqueueBg(x, sh - 1, sw, sh, srcPixels, isBg, q);
+                }
+                for (int y = 0; y < sh; y++)
+                {
+                    TryEnqueueBg(0, y, sw, sh, srcPixels, isBg, q);
+                    TryEnqueueBg(sw - 1, y, sw, sh, srcPixels, isBg, q);
+                }
+
+                int[] dx = { 0, 0, 1, -1 };
+                int[] dy = { 1, -1, 0, 0 };
+
+                while (q.Count > 0)
+                {
+                    int curr = q.Dequeue();
+                    int cx = curr % sw;
+                    int cy = curr / sw;
+
+                    for (int k = 0; k < 4; k++)
+                    {
+                        int nx = cx + dx[k];
+                        int ny = cy + dy[k];
+                        if (nx >= 0 && nx < sw && ny >= 0 && ny < sh)
+                        {
+                            int nidx = ny * sw + nx;
+                            if (!isBg[nidx])
+                            {
+                                Color c = srcPixels[nidx];
+                                if (c.r >= 0.93f && c.g >= 0.93f && c.b >= 0.93f)
+                                {
+                                    isBg[nidx] = true;
+                                    q.Enqueue(nidx);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                float[] alphaMap = new float[sw * sh];
+                for (int i = 0; i < sw * sh; i++)
+                {
+                    if (isBg[i])
+                    {
+                        alphaMap[i] = 0f;
+                    }
+                    else
+                    {
+                        int cx = i % sw;
+                        int cy = i / sw;
+                        Color c = srcPixels[i];
+                        float minDiff = 1f - Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+
+                        bool adjacentBg = false;
+                        for (int k = 0; k < 4; k++)
+                        {
+                            int nx = cx + dx[k];
+                            int ny = cy + dy[k];
+                            if (nx >= 0 && nx < sw && ny >= 0 && ny < sh)
+                            {
+                                if (isBg[ny * sw + nx]) { adjacentBg = true; break; }
+                            }
+                        }
+
+                        if (adjacentBg && minDiff < 0.18f)
+                        {
+                            alphaMap[i] = Mathf.Clamp01(minDiff / 0.18f);
+                        }
+                        else
+                        {
+                            alphaMap[i] = 1f;
+                        }
+                    }
+                }
+
+                int targetSize = 2048;
+                Texture2D outTex = new Texture2D(targetSize, targetSize, TextureFormat.RGBA32, false);
+                Color[] outPixels = new Color[targetSize * targetSize];
+
+                float step = 1f / (targetSize - 1);
+                for (int y = 0; y < targetSize; y++)
+                {
+                    float v = y * step;
+                    for (int x = 0; x < targetSize; x++)
+                    {
+                        float u = x * step;
+                        float fx = u * (sw - 1);
+                        float fy = v * (sh - 1);
+                        int x0 = Mathf.FloorToInt(fx);
+                        int x1 = Mathf.Min(x0 + 1, sw - 1);
+                        int y0 = Mathf.FloorToInt(fy);
+                        int y1 = Mathf.Min(y0 + 1, sh - 1);
+                        float tx = fx - x0;
+                        float ty = fy - y0;
+
+                        float a00 = alphaMap[y0 * sw + x0];
+                        float a10 = alphaMap[y0 * sw + x1];
+                        float a01 = alphaMap[y1 * sw + x0];
+                        float a11 = alphaMap[y1 * sw + x1];
+                        float a = Mathf.Lerp(Mathf.Lerp(a00, a10, tx), Mathf.Lerp(a01, a11, tx), ty);
+
+                        Color c = srcTex.GetPixelBilinear(u, v);
+                        if (a <= 0.001f)
+                        {
+                            outPixels[y * targetSize + x] = Color.clear;
+                        }
+                        else
+                        {
+                            if (a < 0.99f)
+                            {
+                                float invA = 1f - a;
+                                float r = Mathf.Clamp01((c.r - invA) / a);
+                                float g = Mathf.Clamp01((c.g - invA) / a);
+                                float b = Mathf.Clamp01((c.b - invA) / a);
+                                c = new Color(r, g, b, a);
+                            }
+                            else
+                            {
+                                c.a = 1f;
+                            }
+                            outPixels[y * targetSize + x] = c;
+                        }
+                    }
+                }
+
+                outTex.SetPixels(outPixels);
+                outTex.Apply();
+
+                byte[] pngBytes = outTex.EncodeToPNG();
+                SafeWriteAllBytes(dstPng, pngBytes);
+                SafeWriteAllBytes(dstBackupPng, pngBytes);
+                SafeWriteAllBytes(dstJelly, pngBytes);
+
+                AssetDatabase.ImportAsset(dstPng, ImportAssetOptions.ForceUpdate);
+                AssetDatabase.ImportAsset(dstBackupPng, ImportAssetOptions.ForceUpdate);
+                AssetDatabase.ImportAsset(dstJelly, ImportAssetOptions.ForceUpdate);
+
+                SetSpriteImportSettings(dstPng, 2048);
+                SetSpriteImportSettings(dstBackupPng, 2048);
+                SetSpriteImportSettings(dstJelly, 2048);
+            }
+        }
+
+        private static void TryEnqueueBg(int x, int y, int sw, int sh, Color[] srcPixels, bool[] isBg, Queue<int> q)
+        {
+            int idx = y * sw + x;
+            if (!isBg[idx])
+            {
+                Color c = srcPixels[idx];
+                if (c.r >= 0.93f && c.g >= 0.93f && c.b >= 0.93f)
+                {
+                    isBg[idx] = true;
+                    q.Enqueue(idx);
+                }
+            }
+        }
+
+        private static void SetSpriteImportSettings(string path, int maxSize)
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.maxTextureSize = maxSize;
+                importer.mipmapEnabled = false;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
             }
         }
 
@@ -2025,27 +2236,13 @@ namespace BlockBlast.Editor
 
         public static Sprite GetOrCreateBlueMascotSprite()
         {
-            EnsureFolder();
+            // Blue mascot does not exist in Mallang Blast; ensure any remnants are deleted and return null.
             string path = $"{Folder}/Jelly_Mascot_Blue.png";
-            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            if (tex == null)
+            if (File.Exists(path))
             {
-                tex = GenerateBlueWinkingMascotTexture(256);
-                byte[] bytes = tex.EncodeToPNG();
-                File.WriteAllBytes(path, bytes);
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-
-                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (importer != null)
-                {
-                    importer.textureType = TextureImporterType.Sprite;
-                    importer.alphaIsTransparency = true;
-                    importer.spritePixelsPerUnit = 100;
-                    importer.filterMode = FilterMode.Bilinear;
-                    importer.SaveAndReimport();
-                }
+                AssetDatabase.DeleteAsset(path);
             }
-            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            return null;
         }
 
         public static Sprite GetOrCreateRedMascotSprite()
@@ -3391,6 +3588,8 @@ namespace BlockBlast.Editor
                 importer.alphaIsTransparency = true;
                 importer.filterMode = FilterMode.Bilinear;
                 importer.spritePixelsPerUnit = 100;
+                importer.maxTextureSize = 2048;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
                 if (isSliced)
                 {
                     importer.spriteBorder = border;
@@ -4018,6 +4217,930 @@ namespace BlockBlast.Editor
             }
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        public static Sprite GetOrCreateLobbyCoinBoxSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Lobby_Coin_Box.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            // Elegant, modern rounded rectangle (모서리가 둥근 네모)
+            // Translucent dark glass with delicate luminous lavender border & gentle drop shadow
+            Color border = new Color(0.72f, 0.60f, 0.92f, 0.60f); // Delicate luminous lavender border
+            Color fillTop = new Color(0.18f, 0.12f, 0.30f, 0.82f); // Deep translucent royal night top
+            Color fillBot = new Color(0.11f, 0.07f, 0.20f, 0.88f); // Deep cozy night bottom
+            Color shadow = new Color(0.06f, 0.03f, 0.12f, 0.35f);  // Soft drop shadow
+
+            // 256x128 with radius 28f => modern rounded rectangle (NOT a pill/capsule)
+            Texture2D tex = GenerateBeveledPlaqueTexture(256, 128, 28f, border, fillTop, fillBot, shadow, addTopGloss: true);
+            return SaveAndConfigureSprite(path, tex, new Vector4(36, 32, 36, 32), true);
+        }
+
+        public static Sprite GetOrCreateWhiteCircleSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Circle_White_Plate.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 2048;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = size * 0.5f;
+            float cy = size * 0.5f;
+            float r = size * 0.48f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cx, cy));
+                    float alpha = Mathf.Clamp01(r - d + 0.5f);
+                    if (alpha > 0f)
+                    {
+                        float edgeRatio = Mathf.Clamp01(d / r);
+                        Color col = Color.Lerp(Color.white, new Color(0.985f, 0.985f, 1.0f), edgeRatio * edgeRatio);
+                        col.a = alpha;
+                        tex.SetPixel(x, y, col);
+                    }
+                    else
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                    }
+                }
+            }
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        /// <summary>
+        /// Generates a stunning 2048x2048 high-res avatar sprite with a pure white circular plate background
+        /// and the 2048x2048 lossless cutout mascot crisply centered on top!
+        /// </summary>
+        public static Sprite GetOrCreateHighResAvatarSprite(string avatarName, string mascotFileName, bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/{avatarName}.png";
+            if (!force && File.Exists(path))
+            {
+                Sprite s = ForceGetOrImportSingleSprite(path);
+                if (s != null) return s;
+            }
+
+            int size = 2048;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = size * 0.5f;
+            float cy = size * 0.5f;
+            float rPlate = size * 0.48f;
+
+            // 1. Draw smooth anti-aliased pure white circular plate
+            Color[] pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cx, cy));
+                    float alpha = Mathf.Clamp01(rPlate - d + 0.5f);
+                    if (alpha > 0f)
+                    {
+                        float edgeRatio = Mathf.Clamp01(d / rPlate);
+                        Color col = Color.Lerp(Color.white, new Color(0.985f, 0.985f, 1.0f), edgeRatio * edgeRatio);
+                        col.a = alpha;
+                        pixels[y * size + x] = col;
+                    }
+                    else
+                    {
+                        pixels[y * size + x] = Color.clear;
+                    }
+                }
+            }
+
+            // 2. Load 2048 lossless mascot overlay from BlockBlastCute or BlockBlastCute_Backup
+            string ovPath = $"{Folder}/{mascotFileName}";
+            string backupPath = $"Assets/Textures/BlockBlastCute_Backup/{mascotFileName}";
+            Texture2D mascotTex = null;
+            if (File.Exists(ovPath))
+            {
+                byte[] rawBytes = File.ReadAllBytes(ovPath);
+                mascotTex = new Texture2D(2, 2);
+                mascotTex.LoadImage(rawBytes);
+            }
+            else if (File.Exists(backupPath))
+            {
+                byte[] rawBytes = File.ReadAllBytes(backupPath);
+                mascotTex = new Texture2D(2, 2);
+                mascotTex.LoadImage(rawBytes);
+            }
+
+            // 3. Composite 2048 mascot onto the white circular plate (clean 4-point supersampling)
+            if (mascotTex != null)
+            {
+                float mascotScale = 0.88f; // Mascot fills 88% of plate nicely
+                int mSize = Mathf.RoundToInt(size * mascotScale);
+                int startX = (size - mSize) / 2;
+                int startY = (size - mSize) / 2;
+                float stepU = 1f / Mathf.Max(1, mSize - 1);
+                float stepV = 1f / Mathf.Max(1, mSize - 1);
+
+                for (int oy = 0; oy < mSize; oy++)
+                {
+                    for (int ox = 0; ox < mSize; ox++)
+                    {
+                        float u = ox * stepU;
+                        float v = oy * stepV;
+                        Color mc = mascotTex.GetPixelBilinear(u, v);
+                        if (mc.a <= 0.001f) continue;
+
+                        int px = startX + ox;
+                        int py = startY + oy;
+                        if (px >= 0 && px < size && py >= 0 && py < size)
+                        {
+                            int idx = py * size + px;
+                            Color bg = pixels[idx];
+                            // Standard alpha blend
+                            float outA = mc.a + bg.a * (1f - mc.a);
+                            if (outA > 0f)
+                            {
+                                Color outC = (mc * mc.a + bg * bg.a * (1f - mc.a)) / outA;
+                                outC.a = outA;
+                                pixels[idx] = outC;
+                            }
+                        }
+                    }
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply();
+
+            SafeWriteAllBytes(path, tex.EncodeToPNG());
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.spritePixelsPerUnit = 100;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.anisoLevel = 16;
+                importer.maxTextureSize = 2048;
+                importer.mipmapEnabled = false;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        public static Sprite[] GetOrCreateAllHighResAvatarSprites(bool force = false)
+        {
+            EnsureSpecialMascotCutout();
+            return new Sprite[]
+            {
+                GetOrCreateHighResAvatarSprite("Avatar_Pink", "Block_Pink_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Mint", "Block_Mint_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Gold", "Block_Gold_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Purple", "Block_Purple_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Special", "Block_Special_Mascot.png", force)
+            };
+        }
+
+        public static Sprite GetOrCreateGoogleIconSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Icon_Google.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 128;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = size * 0.5f;
+            float cy = size * 0.5f;
+            float rOuter = size * 0.46f;
+            float rInner = size * 0.26f;
+            float barH = (rOuter - rInner) * 0.95f;
+
+            Color cBlue = new Color(0.26f, 0.52f, 0.96f, 1f);   // #4285F4
+            Color cRed = new Color(0.92f, 0.26f, 0.21f, 1f);    // #EA4335
+            Color cYellow = new Color(0.98f, 0.74f, 0.02f, 1f); // #FBBC05
+            Color cGreen = new Color(0.20f, 0.66f, 0.33f, 1f);  // #34A853
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x + 0.5f - cx;
+                    float dy = y + 0.5f - cy;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    // Horizontal blue bar: from cx (dx=0) to right edge (rOuter), centered at cy
+                    bool inBar = (dx >= -1f && dx <= rOuter && Mathf.Abs(dy) <= barH * 0.5f);
+                    float alphaBar = inBar ? Mathf.Clamp01(rOuter - dx + 0.5f) * Mathf.Clamp01(barH * 0.5f - Mathf.Abs(dy) + 0.5f) : 0f;
+
+                    // Doughnut ring
+                    float alphaRing = Mathf.Clamp01(rOuter - dist + 0.5f) * Mathf.Clamp01(dist - rInner + 0.5f);
+
+                    float angle = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg; // -180 to 180
+
+                    // Top-right opening above the bar (0 to 45 deg) is cut out
+                    bool inOpening = (angle > 0f && angle < 45f && dist > rInner);
+
+                    if (inBar && (!inOpening || dy <= 0f || inBar))
+                    {
+                        // Clean bar rendering
+                        float a = Mathf.Max(alphaBar, alphaRing);
+                        tex.SetPixel(x, y, new Color(cBlue.r, cBlue.g, cBlue.b, a));
+                        continue;
+                    }
+
+                    if (alphaRing <= 0f || inOpening)
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                        continue;
+                    }
+
+                    Color col;
+                    if (angle >= 45f && angle <= 135f) col = cRed;
+                    else if (angle > 135f || angle < -135f) col = cYellow;
+                    else if (angle >= -135f && angle <= -42f) col = cGreen;
+                    else col = cBlue; // -42 to 0 deg
+
+                    col.a = alphaRing;
+                    tex.SetPixel(x, y, col);
+                }
+            }
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        public static Sprite GetOrCreateGoogleLoginButtonSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Btn_Google_Login.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            Color outer = new Color(0.82f, 0.84f, 0.90f, 1f);
+            Color bevTop = new Color(1f, 1f, 1f, 1f);
+            Color bevBot = new Color(0.96f, 0.97f, 0.98f, 1f);
+            Color fillTop = new Color(1f, 1f, 1f, 1f);
+            Color fillBot = new Color(0.97f, 0.98f, 1f, 1f);
+            Color shadow = new Color(0.12f, 0.14f, 0.22f, 0.14f);
+
+            Texture2D tex = GenerateShopActionButtonTexture(256, 96, 28f, outer, bevTop, bevBot, fillTop, fillBot, shadow);
+            return SaveAndConfigureSprite(path, tex, new Vector4(32, 24, 32, 24), true);
+        }
+
+        public static Sprite GetOrCreateDiamondIconSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Diamond_Gem.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 256;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+
+            // Gem key coordinates
+            Vector2 pTopL = new Vector2(76f, 192f);
+            Vector2 pTopR = new Vector2(180f, 192f);
+            Vector2 pMidL = new Vector2(30f, 142f);
+            Vector2 pMidR = new Vector2(226f, 142f);
+            Vector2 pBottom = new Vector2(128f, 24f);
+
+            Vector2 pTableL = new Vector2(94f, 152f);
+            Vector2 pTableR = new Vector2(162f, 152f);
+            Vector2 pCenter = new Vector2(128f, 118f);
+
+            // Facet Colors (Sparkling Cyan / Aqua / Diamond Palette)
+            Color colTable = new Color(0.76f, 0.96f, 1.0f, 1f);     // Pale ice cyan highlight
+            Color colTopMid = new Color(0.55f, 0.90f, 1.0f, 1f);    // Crisp sky cyan
+            Color colTopL = new Color(0.40f, 0.82f, 0.98f, 1f);      // Aqua blue
+            Color colTopR = new Color(0.60f, 0.92f, 1.0f, 1f);      // Bright cyan highlight
+            Color colCenter = new Color(0.35f, 0.78f, 0.98f, 1f);    // Radiant cyan
+            Color colBotMidL = new Color(0.14f, 0.60f, 0.92f, 1f);   // Medium deep azure
+            Color colBotMidR = new Color(0.20f, 0.70f, 0.96f, 1f);   // Vibrant sapphire cyan
+            Color colBotL = new Color(0.08f, 0.44f, 0.78f, 1f);      // Deep sapphire
+            Color colBotR = new Color(0.10f, 0.52f, 0.85f, 1f);      // Rich ocean azure
+
+            // Point-in-triangle helper
+            bool PointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3, out float w1, out float w2, out float w3)
+            {
+                float denom = (v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y);
+                if (Mathf.Abs(denom) < 0.0001f) { w1 = w2 = w3 = 0; return false; }
+                w1 = ((v2.y - v3.y) * (pt.x - v3.x) + (v3.x - v2.x) * (pt.y - v3.y)) / denom;
+                w2 = ((v3.y - v1.y) * (pt.x - v3.x) + (v1.x - v3.x) * (pt.y - v3.y)) / denom;
+                w3 = 1f - w1 - w2;
+                return (w1 >= -0.01f && w2 >= -0.01f && w3 >= -0.01f);
+            }
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    Vector2 pt = new Vector2(x, y);
+                    Color pixelCol = Color.clear;
+                    bool hit = false;
+                    float w1, w2, w3;
+
+                    // 1. Table Top Trapezoid: (pTopL, pTopR, pTableR, pTableL)
+                    if (PointInTriangle(pt, pTopL, pTopR, pTableR, out w1, out w2, out w3))
+                    {
+                        pixelCol = colTable * w3 + colTopMid * (w1 + w2);
+                        hit = true;
+                    }
+                    else if (PointInTriangle(pt, pTopL, pTableR, pTableL, out w1, out w2, out w3))
+                    {
+                        pixelCol = colTable * (w2 + w3) + colTopMid * w1;
+                        hit = true;
+                    }
+                    // 2. Upper Left Triangle: (pTopL, pTableL, pMidL)
+                    else if (PointInTriangle(pt, pTopL, pTableL, pMidL, out w1, out w2, out w3))
+                    {
+                        pixelCol = colTopL * (w1 + w3) + colTable * w2;
+                        hit = true;
+                    }
+                    // 3. Upper Right Triangle: (pTopR, pMidR, pTableR)
+                    else if (PointInTriangle(pt, pTopR, pMidR, pTableR, out w1, out w2, out w3))
+                    {
+                        pixelCol = colTopR * (w1 + w2) + colTable * w3;
+                        hit = true;
+                    }
+                    // 4. Center Kite / Upper Center Triangle: (pTableL, pTableR, pCenter)
+                    else if (PointInTriangle(pt, pTableL, pTableR, pCenter, out w1, out w2, out w3))
+                    {
+                        Color cKite = new Color(0.82f, 0.95f, 1.0f, 1f); // Sparkling white-cyan
+                        pixelCol = Color.Lerp(cKite, colCenter, w3);
+                        pixelCol.a = 1f;
+                        hit = true;
+                    }
+                    // 5. Lower Center Left: (pTableL, pCenter, pBottom)
+                    else if (PointInTriangle(pt, pTableL, pCenter, pBottom, out w1, out w2, out w3))
+                    {
+                        pixelCol = Color.Lerp(colBotMidL, colCenter, w2);
+                        pixelCol.a = 1f;
+                        hit = true;
+                    }
+                    // 6. Lower Center Right: (pTableR, pBottom, pCenter)
+                    else if (PointInTriangle(pt, pTableR, pBottom, pCenter, out w1, out w2, out w3))
+                    {
+                        pixelCol = Color.Lerp(colBotMidR, colCenter, w3);
+                        pixelCol.a = 1f;
+                        hit = true;
+                    }
+                    // 7. Lower Left: (pMidL, pTableL, pBottom)
+                    else if (PointInTriangle(pt, pMidL, pTableL, pBottom, out w1, out w2, out w3))
+                    {
+                        pixelCol = Color.Lerp(colBotL, colTopL, w2);
+                        pixelCol.a = 1f;
+                        hit = true;
+                    }
+                    // 8. Lower Right: (pMidR, pBottom, pTableR)
+                    else if (PointInTriangle(pt, pMidR, pBottom, pTableR, out w1, out w2, out w3))
+                    {
+                        pixelCol = Color.Lerp(colBotR, colTopR, w3);
+                        pixelCol.a = 1f;
+                        hit = true;
+                    }
+
+                    if (hit)
+                    {
+                        pixelCol.a = 1f;
+                        tex.SetPixel(x, y, pixelCol);
+                    }
+                    else
+                    {
+                        // Outer magical bloom aura
+                        float dTip = Vector2.Distance(pt, pBottom);
+                        float dMidL = Vector2.Distance(pt, pMidL);
+                        float dMidR = Vector2.Distance(pt, pMidR);
+                        float dTop = Vector2.Distance(pt, new Vector2(128, 192));
+                        float minD = Mathf.Min(Mathf.Min(dTip, dMidL), Mathf.Min(dMidR, dTop));
+                        if (minD < 22f)
+                        {
+                            float glow = Mathf.Pow(Mathf.Clamp01(1f - minD / 22f), 2.2f) * 0.45f;
+                            tex.SetPixel(x, y, new Color(0.45f, 0.88f, 1f, glow));
+                        }
+                        else
+                        {
+                            tex.SetPixel(x, y, Color.clear);
+                        }
+                    }
+                }
+            }
+
+            // Draw sparkling 4-pointed specular stars
+            DrawSparkleStar(tex, 175, 190, 24, Color.white);
+            DrawSparkleStar(tex, 62, 142, 15, new Color(1f, 1f, 1f, 0.9f));
+            DrawSparkleStar(tex, 130, 60, 12, new Color(0.85f, 0.98f, 1f, 0.8f));
+
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        private static void DrawSparkleStar(Texture2D tex, int cx, int cy, int radius, Color starCol)
+        {
+            int w = tex.width;
+            int h = tex.height;
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    int px = cx + dx;
+                    int py = cy + dy;
+                    if (px < 0 || px >= w || py < 0 || py >= h) continue;
+
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    if (dist > radius) continue;
+
+                    // 4-point cross falloff
+                    float cross = Mathf.Max(
+                        Mathf.Clamp01(1f - Mathf.Abs(dx) / (float)radius) * Mathf.Clamp01(1f - Mathf.Abs(dy) / 2.5f),
+                        Mathf.Clamp01(1f - Mathf.Abs(dy) / (float)radius) * Mathf.Clamp01(1f - Mathf.Abs(dx) / 2.5f)
+                    );
+                    float core = Mathf.Clamp01(1f - dist / 4f);
+                    float intensity = Mathf.Clamp01(cross + core);
+                    if (intensity > 0.05f)
+                    {
+                        Color existing = tex.GetPixel(px, py);
+                        Color blended = Color.Lerp(existing, starCol, intensity);
+                        blended.a = Mathf.Max(existing.a, intensity);
+                        tex.SetPixel(px, py, blended);
+                    }
+                }
+            }
+        }
+
+        public static Sprite GetOrCreateShopBannerNewMascotSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Shop_Banner_New_Mascot.png";
+            string jpgSource = $"{Folder}/UI_Shop_Banner_New_Mascot.jpg";
+            if (File.Exists(jpgSource))
+            {
+                byte[] raw = File.ReadAllBytes(jpgSource);
+                Texture2D jTex = new Texture2D(2, 2);
+                jTex.LoadImage(raw);
+                SafeWriteAllBytes(path, jTex.EncodeToPNG());
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                SetSpriteImportSettings(path, 2048);
+                return ForceGetOrImportSingleSprite(path);
+            }
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int width = 1024;
+            int height = 560;
+            Texture2D bannerTex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+
+            // Rich twilight party gradient background
+            Color cTop = new Color(0.92f, 0.32f, 0.58f, 1f);     // Coral berry pink
+            Color cMid = new Color(0.48f, 0.18f, 0.62f, 1f);     // Vibrant violet
+            Color cBot = new Color(0.16f, 0.08f, 0.35f, 1f);     // Deep royal twilight
+
+            for (int y = 0; y < height; y++)
+            {
+                float tY = y / (float)height;
+                Color rowBg = (tY > 0.5f) ? Color.Lerp(cMid, cTop, (tY - 0.5f) * 2f) : Color.Lerp(cBot, cMid, tY * 2f);
+
+                for (int x = 0; x < width; x++)
+                {
+                    float tX = x / (float)width;
+                    // Radial glow from center-bottom
+                    float dCenter = Vector2.Distance(new Vector2(x, y), new Vector2(width * 0.5f, height * 0.4f));
+                    float radialBloom = Mathf.Clamp01(1f - dCenter / (width * 0.6f)) * 0.35f;
+
+                    // Light sunburst rays
+                    float angle = Mathf.Atan2(y - height * 0.4f, x - width * 0.5f);
+                    float ray = (Mathf.Sin(angle * 12f) + 1f) * 0.5f * 0.15f;
+
+                    Color bgPix = rowBg + new Color(0.4f, 0.2f, 0.5f, 0f) * radialBloom + Color.white * ray * radialBloom;
+                    bgPix.a = 1f;
+
+                    // Rounded corner mask
+                    float r = 32f;
+                    float cx = Mathf.Clamp(x, r, width - 1 - r);
+                    float cy = Mathf.Clamp(y, r, height - 1 - r);
+                    float dCorner = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy));
+                    if (dCorner > r)
+                    {
+                        bgPix.a = Mathf.Clamp01(1f - (dCorner - r));
+                    }
+                    bannerTex.SetPixel(x, y, bgPix);
+                }
+            }
+
+            // Blit High-res Mascots onto the banner
+            string backupDir = "Assets/Textures/BlockBlastCute_Backup";
+            string pinkPath = $"{backupDir}/Block_Pink_Mascot.png";
+            string mintPath = $"{backupDir}/Block_Mint_Mascot.png";
+            string goldPath = $"{backupDir}/Block_Gold_Mascot.png";
+            string purplePath = $"{backupDir}/Block_Purple_Mascot.png";
+
+            // Mascot compositions (Destination X, Y, Width, Height)
+            // Left to right joyful party line-up:
+            BlitMascotOntoTexture(bannerTex, mintPath, 70, 70, 250, 250);
+            BlitMascotOntoTexture(bannerTex, pinkPath, 280, 50, 310, 310);
+            BlitMascotOntoTexture(bannerTex, goldPath, 520, 60, 275, 275);
+            BlitMascotOntoTexture(bannerTex, purplePath, 730, 80, 245, 245);
+
+            // Add celebration sparkles and light bursts
+            DrawSparkleStar(bannerTex, 190, 440, 28, new Color(1f, 0.95f, 0.55f));
+            DrawSparkleStar(bannerTex, 510, 480, 35, Color.white);
+            DrawSparkleStar(bannerTex, 830, 420, 26, new Color(0.65f, 0.92f, 1f));
+            DrawSparkleStar(bannerTex, 360, 410, 18, new Color(1f, 0.8f, 0.9f));
+            DrawSparkleStar(bannerTex, 670, 390, 20, new Color(1f, 0.9f, 0.4f));
+
+            bannerTex.Apply();
+            return SaveAndConfigureSprite(path, bannerTex, Vector4.zero, false);
+        }
+
+        public static Sprite GetOrCreateShopBannerPickupSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Shop_Banner_Pickup.png";
+            string jpgSource = $"{Folder}/UI_Shop_Banner_Pickup.jpg";
+            if (File.Exists(jpgSource))
+            {
+                byte[] raw = File.ReadAllBytes(jpgSource);
+                Texture2D jTex = new Texture2D(2, 2);
+                jTex.LoadImage(raw);
+                SafeWriteAllBytes(path, jTex.EncodeToPNG());
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                SetSpriteImportSettings(path, 2048);
+                return ForceGetOrImportSingleSprite(path);
+            }
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int width = 1024;
+            int height = 560;
+            Texture2D bannerTex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+
+            // Radiant celestial summoning dreamscape
+            Color cTop = new Color(0.65f, 0.15f, 0.72f, 1f);     // Vivid royal magenta
+            Color cMid = new Color(0.25f, 0.08f, 0.48f, 1f);     // Deep celestial violet
+            Color cBot = new Color(0.08f, 0.04f, 0.22f, 1f);     // Deep midnight indigo
+
+            for (int y = 0; y < height; y++)
+            {
+                float tY = y / (float)height;
+                Color rowBg = (tY > 0.5f) ? Color.Lerp(cMid, cTop, (tY - 0.5f) * 2f) : Color.Lerp(cBot, cMid, tY * 2f);
+
+                for (int x = 0; x < width; x++)
+                {
+                    // Golden magic summoning circle center
+                    Vector2 circleCenter = new Vector2(width * 0.48f, height * 0.45f);
+                    float dCenter = Vector2.Distance(new Vector2(x, y), circleCenter);
+
+                    // Concentric summoning magic rings
+                    float r1 = 180f, r2 = 230f, r3 = 270f;
+                    float ringIntensity = 0f;
+                    if (Mathf.Abs(dCenter - r1) < 4f) ringIntensity += (1f - Mathf.Abs(dCenter - r1) / 4f) * 0.7f;
+                    if (Mathf.Abs(dCenter - r2) < 3f) ringIntensity += (1f - Mathf.Abs(dCenter - r2) / 3f) * 0.5f;
+                    if (Mathf.Abs(dCenter - r3) < 2f) ringIntensity += (1f - Mathf.Abs(dCenter - r3) / 2f) * 0.35f;
+
+                    // Rotating starbeams
+                    float angle = Mathf.Atan2(y - circleCenter.y, x - circleCenter.x);
+                    float starbeam = (Mathf.Sin(angle * 16f) + 1f) * 0.5f * Mathf.Clamp01(1f - dCenter / 320f) * 0.3f;
+
+                    Color bgPix = rowBg + new Color(1f, 0.85f, 0.40f, 0f) * (ringIntensity + starbeam);
+                    bgPix.a = 1f;
+
+                    // Rounded corner mask
+                    float r = 32f;
+                    float cx = Mathf.Clamp(x, r, width - 1 - r);
+                    float cy = Mathf.Clamp(y, r, height - 1 - r);
+                    float dCorner = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy));
+                    if (dCorner > r)
+                    {
+                        bgPix.a = Mathf.Clamp01(1f - (dCorner - r));
+                    }
+                    bannerTex.SetPixel(x, y, bgPix);
+                }
+            }
+
+            // Blit Featured Pickup Mascot (Mint and Pink in glorious summon radiance)
+            string backupDir = "Assets/Textures/BlockBlastCute_Backup";
+            string mintPath = $"{backupDir}/Block_Mint_Mascot.png";
+            string pinkPath = $"{backupDir}/Block_Pink_Mascot.png";
+            string goldPath = $"{backupDir}/Block_Gold_Mascot.png";
+            string purplePath = $"{backupDir}/Block_Purple_Mascot.png";
+
+            // Left side: Pink & Purple backing, Center: Mint Pickup Star, Right: Gold Mascot
+            BlitMascotOntoTexture(bannerTex, pinkPath, 140, 60, 240, 240);
+            BlitMascotOntoTexture(bannerTex, purplePath, 670, 70, 240, 240);
+            BlitMascotOntoTexture(bannerTex, mintPath, 340, 50, 340, 340); // Spotlight center featured pickup!
+
+            // Majestic Golden Sparkles and summon stars
+            DrawSparkleStar(bannerTex, 480, 480, 42, new Color(1f, 0.95f, 0.5f));
+            DrawSparkleStar(bannerTex, 220, 420, 30, new Color(1f, 0.7f, 0.9f));
+            DrawSparkleStar(bannerTex, 760, 410, 32, new Color(0.6f, 0.9f, 1f));
+            DrawSparkleStar(bannerTex, 360, 360, 22, Color.white);
+            DrawSparkleStar(bannerTex, 620, 350, 24, new Color(1f, 0.85f, 0.4f));
+
+            bannerTex.Apply();
+            return SaveAndConfigureSprite(path, bannerTex, Vector4.zero, false);
+        }
+
+        private static void BlitMascotOntoTexture(Texture2D dst, string srcPath, int dstX, int dstY, int dstW, int dstH)
+        {
+            if (!File.Exists(srcPath)) return;
+            byte[] bytes = File.ReadAllBytes(srcPath);
+            Texture2D srcTex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!srcTex.LoadImage(bytes)) return;
+
+            int srcW = srcTex.width;
+            int srcH = srcTex.height;
+
+            for (int dy = 0; dy < dstH; dy++)
+            {
+                int py = dstY + dy;
+                if (py < 0 || py >= dst.height) continue;
+                float v = dy / (float)dstH;
+                int sy = Mathf.Clamp(Mathf.FloorToInt(v * srcH), 0, srcH - 1);
+
+                for (int dx = 0; dx < dstW; dx++)
+                {
+                    int px = dstX + dx;
+                    if (px < 0 || px >= dst.width) continue;
+                    float u = dx / (float)dstW;
+                    int sx = Mathf.Clamp(Mathf.FloorToInt(u * srcW), 0, srcW - 1);
+
+                    Color srcPix = srcTex.GetPixel(sx, sy);
+                    if (srcPix.a <= 0.01f) continue;
+
+                    Color dstPix = dst.GetPixel(px, py);
+                    Color blended = Color.Lerp(dstPix, srcPix, srcPix.a);
+                    blended.a = Mathf.Max(dstPix.a, srcPix.a);
+                    dst.SetPixel(px, py, blended);
+                }
+            }
+        }
+
+        public static Sprite GetOrCreateShopVerticalTabActiveSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Shop_Tab_Vertical_Active.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            Color outer = new Color(0.95f, 0.35f, 0.58f, 1f);     // Vibrant berry rim
+            Color bevTop = new Color(1f, 0.65f, 0.80f, 1f);     // Sweet pastel pink bevel
+            Color bevBot = new Color(0.92f, 0.30f, 0.55f, 1f);    // Coral pink
+            Color fillTop = new Color(1f, 0.48f, 0.68f, 1f);     // Strawberry candy top
+            Color fillBot = new Color(0.96f, 0.28f, 0.52f, 1f);    // Deep coral candy bot
+            Color shadow = new Color(0.35f, 0.08f, 0.20f, 0.25f);
+
+            Texture2D tex = GenerateShopActionButtonTexture(240, 96, 26f, outer, bevTop, bevBot, fillTop, fillBot, shadow);
+            return SaveAndConfigureSprite(path, tex, new Vector4(30, 24, 30, 24), true);
+        }
+
+        public static Sprite GetOrCreateShopVerticalTabInactiveSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Shop_Tab_Vertical_Inactive.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            Color border = new Color(0.80f, 0.75f, 0.90f, 0.85f); // Soft lavender rim
+            Color fillTop = new Color(0.97f, 0.95f, 1.0f, 0.82f);
+            Color fillBot = new Color(0.92f, 0.88f, 0.96f, 0.82f);
+            Color shadow = new Color(0.15f, 0.10f, 0.25f, 0.10f);
+
+            Texture2D tex = GenerateBeveledPlaqueTexture(240, 96, 24f, border, fillTop, fillBot, shadow, addTopGloss: false);
+            return SaveAndConfigureSprite(path, tex, new Vector4(28, 24, 28, 24), true);
+        }
+
+        public static Sprite GetOrCreateShopPackageCardSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Shop_Package_Card.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            Color border = new Color(1f, 0.82f, 0.45f, 1f);      // Warm golden caramel border
+            Color fillTop = new Color(1f, 1f, 1f, 0.98f);
+            Color fillBot = new Color(0.98f, 0.96f, 1f, 0.98f);
+            Color shadow = new Color(0.18f, 0.12f, 0.25f, 0.16f);
+
+            Texture2D tex = GenerateBeveledPlaqueTexture(320, 420, 28f, border, fillTop, fillBot, shadow, addTopGloss: true);
+            return SaveAndConfigureSprite(path, tex, new Vector4(32, 32, 32, 32), true);
+        }
+
+        public static Sprite GetOrCreateGachaBallGreySprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Gacha_Ball_Grey.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 256;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = (size - 1) * 0.5f;
+            float cy = (size - 1) * 0.5f;
+            float maxR = (size - 1) * 0.48f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - cx;
+                    float dy = y - cy;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    float r = dist / maxR;
+
+                    if (r > 1.0f)
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                        continue;
+                    }
+
+                    float alpha = Mathf.Clamp01((1.0f - r) / 0.035f);
+                    float nx = dx / maxR;
+                    float ny = dy / maxR;
+                    float nz = Mathf.Sqrt(Mathf.Max(0f, 1f - r * r));
+
+                    Color baseCol;
+                    if (dy > 4f)
+                    {
+                        float t = (ny - 0.05f) / 0.95f;
+                        baseCol = Color.Lerp(new Color(0.85f, 0.88f, 0.93f), new Color(0.96f, 0.97f, 1.0f), t);
+                    }
+                    else if (dy < -4f)
+                    {
+                        float t = (-ny - 0.05f) / 0.95f;
+                        baseCol = Color.Lerp(new Color(0.70f, 0.73f, 0.78f), new Color(0.50f, 0.53f, 0.58f), t);
+                    }
+                    else
+                    {
+                        baseCol = new Color(0.38f, 0.40f, 0.46f);
+                    }
+
+                    Vector3 lightDir = new Vector3(-0.35f, 0.45f, 0.82f).normalized;
+                    Vector3 normal = new Vector3(nx, ny, nz);
+                    float diff = Mathf.Max(0.15f, Vector3.Dot(normal, lightDir) * 0.65f + 0.35f);
+                    float spec = Mathf.Pow(Mathf.Max(0f, Vector3.Dot(normal, lightDir)), 14f) * 0.85f;
+                    float rim = Mathf.Pow(1f - nz, 2.5f) * 0.35f;
+
+                    Color finalCol = baseCol * diff + Color.white * spec + new Color(0.85f, 0.9f, 1f) * rim;
+                    finalCol.a = alpha;
+                    tex.SetPixel(x, y, finalCol);
+                }
+            }
+
+            DrawSparkleStar(tex, (int)cx, (int)cy, 18, new Color(0.95f, 0.98f, 1f, 0.95f));
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        public static Sprite GetOrCreateGachaBallRainbowSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Gacha_Ball_Rainbow.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 256;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = (size - 1) * 0.5f;
+            float cy = (size - 1) * 0.5f;
+            float maxR = (size - 1) * 0.48f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - cx;
+                    float dy = y - cy;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    float r = dist / maxR;
+
+                    if (r > 1.0f)
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                        continue;
+                    }
+
+                    float alpha = Mathf.Clamp01((1.0f - r) / 0.035f);
+                    float nx = dx / maxR;
+                    float ny = dy / maxR;
+                    float nz = Mathf.Sqrt(Mathf.Max(0f, 1f - r * r));
+
+                    float angle = Mathf.Atan2(dy, dx);
+                    float hue = Mathf.Repeat((angle / (Mathf.PI * 2f)) + (nx * 0.25f) + 0.5f, 1f);
+                    Color rainbowCol = Color.HSVToRGB(hue, 0.62f, 0.98f);
+
+                    if (Mathf.Abs(dy) <= 5f)
+                    {
+                        rainbowCol = new Color(1f, 0.88f, 0.35f);
+                    }
+
+                    Vector3 lightDir = new Vector3(-0.35f, 0.45f, 0.82f).normalized;
+                    Vector3 normal = new Vector3(nx, ny, nz);
+                    float diff = Mathf.Max(0.2f, Vector3.Dot(normal, lightDir) * 0.6f + 0.4f);
+                    float spec = Mathf.Pow(Mathf.Max(0f, Vector3.Dot(normal, lightDir)), 12f) * 0.95f;
+                    float goldenRim = Mathf.Pow(1f - nz, 2.0f) * 0.55f;
+
+                    Color finalCol = rainbowCol * diff + Color.white * spec + new Color(1f, 0.95f, 0.6f) * goldenRim;
+                    finalCol.a = alpha;
+                    tex.SetPixel(x, y, finalCol);
+                }
+            }
+
+            DrawSparkleStar(tex, (int)cx, (int)cy, 22, new Color(1f, 0.98f, 0.75f, 1f));
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        public static Sprite GetOrCreateGachaRainbowAuraSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Gacha_Rainbow_Aura.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 256;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = (size - 1) * 0.5f;
+            float cy = (size - 1) * 0.5f;
+            float maxR = (size - 1) * 0.5f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - cx;
+                    float dy = y - cy;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy) / maxR;
+                    if (r >= 1.0f)
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                        continue;
+                    }
+
+                    float angle = Mathf.Atan2(dy, dx);
+                    float hue = Mathf.Repeat(angle / (Mathf.PI * 2f), 1f);
+                    Color col = Color.HSVToRGB(hue, 0.5f, 1f);
+                    col = Color.Lerp(Color.white, col, r);
+                    col.a = Mathf.Pow(1f - r, 2.2f) * 0.9f;
+                    tex.SetPixel(x, y, col);
+                }
+            }
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        public static Sprite GetOrCreateGachaSunburstSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Gacha_Sunburst_Rays.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = (size - 1) * 0.5f;
+            float cy = (size - 1) * 0.5f;
+            float maxR = (size - 1) * 0.5f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - cx;
+                    float dy = y - cy;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy) / maxR;
+                    if (r >= 1.0f)
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                        continue;
+                    }
+
+                    float angle = Mathf.Atan2(dy, dx);
+                    float rays = Mathf.Pow(Mathf.Max(0f, Mathf.Cos(angle * 12f)), 1.5f);
+                    float falloff = Mathf.Pow(1f - r, 1.8f);
+
+                    float hue = Mathf.Repeat(angle / (Mathf.PI * 2f), 1f);
+                    Color rayCol = Color.Lerp(new Color(1f, 0.9f, 0.4f), Color.HSVToRGB(hue, 0.45f, 1f), 0.5f);
+                    rayCol.a = rays * falloff * 0.85f;
+                    tex.SetPixel(x, y, rayCol);
+                }
+            }
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        [MenuItem("Block Blast/Generate New Shop & Diamond Assets")]
+        public static void GenerateNewShopAndDiamondAssets()
+        {
+            Debug.Log("[Assets] Generating Diamond icon...");
+            GetOrCreateDiamondIconSprite(true);
+
+            Debug.Log("[Assets] Generating New Mascot Shop Banner...");
+            GetOrCreateShopBannerNewMascotSprite(true);
+
+            Debug.Log("[Assets] Generating Pickup Shop Banner...");
+            GetOrCreateShopBannerPickupSprite(true);
+
+            Debug.Log("[Assets] Generating Vertical Tab Sprites...");
+            GetOrCreateShopVerticalTabActiveSprite(true);
+            GetOrCreateShopVerticalTabInactiveSprite(true);
+
+            Debug.Log("[Assets] Generating Package Card Sprite...");
+            GetOrCreateShopPackageCardSprite(true);
+
+            AssetDatabase.Refresh();
+            Debug.Log("<color=green><b>[Assets] All New Shop & Diamond Assets Successfully Generated!</b></color>");
         }
     }
 }

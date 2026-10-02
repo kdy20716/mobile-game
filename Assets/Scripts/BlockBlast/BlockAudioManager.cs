@@ -278,6 +278,49 @@ namespace BlockBlast
             }
         }
 
+        private AudioClip _fairyChimeClip;
+
+        public void PlayFairyChime()
+        {
+            if (_fairyChimeClip == null)
+            {
+                _fairyChimeClip = CreateFairyChimeClip();
+            }
+            if (_fairyChimeClip != null && _sfxSource != null)
+            {
+                _sfxSource.PlayOneShot(_fairyChimeClip, Mathf.Clamp01(sfxVolume * 1.35f));
+            }
+        }
+
+        private AudioClip CreateFairyChimeClip()
+        {
+            int sampleRate = 44100;
+            float duration = 0.85f;
+            int totalSamples = (int)(sampleRate * duration);
+            float[] samples = new float[totalSamples];
+
+            // 5 sparkling notes arpeggio: C6, E6, G6, C7, E7 ("뾰로롱~~")
+            float[] freqs = new float[] { 1046.5f, 1318.5f, 1568.0f, 2093.0f, 2637.0f };
+            float noteDelay = 0.08f;
+
+            for (int n = 0; n < freqs.Length; n++)
+            {
+                int startSample = (int)(n * noteDelay * sampleRate);
+                float f = freqs[n];
+                for (int i = startSample; i < totalSamples; i++)
+                {
+                    float t = (i - startSample) / (float)sampleRate;
+                    float env = Mathf.Exp(-t * 9.5f);
+                    float wave = Mathf.Sin(2f * Mathf.PI * f * t) + 0.35f * Mathf.Sin(4f * Mathf.PI * f * t);
+                    samples[i] += wave * env * 0.16f;
+                }
+            }
+
+            AudioClip clip = AudioClip.Create("FairyChime", totalSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
         // Backward compatibility wrappers
         public void PlayUIClick()
         {

@@ -34,11 +34,32 @@ namespace BlockBlast
         {
             ClearHand();
 
+            // Purple Mascot Ability: 5% base chance (+1% per upgrade level) that all 3 spawned blocks become 2x2 Purple blocks!
+            bool isPurpleMascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0) == 3;
+            float purpleRate = 0.05f;
+            if (isPurpleMascot)
+            {
+                int lvl = LobbyManager.GetMascotLevel(3);
+                purpleRate = 0.05f + (lvl - 1) * 0.01f;
+            }
+            bool purpleSpecialTriggered = isPurpleMascot && (Random.value < purpleRate);
+
             for (int i = 0; i < 3; i++)
             {
                 if (slotParents != null && i < slotParents.Length && slotParents[i] != null)
                 {
-                    BlockShape shape = BlockShapeData.GetRandomShape(0f);
+                    BlockShape shape;
+                    if (purpleSpecialTriggered)
+                    {
+                        // 2x2 block with purple color (BlockShapeData.Palette[4])
+                        int[,] m2x2 = new int[,] { { 1, 1 }, { 1, 1 } };
+                        Color purpleCol = BlockShapeData.Palette[4]; // Lavender Purple
+                        shape = new BlockShape(m2x2, purpleCol, false, "2x2_Purple_Magic");
+                    }
+                    else
+                    {
+                        shape = BlockShapeData.GetRandomShape(0f);
+                    }
 
                     GameObject blockObj = new GameObject($"Block_{i}", typeof(RectTransform));
                     blockObj.transform.SetParent(slotParents[i], false);

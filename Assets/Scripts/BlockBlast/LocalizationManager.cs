@@ -171,12 +171,19 @@ namespace BlockBlast
 
             // Lobby Main
             { "lobby_start", new[] { "게임 시작", "Start Game", "ゲームスタート", "开始游戏" } },
-            { "lobby_settings", new[] { "설정", "Settings", "設定", "设置" } },
             { "lobby_shop", new[] { "상점", "Shop", "ショップ", "商店" } },
+            { "lobby_mascot", new[] { "말랑이", "Mascots", "マラン", "软萌" } },
+            { "lobby_settings", new[] { "설정", "Settings", "設定", "设置" } },
             { "lobby_help", new[] { "도움말", "Help", "ヘルプ", "帮助" } },
             { "lobby_profile", new[] { "프로필", "Profile", "プロフィール", "个人资料" } },
             { "lobby_party_tip", new[] { "말랑이들을 톡톡 눌러보세요!", "Tap the Mallangs to play!", "マランたちをタップしてみてね！", "轻点软萌小伙伴试试吧！" } },
-            { "my_coins", new[] { "내 코인", "Coins", "コイン", "金币" } },
+            { "my_coins", new[] { "내 골드", "Gold", "ゴールド", "金币" } },
+            { "my_diamonds", new[] { "내 다이아", "Diamonds", "ダイヤ", "钻石" } },
+            { "shop_tab_recommended", new[] { "추천", "Featured", "おすすめ", "推荐" } },
+            { "shop_tab_pickup", new[] { "픽업", "Pickup", "ピックアップ", "精选" } },
+            { "shop_tab_mascot", new[] { "말랑이", "Mascots", "マラン", "软萌" } },
+            { "shop_tab_game", new[] { "게임 배경", "Game Theme", "ゲーム背景", "游戏背景" } },
+            { "shop_tab_lobby", new[] { "로비 배경", "Lobby Theme", "ロビー背景", "大厅背景" } },
 
             // Settings Modal
             { "settings_title", new[] { "게임 설정", "Settings", "ゲーム設定", "游戏设置" } },
@@ -219,9 +226,7 @@ namespace BlockBlast
             { "quit_modal_no", new[] { "취소", "Cancel", "キャンセル", "取消" } },
 
             // Shop Modal
-            { "shop_title", new[] { "배경 테마 상점", "Theme Shop", "テーマショップ", "背景主题商店" } },
-            { "shop_tab_game", new[] { "게임 테마", "Game Themes", "ゲームテーマ", "游戏主题" } },
-            { "shop_tab_lobby", new[] { "로비 테마", "Lobby Themes", "ロビーテーマ", "大厅主题" } },
+            { "shop_title", new[] { "말랑 상점", "Mallang Shop", "マランショップ", "软萌商店" } },
             { "shop_btn_equip", new[] { "장착하기", "Equip", "装備", "装备" } },
             { "shop_btn_equipped", new[] { "적용 중", "Equipped", "適用中", "使用中" } },
             { "shop_btn_buy", new[] { "구매", "Buy", "購入", "购买" } },

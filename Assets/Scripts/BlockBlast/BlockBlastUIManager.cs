@@ -21,6 +21,23 @@ namespace BlockBlast
         [SerializeField] private TMP_Text skipBadgeText;
         [SerializeField] private Button btnRotate;
 
+        [Header("Special Mascot Skill (Board Clear)")]
+        [SerializeField] private Button btnBoardClear;
+        [SerializeField] private Image boardClearGlow;
+        [SerializeField] private TMP_Text boardClearProgressText;
+        [SerializeField] private Image boardClearFillImage;
+
+        [Header("Special Skill Board Clear Cut-in")]
+        [SerializeField] private GameObject specialSkillCutinRoot;
+        [SerializeField] private Image specialSkillCutinMascotImg;
+        [SerializeField] private Image specialSkillCutinAuraImg;
+        [SerializeField] private TMP_Text specialSkillCutinTitle;
+        [SerializeField] private RectTransform[] specialSkillSparkleStars;
+
+        private int _specialLinesProgress = 0;
+        private int _specialLinesRequired = 30;
+        private bool _isSpecialSkillReady = false;
+
         [Header("Guide Tips")]
         [SerializeField] private TMP_Text guideTipText;
         [SerializeField] private CanvasGroup guideTipCanvasGroup;
@@ -38,6 +55,7 @@ namespace BlockBlast
         [SerializeField] private GameObject gameOverModal;
         [SerializeField] private TMP_Text modalFinalScoreText;
         [SerializeField] private TMP_Text modalBestScoreText;
+        [SerializeField] private TMP_Text modalGoldRewardText;
         [SerializeField] private Button btnRestart;
         [SerializeField] private Button btnGameOverLobby;
 
@@ -100,6 +118,16 @@ namespace BlockBlast
         private float _turnRemainingTime = 180f;
         private bool _isTimerActive = false;
 
+        [Header("Turn Timer Difficulty Settings")]
+        [Tooltip("첫 턴 제한 시간 (초 단위, 기본값: 180초 = 3분)")]
+        [SerializeField] private float initialTurnMaxTime = 180f;
+        [Tooltip("1줄을 터뜨릴 때마다 줄어드는 시간 (초 단위, 기본값: 5초)")]
+        [SerializeField] private float timeDecreasePerLine = 5f;
+        [Tooltip("최소 턴 제한 시간 (초 단위, 기본값: 5초 - 도달 시 5초 안에 블록을 놓아야 함)")]
+        [SerializeField] private float minTurnMaxTime = 5f;
+
+        private int _totalLinesCleared = 0;
+
         public const int MAX_SKIP_STOCK = 3;
         public const int LINES_PER_SKIP_CHARGE = 10;
         private int _skipStock = 1;
@@ -114,6 +142,10 @@ namespace BlockBlast
 
             _bestScore = PlayerPrefs.GetInt("BlockBlast_Best", 0);
             AutoBindConfirmModalsAndOverlays();
+
+            // Mobile & PC smooth 60 FPS cap
+            Application.targetFrameRate = 60;
+            QualitySettings.vSyncCount = 0;
         }
 
         private void AutoBindConfirmModalsAndOverlays()
@@ -354,6 +386,13 @@ namespace BlockBlast
                 btnSkip.onClick.AddListener(TryUseSkip);
             }
 
+            if (btnBoardClear != null)
+            {
+                btnBoardClear.onClick.RemoveAllListeners();
+                btnBoardClear.onClick.AddListener(UseBoardClearSkill);
+            }
+            UpdateSpecialSkillUI();
+
             if (btnRotate != null)
             {
                 btnRotate.onClick.AddListener(() =>
@@ -550,14 +589,24 @@ namespace BlockBlast
 #endif
             if (isRightClick && DraggableBlockUI.CurrentlyDraggedBlock != null)
             {
-                DraggableBlockUI.CurrentlyDraggedBlock.CancelDrag(immediate: false);
+                // 드래그 중 오른쪽 클릭 → 회전 (취소 아님)
+                DraggableBlockUI.CurrentlyDraggedBlock.RotateSelf();
             }
 
             if (isRotatePressed)
             {
-                if (btnRotate != null && btnRotate.interactable && (gameOverModal == null || !gameOverModal.activeSelf))
+                if (gameOverModal == null || !gameOverModal.activeSelf)
                 {
-                    btnRotate.onClick.Invoke();
+                    var dragged = DraggableBlockUI.CurrentlyDraggedBlock;
+                    if (dragged != null)
+                    {
+                        // 드래그 중인 블록만 회전 (다른 슬롯 블록은 건드리지 않음)
+                        dragged.RotateSelf();
+                    }
+                    else if (btnRotate != null && btnRotate.interactable)
+                    {
+                        btnRotate.onClick.Invoke();
+                    }
                 }
             }
 
@@ -592,9 +641,15 @@ namespace BlockBlast
 
         private void UpdateTurnMaxTime()
         {
-            // Starts at 180s (3 minutes). Decreases by 4s for every 250 points, down to minimum 8s!
-            int steps = _score / 250;
-            _currentTurnMaxTime = Mathf.Max(8f, 180f - steps * 4f);
+            // Pink Mascot Ability: +1.0 second base (+0.2s per upgrade level) extra time
+            int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
+            float bonusSec = 0f;
+            if (mascot == 0)
+            {
+                int lvl = LobbyManager.GetMascotLevel(0);
+                bonusSec = 1.0f + (lvl - 1) * 0.2f;
+            }
+            _currentTurnMaxTime = Mathf.Max(minTurnMaxTime + bonusSec, (initialTurnMaxTime + bonusSec) - _totalLinesCleared * timeDecreasePerLine);
         }
 
         private void ResetTurnTimer()
@@ -643,7 +698,11 @@ namespace BlockBlast
 
                 if (_turnRemainingTime <= 3f)
                 {
-                    timeRemainingText.color = new Color(1f, 0.25f, 0.25f, 1f);
+                    timeRemainingText.color = new Color(1f, 0.25f, 0.25f, 1f); // Urgent red
+                }
+                else if (_turnRemainingTime <= 5f)
+                {
+                    timeRemainingText.color = new Color(1f, 0.65f, 0.15f, 1f); // Warning orange
                 }
                 else
                 {
@@ -681,7 +740,7 @@ namespace BlockBlast
             }
         }
 
-        private void AddScore(int points)
+        public void AddScore(int points)
         {
             _score += points;
             if (_score > _bestScore)
@@ -793,21 +852,28 @@ namespace BlockBlast
                 }
             }
 
+            int maxStock = MAX_SKIP_STOCK;
+            if (PlayerPrefs.GetInt("Selected_Mascot_Idx", 0) == 1)
+            {
+                int lvl = LobbyManager.GetMascotLevel(1);
+                maxStock = 3 + lvl;
+            }
+
             if (skipBadgeText != null)
             {
-                if (_skipStock >= MAX_SKIP_STOCK)
+                if (_skipStock >= maxStock)
                 {
-                    skipBadgeText.text = "3/3 MAX";
+                    skipBadgeText.text = $"{maxStock}/{maxStock} MAX";
                     skipBadgeText.color = new Color(0.12f, 0.72f, 0.45f, 1f); // Vibrant Mint Green
                 }
                 else if (_skipStock > 0)
                 {
-                    skipBadgeText.text = $"{_skipStock}/3 ({_skipLinesProgress}/10)";
+                    skipBadgeText.text = $"{_skipStock}/{maxStock} ({_skipLinesProgress}/10)";
                     skipBadgeText.color = new Color(0.35f, 0.22f, 0.62f, 1f); // Deep Purple
                 }
                 else
                 {
-                    skipBadgeText.text = $"0/3 ({_skipLinesProgress}/10)";
+                    skipBadgeText.text = $"0/{maxStock} ({_skipLinesProgress}/10)";
                     skipBadgeText.color = new Color(0.85f, 0.25f, 0.35f, 1f); // Muted Crimson
                 }
             }
@@ -817,22 +883,50 @@ namespace BlockBlast
         {
             TriggerShake();
 
-            // 🎲 Skip Stock System: +1 stock every 10 lines, up to max 3
-            if (_skipStock < MAX_SKIP_STOCK)
+            // ⏱️ Line clear difficulty timer: 1줄 터뜨릴 때마다 5초씩 제한 시간 감소!
+            _totalLinesCleared += totalLines;
+            UpdateTurnMaxTime();
+            _turnRemainingTime = _currentTurnMaxTime;
+            UpdateTimerUI();
+
+            // 🎲 Skip Stock System: +1 stock every 10 lines (Mint mascot max 3+level, otherwise max 3)
+            int maxStock = MAX_SKIP_STOCK;
+            if (PlayerPrefs.GetInt("Selected_Mascot_Idx", 0) == 1)
+            {
+                int lvl = LobbyManager.GetMascotLevel(1);
+                maxStock = 3 + lvl;
+            }
+
+            if (_skipStock < maxStock)
             {
                 _skipLinesProgress += totalLines;
-                while (_skipLinesProgress >= LINES_PER_SKIP_CHARGE && _skipStock < MAX_SKIP_STOCK)
+                while (_skipLinesProgress >= LINES_PER_SKIP_CHARGE && _skipStock < maxStock)
                 {
                     _skipLinesProgress -= LINES_PER_SKIP_CHARGE;
                     _skipStock++;
                 }
 
-                if (_skipStock >= MAX_SKIP_STOCK)
+                if (_skipStock >= maxStock)
                 {
                     _skipLinesProgress = 0;
                 }
             }
             UpdateSkipUI();
+
+            // 🌟 Special Mascot Skill: Charge board clear skill (30 lines, reduced by upgrade level)
+            int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
+            if (mascot == 4)
+            {
+                int lvl = LobbyManager.GetMascotLevel(4);
+                _specialLinesRequired = Mathf.Max(15, 30 - (lvl - 1) * 2);
+                _specialLinesProgress += totalLines;
+                if (_specialLinesProgress >= _specialLinesRequired)
+                {
+                    _specialLinesProgress = _specialLinesRequired;
+                    _isSpecialSkillReady = true;
+                }
+                UpdateSpecialSkillUI();
+            }
 
             if (comboPopupText != null)
             {
@@ -906,6 +1000,22 @@ namespace BlockBlast
 
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
 
+            // 💰 Gold Reward Calculation: drop last 3 digits (score / 1000)
+            int earnedGold = _score / 1000;
+            if (earnedGold > 0)
+            {
+                if (LobbyManager.Instance != null)
+                {
+                    LobbyManager.Instance.AddCoins(earnedGold);
+                }
+                else
+                {
+                    int c = PlayerPrefs.GetInt("Mallang_Coins", 0);
+                    PlayerPrefs.SetInt("Mallang_Coins", c + earnedGold);
+                    PlayerPrefs.Save();
+                }
+            }
+
             if (gameOverModal != null)
             {
                 gameOverModal.SetActive(true);
@@ -916,6 +1026,10 @@ namespace BlockBlast
                     string bestPrefix = LocalizationManager.Get("profile_best_score_prefix", "BEST");
                     modalBestScoreText.text = $"{bestPrefix}: {_bestScore:N0}";
                 }
+                if (modalGoldRewardText != null)
+                {
+                    modalGoldRewardText.text = $"+{earnedGold:N0} G";
+                }
             }
         }
 
@@ -924,8 +1038,32 @@ namespace BlockBlast
             DraggableBlockUI.CancelAllActiveDrags(immediate: true);
 
             _score = 0;
-            _skipStock = 1;
+            _totalLinesCleared = 0;
+            int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
+            if (mascot == 1)
+            {
+                int lvl = LobbyManager.GetMascotLevel(1);
+                _skipStock = 1 + Mathf.Min(3, lvl);
+            }
+            else
+            {
+                _skipStock = 1;
+            }
             _skipLinesProgress = 0;
+
+            if (mascot == 4)
+            {
+                int lvl = LobbyManager.GetMascotLevel(4);
+                _specialLinesRequired = Mathf.Max(15, 30 - (lvl - 1) * 2);
+                _specialLinesProgress = _specialLinesRequired;
+                _isSpecialSkillReady = true;
+            }
+            else
+            {
+                _specialLinesProgress = 0;
+                _isSpecialSkillReady = false;
+            }
+            UpdateSpecialSkillUI();
 
             Time.timeScale = 1f;
             _wasTimerActiveBeforePause = false;
@@ -1256,7 +1394,7 @@ namespace BlockBlast
             }
         }
 
-        public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null, Button gameOverLobby = null)
+        public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null, Button gameOverLobby = null, TMP_Text goldRewardText = null)
         {
             scoreText = score;
             bestScoreText = best;
@@ -1271,6 +1409,7 @@ namespace BlockBlast
             gameOverModal = modal;
             modalFinalScoreText = finalS;
             modalBestScoreText = mBestS;
+            modalGoldRewardText = goldRewardText;
             btnRestart = restart;
             inGameRoot = inGameR;
             btnGameOverLobby = gameOverLobby;
@@ -1328,6 +1467,243 @@ namespace BlockBlast
                     }
                     guideTipCanvasGroup.alpha = 1f;
                 }
+            }
+        }
+
+        public void SetupSpecialSkillButton(Button btn, Image glow = null, TMP_Text progTxt = null, Image fillImg = null)
+        {
+            btnBoardClear = btn;
+            boardClearGlow = glow;
+            boardClearProgressText = progTxt;
+            boardClearFillImage = fillImg;
+
+            if (btnBoardClear != null)
+            {
+                btnBoardClear.onClick.RemoveAllListeners();
+                btnBoardClear.onClick.AddListener(UseBoardClearSkill);
+            }
+            UpdateSpecialSkillUI();
+        }
+
+        public void UpdateSpecialSkillUI()
+        {
+            int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
+            if (mascot != 4)
+            {
+                if (btnBoardClear != null) btnBoardClear.gameObject.SetActive(false);
+                return;
+            }
+
+            if (btnBoardClear != null)
+            {
+                btnBoardClear.gameObject.SetActive(true);
+                btnBoardClear.interactable = _isSpecialSkillReady;
+            }
+
+            if (boardClearGlow != null)
+            {
+                boardClearGlow.gameObject.SetActive(_isSpecialSkillReady);
+            }
+
+            if (boardClearProgressText != null)
+            {
+                if (_isSpecialSkillReady)
+                {
+                    boardClearProgressText.text = "올 클리어!";
+                    boardClearProgressText.color = new Color(1f, 0.95f, 0.2f, 1f);
+                }
+                else
+                {
+                    boardClearProgressText.text = $"{_specialLinesProgress}/{_specialLinesRequired}줄";
+                    boardClearProgressText.color = new Color(0.9f, 0.9f, 1f, 1f);
+                }
+            }
+
+            if (boardClearFillImage != null)
+            {
+                boardClearFillImage.fillAmount = Mathf.Clamp01((float)_specialLinesProgress / Mathf.Max(1, _specialLinesRequired));
+            }
+        }
+
+        public void SetupSpecialSkillCutin(GameObject root, Image mascotImg, Image auraImg, TMP_Text title, RectTransform[] stars)
+        {
+            specialSkillCutinRoot = root;
+            specialSkillCutinMascotImg = mascotImg;
+            specialSkillCutinAuraImg = auraImg;
+            specialSkillCutinTitle = title;
+            specialSkillSparkleStars = stars;
+            if (specialSkillCutinRoot != null) specialSkillCutinRoot.SetActive(false);
+        }
+
+        public void UseBoardClearSkill()
+        {
+            int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
+            if (mascot != 4 || !_isSpecialSkillReady) return;
+
+            _isSpecialSkillReady = false;
+            _specialLinesProgress = 0;
+            UpdateSpecialSkillUI();
+
+            StartCoroutine(PlaySpecialSkillCutinSequenceRoutine());
+        }
+
+        public void ForceTriggerBoardClearSkill()
+        {
+            _isSpecialSkillReady = true;
+            _specialLinesProgress = _specialLinesRequired;
+            UpdateSpecialSkillUI();
+            StartCoroutine(PlaySpecialSkillCutinSequenceRoutine());
+        }
+
+        public void ShowCutinStaticForDebug()
+        {
+            if (specialSkillCutinRoot != null)
+            {
+                specialSkillCutinRoot.SetActive(true);
+                if (specialSkillCutinMascotImg != null)
+                {
+                    specialSkillCutinMascotImg.rectTransform.localScale = Vector3.one;
+                    specialSkillCutinMascotImg.rectTransform.anchoredPosition = Vector2.zero;
+                }
+                if (specialSkillCutinAuraImg != null)
+                {
+                    specialSkillCutinAuraImg.transform.localScale = Vector3.one;
+                }
+                if (specialSkillSparkleStars != null)
+                {
+                    for (int i = 0; i < specialSkillSparkleStars.Length; i++)
+                    {
+                        var star = specialSkillSparkleStars[i];
+                        if (star == null) continue;
+                        float baseAngle = (i / (float)specialSkillSparkleStars.Length) * Mathf.PI * 2f;
+                        float radius = 180f;
+                        star.anchoredPosition = new Vector2(Mathf.Cos(baseAngle) * radius, Mathf.Sin(baseAngle) * radius);
+                        star.localScale = Vector3.one * 1.2f;
+                    }
+                }
+            }
+        }
+
+        private IEnumerator PlaySpecialSkillCutinSequenceRoutine()
+        {
+            // 1. Cutin presentation: Mascot appears with cute particles & "뾰로롱~~" sound
+            if (specialSkillCutinRoot != null)
+            {
+                specialSkillCutinRoot.SetActive(true);
+
+                if (BlockAudioManager.Instance != null)
+                {
+                    BlockAudioManager.Instance.PlayFairyChime();
+                }
+
+                RectTransform mrt = (specialSkillCutinMascotImg != null) ? specialSkillCutinMascotImg.rectTransform : null;
+                if (mrt != null) mrt.localScale = Vector3.zero;
+
+                // Pop-in bounce
+                float popDur = 0.28f;
+                float el = 0f;
+                while (el < popDur)
+                {
+                    el += Time.deltaTime;
+                    float t = el / popDur;
+                    float s = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.25f;
+                    if (t > 0.8f) s = Mathf.Lerp(1.25f, 1.0f, (t - 0.8f) / 0.2f);
+                    if (mrt != null) mrt.localScale = Vector3.one * s;
+                    yield return null;
+                }
+                if (mrt != null) mrt.localScale = Vector3.one;
+
+                // Float & swirl particles ("뾰로롱~~")
+                float floatDur = 0.75f;
+                el = 0f;
+                while (el < floatDur)
+                {
+                    el += Time.deltaTime;
+                    float t = el / floatDur;
+
+                    if (mrt != null)
+                    {
+                        mrt.anchoredPosition = new Vector2(0, Mathf.Sin(el * 6f) * 15f);
+                    }
+                    if (specialSkillCutinAuraImg != null)
+                    {
+                        specialSkillCutinAuraImg.transform.Rotate(0, 0, 50f * Time.deltaTime);
+                    }
+
+                    if (specialSkillSparkleStars != null)
+                    {
+                        for (int i = 0; i < specialSkillSparkleStars.Length; i++)
+                        {
+                            var star = specialSkillSparkleStars[i];
+                            if (star == null) continue;
+                            float baseAngle = (i / (float)specialSkillSparkleStars.Length) * Mathf.PI * 2f;
+                            float angle = baseAngle + el * 3.5f;
+                            float radius = Mathf.Lerp(80f, 260f, t);
+                            star.anchoredPosition = new Vector2(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius);
+                            star.localScale = Vector3.one * (Mathf.Sin((t + i * 0.1f) * Mathf.PI) * 1.3f);
+                            star.Rotate(0, 0, -180f * Time.deltaTime);
+                        }
+                    }
+                    yield return null;
+                }
+
+                // Disappear with magical spin shrink & burst ("뾰로롱~~하면서 사라짐")
+                float exitDur = 0.25f;
+                el = 0f;
+                while (el < exitDur)
+                {
+                    el += Time.deltaTime;
+                    float t = el / exitDur;
+                    float s = Mathf.Lerp(1.0f, 0f, t);
+                    if (mrt != null)
+                    {
+                        mrt.localScale = Vector3.one * s;
+                        mrt.Rotate(0, 0, 360f * Time.deltaTime * 3f);
+                    }
+                    if (specialSkillCutinAuraImg != null)
+                    {
+                        specialSkillCutinAuraImg.transform.localScale = Vector3.one * s;
+                    }
+                    yield return null;
+                }
+
+                specialSkillCutinRoot.SetActive(false);
+            }
+
+            // 2. Wipe the board with explosion cascade & VFX
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearAllBlocksWithExplosion();
+            }
+
+            yield return StartCoroutine(DoBoardClearVFX());
+        }
+
+        private IEnumerator DoBoardClearVFX()
+        {
+            if (whiteFlashOverlay != null)
+            {
+                whiteFlashOverlay.gameObject.SetActive(true);
+                whiteFlashOverlay.color = new Color(1f, 1f, 1f, 0.85f);
+                float el = 0f;
+                while (el < 0.45f)
+                {
+                    el += Time.deltaTime;
+                    whiteFlashOverlay.color = new Color(1f, 1f, 1f, Mathf.Lerp(0.85f, 0f, el / 0.45f));
+                    yield return null;
+                }
+                whiteFlashOverlay.gameObject.SetActive(false);
+            }
+
+            TriggerShake();
+
+            if (comboPopupText != null)
+            {
+                comboPopupText.text = "<color=#FFE600>★ BOARD ALL CLEAR! ★</color>";
+                comboPopupText.transform.localScale = Vector3.one * 1.5f;
+                comboPopupText.gameObject.SetActive(true);
+                yield return new WaitForSeconds(1.3f);
+                comboPopupText.gameObject.SetActive(false);
             }
         }
     }
