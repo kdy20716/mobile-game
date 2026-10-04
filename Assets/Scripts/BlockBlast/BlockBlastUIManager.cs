@@ -533,11 +533,20 @@ namespace BlockBlast
                 isRotatePressed = UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame || UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
                 isSkipPressed = UnityEngine.InputSystem.Keyboard.current.sKey.wasPressedThisFrame;
             }
-#else
-            isEscPressed = Input.GetKeyDown(KeyCode.Escape);
-            isRotatePressed = Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Space);
-            isSkipPressed = Input.GetKeyDown(KeyCode.S);
 #endif
+            // Mobile Android Back Button & fallback
+            if (!isEscPressed && Input.GetKeyDown(KeyCode.Escape))
+            {
+                isEscPressed = true;
+            }
+            if (!isRotatePressed && (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Space)))
+            {
+                isRotatePressed = true;
+            }
+            if (!isSkipPressed && Input.GetKeyDown(KeyCode.S))
+            {
+                isSkipPressed = true;
+            }
 
             // 3. Confirm Modals active: ESC closes them and returns to Pause Modal
             if (restartConfirmModal != null && restartConfirmModal.activeSelf)
@@ -636,6 +645,7 @@ namespace BlockBlast
 
         private void HandleShapePlaced()
         {
+            MobileDeviceManager.TriggerHapticLight();
             ResetTurnTimer();
         }
 
@@ -881,6 +891,7 @@ namespace BlockBlast
 
         private void HandleLinesCleared(int combo, int totalLines)
         {
+            MobileDeviceManager.TriggerHapticLineClear();
             TriggerShake();
 
             // ⏱️ Line clear difficulty timer: 1줄 터뜨릴 때마다 5초씩 제한 시간 감소!

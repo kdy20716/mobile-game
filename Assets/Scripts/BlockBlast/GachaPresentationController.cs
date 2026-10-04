@@ -563,6 +563,8 @@ namespace BlockBlast
             }
         }
 
+        public bool IsActive => (modalRoot != null && modalRoot.activeSelf) || (climaxOverlay != null && climaxOverlay.activeSelf);
+
         public void CloseModal()
         {
             if (modalRoot != null) modalRoot.SetActive(false);

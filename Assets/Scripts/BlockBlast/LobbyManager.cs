@@ -170,6 +170,17 @@ namespace BlockBlast
         [SerializeField] private TMP_Text[] mascotShardTexts;
         [SerializeField] private TMP_Text[] mascotAbilityTexts;
 
+        [Header("Legal & Compliance: Probability Modal")]
+        [SerializeField] private GameObject probabilityModal;
+        [SerializeField] private Button btnCloseProbability;
+        [SerializeField] private Button btnConfirmProbability;
+        [SerializeField] private Button btnProbabilityDarkBg;
+
+        [Header("Mobile Settings: Haptics & Privacy")]
+        [SerializeField] private Button btnHapticToggle;
+        [SerializeField] private TMP_Text hapticToggleText;
+        [SerializeField] private Button btnPrivacyPolicy;
+
         [Header("Summon Result Modal")]
         [SerializeField] private GameObject summonResultModal;
         [SerializeField] private Button btnCloseSummonResult;
@@ -202,6 +213,7 @@ namespace BlockBlast
         [SerializeField] private GameObject shopMascotsPanel;
         [SerializeField] private GameObject shopInGameThemesPanel;
         [SerializeField] private GameObject shopLobbyThemesPanel;
+        [SerializeField] private AnimatedPickupBannerController pickupBannerController;
 
         [Header("Shop Packages & Summons & Mascot Items")]
         [SerializeField] private Button[] shopPackageButtons;
@@ -1441,6 +1453,7 @@ namespace BlockBlast
         public void CloseShopModal()
         {
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (pickupBannerController != null) pickupBannerController.StopVideo();
             if (shopModal != null) shopModal.SetActive(false);
             if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
         }
@@ -1530,10 +1543,7 @@ namespace BlockBlast
 
         public void RefreshThemeShopUI()
         {
-            if (shopCoinsText != null)
-            {
-                shopCoinsText.text = $"{LocalizationManager.Get("my_coins")}: {FormatCoins(_currentCoins)} C";
-            }
+            RefreshCurrenciesUI();
 
             int equippedTheme = PlayerPrefs.GetInt(KEY_EQUIPPED_THEME, 0);
 
@@ -1663,6 +1673,21 @@ namespace BlockBlast
             if (shopMascotsPanel != null) shopMascotsPanel.SetActive(_currentShopTab == 2);
             if (shopInGameThemesPanel != null) shopInGameThemesPanel.SetActive(_currentShopTab == 3);
             if (shopLobbyThemesPanel != null) shopLobbyThemesPanel.SetActive(_currentShopTab == 4);
+
+            if (_currentShopTab == 1)
+            {
+                if (pickupBannerController != null)
+                {
+                    pickupBannerController.PlayIntroVideo();
+                }
+            }
+            else
+            {
+                if (pickupBannerController != null)
+                {
+                    pickupBannerController.StopVideo();
+                }
+            }
 
             if (shopTabBgs != null)
             {
@@ -2255,6 +2280,106 @@ namespace BlockBlast
             RefreshCurrenciesUI();
         }
 
+        // ==========================================
+        // PROBABILITY MODAL (확률형 아이템 정보공개 의무화 대응)
+        // ==========================================
+
+        public void OpenProbabilityModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (probabilityModal != null)
+            {
+                probabilityModal.transform.SetAsLastSibling();
+                probabilityModal.SetActive(true);
+            }
+        }
+
+        public void CloseProbabilityModal()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (probabilityModal != null)
+            {
+                probabilityModal.SetActive(false);
+            }
+        }
+
+        public void SetupProbabilityModal(GameObject pModal, Button closeBtn, Button confirmBtn, Button darkBgBtn = null)
+        {
+            probabilityModal = pModal;
+            btnCloseProbability = closeBtn;
+            btnConfirmProbability = confirmBtn;
+            btnProbabilityDarkBg = darkBgBtn;
+
+            if (probabilityModal != null) probabilityModal.SetActive(false);
+
+            if (btnCloseProbability != null)
+            {
+                btnCloseProbability.onClick.RemoveAllListeners();
+                btnCloseProbability.onClick.AddListener(CloseProbabilityModal);
+            }
+            if (btnConfirmProbability != null)
+            {
+                btnConfirmProbability.onClick.RemoveAllListeners();
+                btnConfirmProbability.onClick.AddListener(CloseProbabilityModal);
+            }
+            if (btnProbabilityDarkBg != null)
+            {
+                btnProbabilityDarkBg.onClick.RemoveAllListeners();
+                btnProbabilityDarkBg.onClick.AddListener(CloseProbabilityModal);
+            }
+        }
+
+        // ==========================================
+        // MOBILE SETTINGS (HAPTICS & PRIVACY POLICY)
+        // ==========================================
+
+        public void SetupMobileSettings(Button hapticBtn, TMP_Text hapticTxt, Button privacyBtn)
+        {
+            btnHapticToggle = hapticBtn;
+            hapticToggleText = hapticTxt;
+            btnPrivacyPolicy = privacyBtn;
+
+            if (btnHapticToggle != null)
+            {
+                btnHapticToggle.onClick.RemoveAllListeners();
+                btnHapticToggle.onClick.AddListener(ToggleHapticSetting);
+            }
+
+            if (btnPrivacyPolicy != null)
+            {
+                btnPrivacyPolicy.onClick.RemoveAllListeners();
+                btnPrivacyPolicy.onClick.AddListener(OpenPrivacyPolicy);
+            }
+
+            UpdateHapticUI();
+        }
+
+        public void ToggleHapticSetting()
+        {
+            PlayClickSound();
+            MobileDeviceManager.IsHapticEnabled = !MobileDeviceManager.IsHapticEnabled;
+            if (MobileDeviceManager.IsHapticEnabled)
+            {
+                MobileDeviceManager.TriggerHapticLight();
+            }
+            UpdateHapticUI();
+        }
+
+        private void UpdateHapticUI()
+        {
+            bool enabled = MobileDeviceManager.IsHapticEnabled;
+            if (hapticToggleText != null)
+            {
+                hapticToggleText.text = enabled ? "진동: 켜짐" : "진동: 꺼짐";
+            }
+        }
+
+        public void OpenPrivacyPolicy()
+        {
+            PlayClickSound();
+            Application.OpenURL("https://mallanggames.com/privacy");
+        }
+
         private IEnumerator FlashDiamondsTextRed()
         {
             if (shopDiamondsText == null) yield break;
@@ -2341,10 +2466,7 @@ namespace BlockBlast
 
         public void RefreshLobbyThemeShopUI()
         {
-            if (shopCoinsText != null)
-            {
-                shopCoinsText.text = $"{LocalizationManager.Get("my_coins")}: {FormatCoins(_currentCoins)} C";
-            }
+            RefreshCurrenciesUI();
 
             int equippedLobby = PlayerPrefs.GetInt(KEY_EQUIPPED_LOBBY_THEME, 0);
 
@@ -2458,6 +2580,11 @@ namespace BlockBlast
             }
 
             SelectShopTab(0);
+        }
+
+        public void SetupPickupBannerController(AnimatedPickupBannerController bannerCtrl)
+        {
+            pickupBannerController = bannerCtrl;
         }
 
         public void SetupShopMascots(Button[] actionBtns, TMP_Text[] actionTexts)
@@ -2644,11 +2771,17 @@ namespace BlockBlast
 
             bool isEsc = false;
 #if ENABLE_INPUT_SYSTEM
-            if (UnityEngine.InputSystem.Keyboard.current != null)
-                isEsc = UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame;
-#else
-            isEsc = Input.GetKeyDown(KeyCode.Escape);
+            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                isEsc = true;
+            }
 #endif
+            // Mobile Android Back Button & fallback
+            if (!isEsc && Input.GetKeyDown(KeyCode.Escape))
+            {
+                isEsc = true;
+            }
+
             if (isEsc)
             {
                 HandleEscapeKey();
@@ -2657,6 +2790,35 @@ namespace BlockBlast
 
         private void HandleEscapeKey()
         {
+            // 1. Legal Probability Modal
+            if (probabilityModal != null && probabilityModal.activeSelf)
+            {
+                CloseProbabilityModal();
+                return;
+            }
+
+            // 2. Summon Result Modal
+            if (summonResultModal != null && summonResultModal.activeSelf)
+            {
+                CloseSummonResultModal();
+                return;
+            }
+
+            // 3. Gacha Presentation Sequence
+            if (GachaPresentationController.Instance != null && GachaPresentationController.Instance.IsActive)
+            {
+                GachaPresentationController.Instance.CloseModal();
+                return;
+            }
+
+            // 4. Mascot Management Modal
+            if (mascotModal != null && mascotModal.activeSelf)
+            {
+                CloseMascotModal();
+                return;
+            }
+
+            // 5. Standard Dialogs
             if (quitModal != null && quitModal.activeSelf)
             {
                 CloseQuitModal();
@@ -2688,7 +2850,7 @@ namespace BlockBlast
                 return;
             }
 
-            // If no modal is open in Lobby, prompt quit confirmation
+            // 6. If no modal is open in Lobby, prompt quit confirmation
             OpenQuitModal();
         }
 

@@ -4,6 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Video;
 using TMPro;
 
 namespace BlockBlast.Editor
@@ -275,7 +276,7 @@ namespace BlockBlast.Editor
             // ==========================================
 
             // --- In-Game Root Container (Starts inactive so it NEVER shows during main menu or lobby!) ---
-            GameObject inGameRoot = new GameObject("InGameRoot", typeof(RectTransform));
+            GameObject inGameRoot = new GameObject("InGameRoot", typeof(RectTransform), typeof(SafeAreaFitter));
             inGameRoot.transform.SetParent(canvasObj.transform, false);
             SetRect(inGameRoot, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(1080f, 0f));
             inGameRoot.SetActive(false);
@@ -1324,8 +1325,14 @@ namespace BlockBlast.Editor
             Sprite tabVerticalActiveSprite = CuteBlockTextureGenerator.GetOrCreateShopVerticalTabActiveSprite();
             Sprite tabVerticalInactiveSprite = CuteBlockTextureGenerator.GetOrCreateShopVerticalTabInactiveSprite();
             Sprite bannerNewMascotSprite = CuteBlockTextureGenerator.GetOrCreateShopBannerNewMascotSprite();
+            CuteBlockTextureGenerator.GetOrCreateShopBannerPickupSprite(true);
             Sprite bannerPickupSprite = CuteBlockTextureGenerator.GetOrCreateShopBannerPickupSprite();
             Sprite packageCardSprite = CuteBlockTextureGenerator.GetOrCreateShopPackageCardSprite();
+            Sprite shootingStarSprite = CuteBlockTextureGenerator.GetOrCreateShootingStarSprite();
+            Sprite sunburstSprite = CuteBlockTextureGenerator.GetOrCreateGachaSunburstSprite();
+            Sprite rainbowAuraSprite = CuteBlockTextureGenerator.GetOrCreateGachaRainbowAuraSprite();
+            Sprite fairySparkleSprite = CuteBlockTextureGenerator.GetOrCreateFairySparkleSprite();
+            Sprite specialMascotCutoutSprite = CuteBlockTextureGenerator.GetOrCreateSpecialMascotSprite();
 
             GameObject sModal = new GameObject("ShopModal", typeof(RectTransform));
             sModal.transform.SetParent(lobbyRoot.transform, false);
@@ -1341,7 +1348,7 @@ namespace BlockBlast.Editor
 
             // --- Top Header ---
             GameObject sTitle = CreateText(sCard.transform, "Title", "말랑 상점", 40, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(sTitle, new Vector2(0, 1), new Vector2(0, 1), new Vector2(50, -50), new Vector2(250, 50));
+            SetRect(sTitle, new Vector2(0, 1), new Vector2(0, 1), new Vector2(175, -50), new Vector2(250, 50));
 
             // Top-Right: Diamond Badge in Shop
             GameObject sDiaBadge = CreateImage(sCard.transform, "DiaBadge", coinBoxSprite, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-360, -50), new Vector2(165, 58));
@@ -1362,21 +1369,21 @@ namespace BlockBlast.Editor
             // Close Button
             GameObject sCloseBtn = CreateButton(sCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -50), new Vector2(60, 60), closeXBtnSprite, 30);
 
-            // --- Left Sidebar: 5 Vertical Tabs ---
-            GameObject tabSidebar = new GameObject("TabSidebar", typeof(RectTransform));
-            tabSidebar.transform.SetParent(sCard.transform, false);
-            SetRect(tabSidebar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(120, -780), new Vector2(210, 1340));
+            // --- Top Horizontal Tab Bar: 5 Tabs ---
+            GameObject tabHeaderBar = new GameObject("TabHeaderBar", typeof(RectTransform));
+            tabHeaderBar.transform.SetParent(sCard.transform, false);
+            SetRect(tabHeaderBar, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -125), new Vector2(920, 68));
 
             string[] tabNames = new string[] { "추천", "픽업", "말랑이", "게임 배경", "로비 배경" };
             Button[] shopTabBtns = new Button[5];
             Image[] shopTabBgs = new Image[5];
             TMP_Text[] shopTabTexts = new TMP_Text[5];
+            float[] tabXOffsets = new float[] { -352f, -176f, 0f, 176f, 352f };
 
             for (int t = 0; t < 5; t++)
             {
-                float tabY = -60f - t * 110f;
                 Sprite initTabSp = (t == 0) ? tabVerticalActiveSprite : tabVerticalInactiveSprite;
-                GameObject tBtnObj = CreateButton(tabSidebar.transform, $"Tab_{t}", tabNames[t], cuteFont, new Vector2(0.5f, 1), new Vector2(0, tabY), new Vector2(195, 96), initTabSp, 26);
+                GameObject tBtnObj = CreateButton(tabHeaderBar.transform, $"Tab_{t}", tabNames[t], cuteFont, new Vector2(0.5f, 0.5f), new Vector2(tabXOffsets[t], 0), new Vector2(170, 62), initTabSp, 24);
                 shopTabBtns[t] = tBtnObj.GetComponent<Button>();
                 shopTabBgs[t] = tBtnObj.GetComponent<Image>();
                 shopTabBgs[t].type = Image.Type.Sliced;
@@ -1388,10 +1395,10 @@ namespace BlockBlast.Editor
                 }
             }
 
-            // --- Right Content Container ---
+            // --- Main Content Container (Full 920px width below tabs) ---
             GameObject contentContainer = new GameObject("ContentContainer", typeof(RectTransform));
             contentContainer.transform.SetParent(sCard.transform, false);
-            SetRect(contentContainer, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-380, -780), new Vector2(730, 1340));
+            SetRect(contentContainer, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -840), new Vector2(920, 1340));
 
             // ==========================================
             // PANEL 0: 추천 (RECOMMENDED)
@@ -1400,44 +1407,52 @@ namespace BlockBlast.Editor
             recPanel.transform.SetParent(contentContainer.transform, false);
             SetRect(recPanel, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-            // Huge Top Banner: "신규 말랑이 출시!"
-            GameObject newMascotBanner = CreateImage(recPanel.transform, "NewMascotBanner", bannerNewMascotSprite, new Vector2(0.5f, 1), new Vector2(0, -225), new Vector2(710, 410));
+            // Huge Top Banner: "신규 말랑이 출시!" (Width 880, Height 480)
+            GameObject newMascotBanner = CreateImage(recPanel.transform, "NewMascotBanner", bannerNewMascotSprite, new Vector2(0.5f, 1), new Vector2(0, -250), new Vector2(880, 480));
             newMascotBanner.GetComponent<Image>().preserveAspect = false;
 
             // Section Subtitle
             GameObject packSub = CreateText(recPanel.transform, "PackSubtitle", "이달의 특별 한정 추천 패키지", 26, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(packSub, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -460), new Vector2(700, 36));
+            SetRect(packSub, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -515), new Vector2(860, 36));
 
-            // 3 Package Cards Row
+            // 3 Package Cards Row (Width 275 each, full width 880)
             Button[] packageBtns = new Button[3];
             string[] packTitles = new string[] { "스타터 팩", "민트 웰컴 팩", "골드 대박 팩" };
             string[] packRewards = new string[] { "+1,500 G\n+30 다이아", "민트 말랑이\n+1,000 G", "+5,000 G\n특가 찬스!" };
             string[] packPrices = new string[] { "20 다이아 구매", "50 다이아 구매", "80 다이아 구매" };
-            float[] packXOffsets = new float[] { -235f, 0f, 235f };
+            float[] packXOffsets = new float[] { -295f, 0f, 295f };
             Sprite[] packIcons = new Sprite[] { goldCoinSprite, highResAvatars[1], goldCoinSprite };
 
             for (int p = 0; p < 3; p++)
             {
-                GameObject pCardObj = CreateImage(recPanel.transform, $"PackageCard_{p}", packageCardSprite, new Vector2(0.5f, 1), new Vector2(packXOffsets[p], -700), new Vector2(225, 410));
+                GameObject pCardObj = CreateImage(recPanel.transform, $"PackageCard_{p}", packageCardSprite, new Vector2(0.5f, 1), new Vector2(packXOffsets[p], -750), new Vector2(275, 420));
                 pCardObj.GetComponent<Image>().type = Image.Type.Sliced;
 
                 // Card Title
-                GameObject pTitleTxt = CreateText(pCardObj.transform, "Title", packTitles[p], 22, TextAlignmentOptions.Center, cuteFont, new Color(0.28f, 0.18f, 0.48f));
-                SetRect(pTitleTxt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -32), new Vector2(210, 30));
+                GameObject pTitleTxt = CreateText(pCardObj.transform, "Title", packTitles[p], 24, TextAlignmentOptions.Center, cuteFont, new Color(0.28f, 0.18f, 0.48f));
+                SetRect(pTitleTxt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -32), new Vector2(250, 30));
 
                 // Icon Frame
-                GameObject pIconFrame = CreateImage(pCardObj.transform, "IconFrame", circleFrameSprite, new Vector2(0.5f, 1), new Vector2(0, -115), new Vector2(110, 110));
-                GameObject pIconImg = CreateImage(pIconFrame.transform, "Icon", packIcons[p], new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(90, 90));
+                GameObject pIconFrame = CreateImage(pCardObj.transform, "IconFrame", circleFrameSprite, new Vector2(0.5f, 1), new Vector2(0, -120), new Vector2(115, 115));
+                GameObject pIconImg = CreateImage(pIconFrame.transform, "Icon", packIcons[p], new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(95, 95));
                 pIconImg.GetComponent<Image>().preserveAspect = true;
 
                 // Reward Text
-                GameObject pRewardTxt = CreateText(pCardObj.transform, "Rewards", packRewards[p], 22, TextAlignmentOptions.Center, cuteFont, new Color(0.45f, 0.35f, 0.60f));
-                SetRect(pRewardTxt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -210), new Vector2(200, 56));
+                GameObject pRewardTxt = CreateText(pCardObj.transform, "Rewards", packRewards[p], 23, TextAlignmentOptions.Center, cuteFont, new Color(0.45f, 0.35f, 0.60f));
+                SetRect(pRewardTxt, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -220), new Vector2(250, 58));
 
                 // Buy Button
-                GameObject pBtnObj = CreateButton(pCardObj.transform, "BtnBuy", packPrices[p], cuteFont, new Vector2(0.5f, 0), new Vector2(0, 45), new Vector2(190, 62), btnPinkSprite, 22, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+                GameObject pBtnObj = CreateButton(pCardObj.transform, "BtnBuy", packPrices[p], cuteFont, new Vector2(0.5f, 0), new Vector2(0, 45), new Vector2(235, 65), btnPinkSprite, 23, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
                 packageBtns[p] = pBtnObj.GetComponent<Button>();
             }
+
+            // Bottom Info Strip in Recommended Panel
+            GameObject recTipCard = CreateImage(recPanel.transform, "RecTipCard", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -1035), new Vector2(880, 110));
+            recTipCard.GetComponent<Image>().type = Image.Type.Sliced;
+            recTipCard.GetComponent<Image>().color = new Color(0.95f, 0.92f, 1f, 0.92f);
+
+            GameObject recTipTxt = CreateText(recTipCard.transform, "TipTxt", "TIP: 다이아몬드는 매일 퀘스트 및 업적 달성 시에도 무료로 획득할 수 있습니다!\n스페셜 말랑이 픽업 소환으로 판을 시원하게 쓸어담아 보세요!", 21, TextAlignmentOptions.Center, cuteFont, new Color(0.38f, 0.25f, 0.60f));
+            SetRect(recTipTxt, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             // ==========================================
             // PANEL 1: 픽업 소환 (PICKUP SUMMON)
@@ -1447,24 +1462,99 @@ namespace BlockBlast.Editor
             SetRect(pickPanel, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             pickPanel.SetActive(false);
 
-            // Huge Celestial Pickup Banner (16:9 uncompressed, width 710, height 400)
-            GameObject pickupBanner = CreateImage(pickPanel.transform, "PickupBanner", bannerPickupSprite, new Vector2(0.5f, 1), new Vector2(0, -225), new Vector2(710, 400));
-            pickupBanner.GetComponent<Image>().preserveAspect = true;
+            // Huge Celestial Animated Pickup Banner (16:9 uncompressed widescreen: width 880, height 495)
+            GameObject pickupBanner = CreateImage(pickPanel.transform, "PickupBanner", bannerPickupSprite, new Vector2(0.5f, 1), new Vector2(0, -255), new Vector2(880, 495));
+            pickupBanner.GetComponent<Image>().preserveAspect = false;
 
-            // Pickup Info Box
-            GameObject pickInfoCard = CreateImage(pickPanel.transform, "InfoCard", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -485), new Vector2(700, 115));
+            // Live Animation Layer 1: Sunburst Rays behind mascot
+            GameObject bSunburst = CreateImage(pickupBanner.transform, "SunburstRays", sunburstSprite, new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(440, 440));
+            bSunburst.GetComponent<Image>().color = new Color(1f, 0.90f, 0.50f, 0.55f);
+
+            // Live Animation Layer 2: Rainbow Aura
+            GameObject bRainbowAura = CreateImage(pickupBanner.transform, "RainbowAura", rainbowAuraSprite, new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(330, 330));
+            bRainbowAura.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.70f);
+
+            // Live Animation Layer 3: Live Special Mascot Cutout (Levitation, Breathing Squash & Tilt)
+            GameObject bLiveMascot = CreateImage(pickupBanner.transform, "LiveMascot", specialMascotCutoutSprite, new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(360, 360));
+            bLiveMascot.GetComponent<Image>().preserveAspect = true;
+
+            // Live Animation Layer 4: Sparkle Particles Container
+            GameObject bSparkleRoot = new GameObject("SparkleContainer", typeof(RectTransform));
+            bSparkleRoot.transform.SetParent(pickupBanner.transform, false);
+            SetRect(bSparkleRoot, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+            // Live Animation Layer 5: Shooting Star Container (Masked to banner)
+            GameObject bStarRoot = new GameObject("ShootingStarContainer", typeof(RectTransform), typeof(RectMask2D));
+            bStarRoot.transform.SetParent(pickupBanner.transform, false);
+            SetRect(bStarRoot, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+            // Live Animation Layer 6: Video Player & Overlay (mallang_pick1 Video Support)
+            GameObject bVideoOverlay = new GameObject("VideoOverlay", typeof(RectTransform), typeof(RawImage), typeof(UnityEngine.Video.VideoPlayer), typeof(CanvasGroup));
+            bVideoOverlay.transform.SetParent(pickupBanner.transform, false);
+            SetRect(bVideoOverlay, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            RawImage vRawImg = bVideoOverlay.GetComponent<RawImage>();
+            vRawImg.raycastTarget = true;
+            bVideoOverlay.SetActive(false);
+
+            VideoClip pickVideoClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/movies/mallang_pick1.mp4");
+
+            // Cute skip pill button on top right
+            GameObject btnSkipVideo = CreateButton(bVideoOverlay.transform, "BtnSkipVideo", "스킵 >>", cuteFont, new Vector2(1, 1), new Vector2(-75, -40), new Vector2(115, 46), tabPillSprite, 20, Color.white, new Color(0.2f, 0.1f, 0.3f, 0.8f));
+
+            // Attach & Wire AnimatedPickupBannerController
+            var bannerCtrl = pickupBanner.AddComponent<AnimatedPickupBannerController>();
+            bannerCtrl.SetupReferences(
+                pickupBanner.GetComponent<Image>(),
+                bLiveMascot.GetComponent<RectTransform>(), bLiveMascot.GetComponent<Image>(),
+                bSunburst.GetComponent<RectTransform>(), bSunburst.GetComponent<Image>(),
+                bRainbowAura.GetComponent<RectTransform>(), bRainbowAura.GetComponent<Image>(),
+                bStarRoot.GetComponent<RectTransform>(), shootingStarSprite,
+                bSparkleRoot.GetComponent<RectTransform>(), fairySparkleSprite,
+                bVideoOverlay.GetComponent<UnityEngine.Video.VideoPlayer>(), vRawImg,
+                pickVideoClip, btnSkipVideo.GetComponent<Button>()
+            );
+
+            // Pickup Info Box & Legal Probability Button
+            GameObject pickInfoCard = CreateImage(pickPanel.transform, "InfoCard", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -560), new Vector2(880, 90));
             pickInfoCard.GetComponent<Image>().type = Image.Type.Sliced;
             pickInfoCard.GetComponent<Image>().color = new Color(0.95f, 0.92f, 1f, 0.95f);
 
-            GameObject pickInfoTxt = CreateText(pickInfoCard.transform, "InfoTxt", "[0.1% 확률] 스페셜 말랑이 픽업 소환!\n중복 획득 시 60조각 즉시 지급 (바로 돌파 가능!)\n기본 보상: 일반 말랑이 조각 5개 지급 (능력 업그레이드)", 20, TextAlignmentOptions.Center, cuteFont, new Color(0.38f, 0.25f, 0.60f));
-            SetRect(pickInfoTxt, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            GameObject pickInfoTxt = CreateText(pickInfoCard.transform, "InfoTxt", "[0.1% 확률] 스페셜 말랑이 픽업 소환!\n중복 획득 시 60조각 즉시 지급 (바로 돌파 가능!)\n기본 보상: 일반 말랑이 조각 5개 지급 (능력 업그레이드)", 19, TextAlignmentOptions.Left, cuteFont, new Color(0.38f, 0.25f, 0.60f));
+            SetRect(pickInfoTxt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(25, 0), new Vector2(-185, 0));
+
+            GameObject btnProbCheck = CreateButton(pickInfoCard.transform, "BtnProbCheck", "확률 정보", cuteFont, new Vector2(1, 0.5f), new Vector2(-95, 0), new Vector2(145, 54), btnTealSprite, 20, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+            btnProbCheck.GetComponent<Button>().onClick.AddListener(lobbyMgr.OpenProbabilityModal);
+
+            // Special Mascot Skill Feature Showcase Box
+            GameObject featBox = CreateImage(pickPanel.transform, "MascotShowcaseBox", packageCardSprite, new Vector2(0.5f, 1), new Vector2(0, -780), new Vector2(880, 310));
+            featBox.GetComponent<Image>().type = Image.Type.Sliced;
+            featBox.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.98f);
+
+            GameObject featHeader = CreateText(featBox.transform, "Header", "★ [올 클리어 엔젤] 스페셜 말랑이 전용 능력 미리보기 ★", 25, TextAlignmentOptions.Center, cuteFont, new Color(0.38f, 0.18f, 0.55f));
+            SetRect(featHeader, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -28), new Vector2(850, 32));
+
+            // Avatar Frame & Cutout Icon
+            GameObject fAvFrame = CreateImage(featBox.transform, "AvFrame", circleFrameSprite, new Vector2(0, 0.5f), new Vector2(110, -15), new Vector2(150, 150));
+            GameObject fAvIcon = CreateImage(fAvFrame.transform, "Icon", specialMascotCutoutSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130, 130));
+            fAvIcon.GetComponent<Image>().preserveAspect = true;
+
+            // Skill details on the right
+            GameObject fSkillTitle = CreateText(featBox.transform, "SkillTitle", "고유 스킬: [보드 올 클리어 (Board Wipe Magic)]", 25, TextAlignmentOptions.Left, cuteFont, new Color(0.12f, 0.48f, 0.42f));
+            SetRect(fSkillTitle, new Vector2(0, 1), new Vector2(0, 1), new Vector2(535, -75), new Vector2(650, 32));
+
+            string featDescStr = "• 30줄 클리어 시 스킬 게이지 100% 충전 (버튼 점등!)\n" +
+                                 "• 버튼 터치 시 화면의 모든 블록 폭파 + 뾰로롱 마법 연출!\n" +
+                                 "• 깨끗한 빈 판에서 막힘없이 무한 콤보 연속 클리어!\n" +
+                                 "• [중복 획득 특전] 60조각 즉시 지급으로 바로 1차 돌파 가능!";
+            GameObject fDescTxt = CreateText(featBox.transform, "SkillDesc", featDescStr, 20, TextAlignmentOptions.Left, cuteFont, new Color(0.32f, 0.22f, 0.46f));
+            SetRect(fDescTxt, new Vector2(0, 1), new Vector2(0, 1), new Vector2(535, -175), new Vector2(650, 150));
 
             // 1x Summon Button (100 Dia)
-            GameObject btnSummon1Obj = CreateButton(pickPanel.transform, "BtnSummon1", "1회 소환\n(100 다이아)", cuteFont, new Vector2(0.5f, 0), new Vector2(-175, 110), new Vector2(310, 95), btnTealSprite, 26, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+            GameObject btnSummon1Obj = CreateButton(pickPanel.transform, "BtnSummon1", "1회 소환\n(100 다이아)", cuteFont, new Vector2(0.5f, 1), new Vector2(-225, -1075), new Vector2(410, 115), btnTealSprite, 28, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
             Button btnSummon1 = btnSummon1Obj.GetComponent<Button>();
 
             // 10x Summon Button (1,000 Dia)
-            GameObject btnSummon10Obj = CreateButton(pickPanel.transform, "BtnSummon10", "10회 소환\n(1,000 다이아)", cuteFont, new Vector2(0.5f, 0), new Vector2(175, 110), new Vector2(310, 95), btnPinkSprite, 26, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            GameObject btnSummon10Obj = CreateButton(pickPanel.transform, "BtnSummon10", "10회 소환\n(1,000 다이아)", cuteFont, new Vector2(0.5f, 1), new Vector2(225, -1075), new Vector2(410, 115), btnPinkSprite, 28, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
             Button btnSummon10 = btnSummon10Obj.GetComponent<Button>();
 
             // ==========================================
@@ -1480,27 +1570,27 @@ namespace BlockBlast.Editor
 
             for (int m = 0; m < 5; m++)
             {
-                float yPos = -105f - m * 225f;
-                GameObject mCard = CreateImage(mascPanel.transform, $"MascotShopCard_{m}", shopItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(710, 210));
+                float yPos = -115f - m * 235f;
+                GameObject mCard = CreateImage(mascPanel.transform, $"MascotShopCard_{m}", shopItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(880, 215));
                 mCard.GetComponent<Image>().type = Image.Type.Sliced;
                 mCard.GetComponent<Image>().color = new Color(0.97f, 0.95f, 1f, 0.96f);
 
                 // Avatar Frame & Icon
-                GameObject avFrame = CreateImage(mCard.transform, "AvFrame", circleFrameSprite, new Vector2(0, 0.5f), new Vector2(85, 0), new Vector2(120, 120));
+                GameObject avFrame = CreateImage(mCard.transform, "AvFrame", circleFrameSprite, new Vector2(0, 0.5f), new Vector2(90, 0), new Vector2(120, 120));
                 Sprite mAv = (mascotAvatars != null && m < mascotAvatars.Length) ? mascotAvatars[m] : null;
                 GameObject avIcon = CreateImage(avFrame.transform, "AvIcon", mAv, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(104, 104));
                 avIcon.GetComponent<Image>().preserveAspect = true;
 
                 // Name & Title
                 GameObject mName = CreateText(mCard.transform, "Name", LobbyManager.MascotNames[m], 30, TextAlignmentOptions.Left, cuteFont, new Color(0.28f, 0.18f, 0.48f));
-                SetRect(mName, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(160, 48), new Vector2(350, 36), new Vector2(0, 0.5f));
+                SetRect(mName, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(180, 50), new Vector2(460, 36), new Vector2(0, 0.5f));
 
                 GameObject mTitle = CreateText(mCard.transform, "Title", $"[{LobbyManager.MascotTitles[m]}]", 22, TextAlignmentOptions.Left, cuteFont, new Color(0.50f, 0.35f, 0.70f));
-                SetRect(mTitle, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(160, 16), new Vector2(350, 26), new Vector2(0, 0.5f));
+                SetRect(mTitle, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(180, 16), new Vector2(460, 28), new Vector2(0, 0.5f));
 
                 // Ability
                 GameObject mAbil = CreateText(mCard.transform, "Ability", LobbyManager.MascotAbilities[m], 19, TextAlignmentOptions.Left, cuteFont, new Color(0.38f, 0.28f, 0.50f));
-                SetRect(mAbil, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(160, -32), new Vector2(350, 56), new Vector2(0, 0.5f));
+                SetRect(mAbil, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(180, -32), new Vector2(460, 56), new Vector2(0, 0.5f));
 
                 // Buy / Equip Button
                 int price = LobbyManager.MascotPricesCoins[m];
@@ -1522,7 +1612,7 @@ namespace BlockBlast.Editor
                     btnSp = shopEquipBtnSprite;
                 }
 
-                GameObject actBtnObj = CreateButton(mCard.transform, "BtnAction", btnLbl, cuteFont, new Vector2(1, 0.5f), new Vector2(-100, 0), new Vector2(175, 75), btnSp, 24);
+                GameObject actBtnObj = CreateButton(mCard.transform, "BtnAction", btnLbl, cuteFont, new Vector2(1, 0.5f), new Vector2(-110, 0), new Vector2(190, 75), btnSp, 24);
                 mascotShopActionBtns[m] = actBtnObj.GetComponent<Button>();
                 mascotShopActionTexts[m] = actBtnObj.GetComponentInChildren<TMP_Text>();
                 if (mascotShopActionTexts[m] != null)
@@ -1546,28 +1636,28 @@ namespace BlockBlast.Editor
 
             for (int i = 0; i < 4; i++)
             {
-                float yPos = -115f - i * 230f;
-                GameObject itCard = CreateImage(inGamePanel.transform, $"ThemeItem_{i}", shopItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(710, 205));
+                float yPos = -120f - i * 240f;
+                GameObject itCard = CreateImage(inGamePanel.transform, $"ThemeItem_{i}", shopItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(880, 215));
                 itCard.GetComponent<Image>().type = Image.Type.Sliced;
                 itCard.GetComponent<Image>().color = new Color(0.97f, 0.95f, 1f, 0.96f);
 
-                GameObject thumbFrame = CreateImage(itCard.transform, "ThumbFrame", tabPillSprite, new Vector2(0, 0.5f), new Vector2(100, 0), new Vector2(150, 145));
+                GameObject thumbFrame = CreateImage(itCard.transform, "ThumbFrame", tabPillSprite, new Vector2(0, 0.5f), new Vector2(105, 0), new Vector2(160, 155));
                 thumbFrame.GetComponent<Image>().type = Image.Type.Sliced;
                 thumbFrame.GetComponent<Image>().color = new Color(0.85f, 0.80f, 0.95f, 0.9f);
 
-                GameObject thumbImg = CreateImage(thumbFrame.transform, "Thumb", allThemeSprites[i], new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140, 135));
+                GameObject thumbImg = CreateImage(thumbFrame.transform, "Thumb", allThemeSprites[i], new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(150, 145));
                 thumbImg.GetComponent<Image>().preserveAspect = false;
 
                 GameObject itName = CreateText(itCard.transform, "Name", themeTitles[i], 30, TextAlignmentOptions.Left, cuteFont, new Color(0.28f, 0.18f, 0.48f));
-                SetRect(itName, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(195, 26), new Vector2(320, 38), new Vector2(0, 0.5f));
+                SetRect(itName, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(215, 26), new Vector2(430, 38), new Vector2(0, 0.5f));
 
                 GameObject itDesc = CreateText(itCard.transform, "Desc", themeDescs[i], 20, TextAlignmentOptions.Left, cuteFont, new Color(0.55f, 0.48f, 0.65f));
-                SetRect(itDesc, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(195, -22), new Vector2(320, 36), new Vector2(0, 0.5f));
+                SetRect(itDesc, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(215, -22), new Vector2(430, 36), new Vector2(0, 0.5f));
 
                 int tPrice = LobbyManager.ThemePrices[i];
                 string initBtnLabel = (i == 0) ? "적용 중" : $"{tPrice:N0} G 구매";
                 Sprite initBtnSprite = (i == 0) ? shopEquippedBtnSprite : shopEquipBtnSprite;
-                GameObject actBtnObj = CreateButton(itCard.transform, $"BtnAction_{i}", initBtnLabel, cuteFont, new Vector2(1, 0.5f), new Vector2(-95, 0), new Vector2(175, 75), initBtnSprite, 24);
+                GameObject actBtnObj = CreateButton(itCard.transform, $"BtnAction_{i}", initBtnLabel, cuteFont, new Vector2(1, 0.5f), new Vector2(-105, 0), new Vector2(185, 75), initBtnSprite, 24);
                 themeActionBtns[i] = actBtnObj.GetComponent<Button>();
                 themeActionTMPs[i] = actBtnObj.GetComponentInChildren<TMP_Text>();
                 if (themeActionTMPs[i] != null)
@@ -1589,28 +1679,28 @@ namespace BlockBlast.Editor
 
             for (int i = 0; i < 3; i++)
             {
-                float yPos = -120f - i * 240f;
-                GameObject itCard = CreateImage(lobbyPanel.transform, $"LobbyThemeItem_{i}", shopItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(710, 215));
+                float yPos = -130f - i * 255f;
+                GameObject itCard = CreateImage(lobbyPanel.transform, $"LobbyThemeItem_{i}", shopItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(880, 225));
                 itCard.GetComponent<Image>().type = Image.Type.Sliced;
                 itCard.GetComponent<Image>().color = new Color(0.97f, 0.95f, 1f, 0.96f);
 
-                GameObject thumbFrame = CreateImage(itCard.transform, "ThumbFrame", tabPillSprite, new Vector2(0, 0.5f), new Vector2(110, 0), new Vector2(165, 155));
+                GameObject thumbFrame = CreateImage(itCard.transform, "ThumbFrame", tabPillSprite, new Vector2(0, 0.5f), new Vector2(115, 0), new Vector2(170, 160));
                 thumbFrame.GetComponent<Image>().type = Image.Type.Sliced;
                 thumbFrame.GetComponent<Image>().color = new Color(0.85f, 0.80f, 0.95f, 0.9f);
 
-                GameObject thumbImg = CreateImage(thumbFrame.transform, "Thumb", allLobbySprites[i], new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(155, 145));
+                GameObject thumbImg = CreateImage(thumbFrame.transform, "Thumb", allLobbySprites[i], new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(160, 150));
                 thumbImg.GetComponent<Image>().preserveAspect = false;
 
                 GameObject itName = CreateText(itCard.transform, "Name", LobbyManager.LobbyThemeNames[i], 30, TextAlignmentOptions.Left, cuteFont, new Color(0.28f, 0.18f, 0.48f));
-                SetRect(itName, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(210, 28), new Vector2(300, 38), new Vector2(0, 0.5f));
+                SetRect(itName, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(225, 28), new Vector2(420, 38), new Vector2(0, 0.5f));
 
                 GameObject itDesc = CreateText(itCard.transform, "Desc", LobbyManager.LobbyThemeDescs[i], 20, TextAlignmentOptions.Left, cuteFont, new Color(0.55f, 0.48f, 0.65f));
-                SetRect(itDesc, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(210, -22), new Vector2(300, 36), new Vector2(0, 0.5f));
+                SetRect(itDesc, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(225, -22), new Vector2(420, 36), new Vector2(0, 0.5f));
 
                 int ltPrice = LobbyManager.LobbyThemePrices[i];
                 string initLobbyBtnLabel = (i == 0) ? "적용 중" : $"{ltPrice:N0} G 구매";
                 Sprite initLobbyBtnSprite = (i == 0) ? shopEquippedBtnSprite : shopEquipBtnSprite;
-                GameObject actBtnObj = CreateButton(itCard.transform, $"BtnAction_{i}", initLobbyBtnLabel, cuteFont, new Vector2(1, 0.5f), new Vector2(-95, 0), new Vector2(175, 75), initLobbyBtnSprite, 24);
+                GameObject actBtnObj = CreateButton(itCard.transform, $"BtnAction_{i}", initLobbyBtnLabel, cuteFont, new Vector2(1, 0.5f), new Vector2(-105, 0), new Vector2(185, 75), initLobbyBtnSprite, 24);
                 lobbyThemeActionBtns[i] = actBtnObj.GetComponent<Button>();
                 lobbyThemeActionTMPs[i] = actBtnObj.GetComponentInChildren<TMP_Text>();
                 if (lobbyThemeActionTMPs[i] != null)
@@ -1631,27 +1721,27 @@ namespace BlockBlast.Editor
             setDarkBg.GetComponent<Image>().color = new Color(0.06f, 0.04f, 0.14f, 0.88f);
             setDarkBg.GetComponent<Image>().raycastTarget = true;
 
-            GameObject setCard = CreateImage(setModal.transform, "DialogCard", settingsModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(780, 780));
+            GameObject setCard = CreateImage(setModal.transform, "DialogCard", settingsModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(800, 940));
             setCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject setCloseBtn = CreateButton(setCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), closeXBtnSprite, 32);
 
             GameObject setTitle = CreateText(setCard.transform, "Title", "게임 설정", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(setTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -60), new Vector2(400, 50));
+            SetRect(setTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -55), new Vector2(400, 48));
 
             // BGM Slider
             GameObject bgmLbl = CreateText(setCard.transform, "BGMLbl", "배경음악 (BGM)", 28, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(bgmLbl, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -125), new Vector2(580, 34));
-            GameObject bgmSldObj = CreateSlider(setCard.transform, "BGMSlider", new Vector2(0, -172), new Vector2(580, 42), 0.7f, sliderTrackSprite, sliderFillSprite, sliderKnobSprite);
+            SetRect(bgmLbl, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -115), new Vector2(580, 32));
+            GameObject bgmSldObj = CreateSlider(setCard.transform, "BGMSlider", new Vector2(0, -160), new Vector2(580, 40), 0.7f, sliderTrackSprite, sliderFillSprite, sliderKnobSprite);
 
             // SFX Slider
             GameObject sfxLbl = CreateText(setCard.transform, "SFXLbl", "효과음 (SFX)", 28, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(sfxLbl, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -238), new Vector2(580, 34));
-            GameObject sfxSldObj = CreateSlider(setCard.transform, "SFXSlider", new Vector2(0, -285), new Vector2(580, 42), 0.85f, sliderTrackSprite, sliderFillSprite, sliderKnobSprite);
+            SetRect(sfxLbl, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -220), new Vector2(580, 32));
+            GameObject sfxSldObj = CreateSlider(setCard.transform, "SFXSlider", new Vector2(0, -265), new Vector2(580, 40), 0.85f, sliderTrackSprite, sliderFillSprite, sliderKnobSprite);
 
             // Language Selection
             GameObject langLbl = CreateText(setCard.transform, "LangLbl", "언어 설정 (Language)", 28, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(langLbl, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -350), new Vector2(580, 34));
+            SetRect(langLbl, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -325), new Vector2(580, 32));
 
             string[] langNames = new string[] { "한국어", "English", "日本語", "中文" };
             float[] langXOffsets = new float[] { -219f, -73f, 73f, 219f };
@@ -1661,15 +1751,29 @@ namespace BlockBlast.Editor
 
             for (int i = 0; i < 4; i++)
             {
-                GameObject lBtnObj = CreateButton(setCard.transform, $"BtnLang_{i}", langNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(langXOffsets[i], -405), new Vector2(136, 50), tabPillSprite, 22);
+                GameObject lBtnObj = CreateButton(setCard.transform, $"BtnLang_{i}", langNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(langXOffsets[i], -375), new Vector2(136, 48), tabPillSprite, 22);
                 langBtns[i] = lBtnObj.GetComponent<Button>();
                 langBgs[i] = lBtnObj.GetComponent<Image>();
                 langTexts[i] = lBtnObj.GetComponentInChildren<TMP_Text>();
             }
 
+            // Mobile Support Row (Haptics, Privacy Policy, Probability Info)
+            GameObject mobileTitle = CreateText(setCard.transform, "MobileTitle", "모바일 & 편의 기능 (Mobile Support)", 26, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
+            SetRect(mobileTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -438), new Vector2(580, 32));
+
+            GameObject btnHapticObj = CreateButton(setCard.transform, "BtnHaptic", "진동: 켜짐", cuteFont, new Vector2(0.5f, 1), new Vector2(-200, -488), new Vector2(185, 48), btnTealSprite, 21, Color.white, new Color(0.18f, 0.55f, 0.45f, 0.85f));
+            Button btnHaptic = btnHapticObj.GetComponent<Button>();
+            TMP_Text hapticTxt = btnHapticObj.GetComponentInChildren<TMP_Text>();
+
+            GameObject btnPrivacyObj = CreateButton(setCard.transform, "BtnPrivacy", "개인정보방침", cuteFont, new Vector2(0.5f, 1), new Vector2(0, -488), new Vector2(195, 48), tabPillSprite, 21, new Color(0.35f, 0.22f, 0.55f));
+            Button btnPrivacy = btnPrivacyObj.GetComponent<Button>();
+
+            GameObject btnProbSetObj = CreateButton(setCard.transform, "BtnProbSet", "확률 정보", cuteFont, new Vector2(0.5f, 1), new Vector2(200, -488), new Vector2(185, 48), btnPinkSprite, 21, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            btnProbSetObj.GetComponent<Button>().onClick.AddListener(lobbyMgr.OpenProbabilityModal);
+
             // Row 1: Aspect Ratio Selection (16:9, 16:10, 4:3, 9:16)
             GameObject aspectTitle = CreateText(setCard.transform, "AspectTitle", LocalizationManager.Get("settings_aspect_ratio_title"), 26, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(aspectTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -452), new Vector2(580, 32));
+            SetRect(aspectTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -552), new Vector2(580, 32));
 
             string[] aspectNames = new string[] { "16:9", "16:10", "4:3", "9:16" };
             float[] aspectXOffsets = new float[] { -219f, -73f, 73f, 219f };
@@ -1680,7 +1784,7 @@ namespace BlockBlast.Editor
             for (int i = 0; i < 4; i++)
             {
                 Sprite initSprite = (i == 3) ? btnPinkSprite : tabPillSprite;
-                GameObject aBtnObj = CreateButton(setCard.transform, $"BtnAspect_{i}", aspectNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(aspectXOffsets[i], -502), new Vector2(136, 48), initSprite, 22);
+                GameObject aBtnObj = CreateButton(setCard.transform, $"BtnAspect_{i}", aspectNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(aspectXOffsets[i], -602), new Vector2(136, 46), initSprite, 22);
                 aspectBtns[i] = aBtnObj.GetComponent<Button>();
                 aspectBgs[i] = aBtnObj.GetComponent<Image>();
                 aspectTexts[i] = aBtnObj.GetComponentInChildren<TMP_Text>();
@@ -1693,7 +1797,7 @@ namespace BlockBlast.Editor
 
             // Row 2: Window Mode Selection (창 모드, 테두리 없는 창, 전체화면)
             GameObject winModeTitle = CreateText(setCard.transform, "WindowModeTitle", LocalizationManager.Get("settings_window_mode_title"), 26, TextAlignmentOptions.Left, cuteFont, new Color(0.35f, 0.22f, 0.55f));
-            SetRect(winModeTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -565), new Vector2(580, 32));
+            SetRect(winModeTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -665), new Vector2(580, 32));
 
             string[] winModeNames = new string[] { "창 모드", "테두리 없는 창", "전체화면" };
             float[] winModeXOffsets = new float[] { -196f, 0f, 196f };
@@ -1704,7 +1808,7 @@ namespace BlockBlast.Editor
             for (int j = 0; j < 3; j++)
             {
                 Sprite initSprite = (j == 0) ? btnPinkSprite : tabPillSprite;
-                GameObject wBtnObj = CreateButton(setCard.transform, $"BtnWindowMode_{j}", winModeNames[j], cuteFont, new Vector2(0.5f, 1), new Vector2(winModeXOffsets[j], -615), new Vector2(186, 48), initSprite, 21);
+                GameObject wBtnObj = CreateButton(setCard.transform, $"BtnWindowMode_{j}", winModeNames[j], cuteFont, new Vector2(0.5f, 1), new Vector2(winModeXOffsets[j], -715), new Vector2(186, 46), initSprite, 21);
                 winModeBtns[j] = wBtnObj.GetComponent<Button>();
                 winModeBgs[j] = wBtnObj.GetComponent<Image>();
                 winModeTexts[j] = wBtnObj.GetComponentInChildren<TMP_Text>();
@@ -1717,7 +1821,7 @@ namespace BlockBlast.Editor
 
             // Version
             GameObject verTxt = CreateText(setCard.transform, "Version", "말랑블라스트 v1.2.0 (Fairy Party Edition)", 24, TextAlignmentOptions.Center, cuteFont, new Color(0.6f, 0.55f, 0.7f));
-            SetRect(verTxt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 35), new Vector2(600, 36));
+            SetRect(verTxt, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(600, 36));
 
             // --- Quit Confirm Modal (NEW!) ---
             GameObject qModal = new GameObject("QuitConfirmModal", typeof(RectTransform));
@@ -1899,6 +2003,114 @@ namespace BlockBlast.Editor
                 srIconImg.GetComponent<Image>()
             );
 
+            // --- Probability Info Modal (Korean Game Industry Act Compliance) ---
+            GameObject probModalObj = new GameObject("ProbabilityModal", typeof(RectTransform));
+            probModalObj.transform.SetParent(lobbyRoot.transform, false);
+            SetRect(probModalObj, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(4000f, 0f));
+            probModalObj.SetActive(false);
+
+            GameObject probDarkBg = CreateImage(probModalObj.transform, "DarkBg", null, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            probDarkBg.GetComponent<Image>().color = new Color(0.04f, 0.02f, 0.12f, 0.90f);
+            probDarkBg.GetComponent<Image>().raycastTarget = true;
+            Button probDarkBgBtn = probDarkBg.AddComponent<Button>();
+            probDarkBgBtn.transition = Selectable.Transition.None;
+
+            GameObject probCard = CreateImage(probModalObj.transform, "DialogCard", shopModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(850, 1080));
+            probCard.GetComponent<Image>().type = Image.Type.Sliced;
+
+            GameObject probCloseBtn = CreateButton(probCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), closeXBtnSprite, 32);
+
+            GameObject probTitle = CreateText(probCard.transform, "Title", "소환 확률 정보", 38, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
+            SetRect(probTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -50), new Vector2(500, 48));
+
+            // Legal Compliance Notice Card
+            GameObject probLawCard = CreateImage(probCard.transform, "LawCard", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -125), new Vector2(770, 85));
+            probLawCard.GetComponent<Image>().type = Image.Type.Sliced;
+            probLawCard.GetComponent<Image>().color = new Color(0.94f, 0.91f, 1f, 0.95f);
+
+            GameObject probLawTxt = CreateText(probLawCard.transform, "LawTxt", "본 게임은 대한민국 게임산업진흥에 관한 법률 제33조에 따라\n확률형 아이템의 소환 확률 정보를 100% 투명하게 공개하고 있습니다.", 18, TextAlignmentOptions.Center, cuteFont, new Color(0.32f, 0.20f, 0.55f));
+            SetRect(probLawTxt, Vector2.zero, Vector2.one, new Vector2(20, 0), new Vector2(-20, 0));
+
+            // Table Header Card
+            GameObject tableHeader = CreateImage(probCard.transform, "TableHeader", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -230), new Vector2(770, 45));
+            tableHeader.GetComponent<Image>().type = Image.Type.Sliced;
+            tableHeader.GetComponent<Image>().color = new Color(0.85f, 0.80f, 0.96f, 0.95f);
+
+            GameObject thName = CreateText(tableHeader.transform, "ThName", "등장 항목 / 구성품", 20, TextAlignmentOptions.Left, cuteFont, new Color(0.28f, 0.16f, 0.48f));
+            SetRect(thName, new Vector2(0, 0), new Vector2(0.55f, 1), new Vector2(25, 0), Vector2.zero);
+
+            GameObject thType = CreateText(tableHeader.transform, "ThType", "구분", 20, TextAlignmentOptions.Center, cuteFont, new Color(0.28f, 0.16f, 0.48f));
+            SetRect(thType, new Vector2(0.55f, 0), new Vector2(0.75f, 1), Vector2.zero, Vector2.zero);
+
+            GameObject thRate = CreateText(tableHeader.transform, "ThRate", "소환 확률", 20, TextAlignmentOptions.Right, cuteFont, new Color(0.28f, 0.16f, 0.48f));
+            SetRect(thRate, new Vector2(0.75f, 0), new Vector2(1, 1), Vector2.zero, new Vector2(-25, 0));
+
+            // 5 Items Data Rows
+            string[] probItemNames = new string[]
+            {
+                "★ [올 클리어 엔젤] 스페셜 말랑이",
+                "분홍 말랑이 조각 (5개)",
+                "하늘 말랑이 조각 (5개)",
+                "노랑 말랑이 조각 (5개)",
+                "보라 말랑이 조각 (5개)"
+            };
+            string[] probItemTypes = new string[] { "스페셜 완제", "조각 보상", "조각 보상", "조각 보상", "조각 보상" };
+            string[] probItemRates = new string[] { "0.100 %", "24.975 %", "24.975 %", "24.975 %", "24.975 %" };
+            Color[] rowBgs = new Color[]
+            {
+                new Color(1f, 0.92f, 0.95f, 0.95f),
+                new Color(0.97f, 0.97f, 1f, 0.95f),
+                new Color(0.94f, 0.98f, 1f, 0.95f),
+                new Color(1f, 0.98f, 0.92f, 0.95f),
+                new Color(0.97f, 0.94f, 1f, 0.95f)
+            };
+
+            for (int r = 0; r < 5; r++)
+            {
+                float rowY = -285f - (r * 62f);
+                GameObject rowObj = CreateImage(probCard.transform, $"Row_{r}", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, rowY), new Vector2(770, 54));
+                rowObj.GetComponent<Image>().type = Image.Type.Sliced;
+                rowObj.GetComponent<Image>().color = rowBgs[r];
+
+                Color nameCol = (r == 0) ? new Color(0.85f, 0.20f, 0.42f) : new Color(0.25f, 0.18f, 0.45f);
+                GameObject rName = CreateText(rowObj.transform, "Name", probItemNames[r], (r == 0) ? 21 : 19, TextAlignmentOptions.Left, cuteFont, nameCol);
+                SetRect(rName, new Vector2(0, 0), new Vector2(0.55f, 1), new Vector2(25, 0), Vector2.zero);
+
+                Color typeCol = (r == 0) ? new Color(0.80f, 0.25f, 0.45f) : new Color(0.40f, 0.35f, 0.55f);
+                GameObject rType = CreateText(rowObj.transform, "Type", probItemTypes[r], 18, TextAlignmentOptions.Center, cuteFont, typeCol);
+                SetRect(rType, new Vector2(0.55f, 0), new Vector2(0.75f, 1), Vector2.zero, Vector2.zero);
+
+                Color rateCol = (r == 0) ? new Color(0.95f, 0.30f, 0.15f) : new Color(0.20f, 0.45f, 0.70f);
+                GameObject rRate = CreateText(rowObj.transform, "Rate", probItemRates[r], (r == 0) ? 22 : 20, TextAlignmentOptions.Right, cuteFont, rateCol);
+                SetRect(rRate, new Vector2(0.75f, 0), new Vector2(1, 1), Vector2.zero, new Vector2(-25, 0));
+            }
+
+            // Total Row Card
+            GameObject totalRow = CreateImage(probCard.transform, "RowTotal", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -600), new Vector2(770, 52));
+            totalRow.GetComponent<Image>().type = Image.Type.Sliced;
+            totalRow.GetComponent<Image>().color = new Color(0.90f, 0.86f, 0.98f, 0.95f);
+
+            GameObject totalLbl = CreateText(totalRow.transform, "TotalLbl", "합계 (Total Probability)", 20, TextAlignmentOptions.Left, cuteFont, new Color(0.25f, 0.15f, 0.45f));
+            SetRect(totalLbl, new Vector2(0, 0), new Vector2(0.55f, 1), new Vector2(25, 0), Vector2.zero);
+
+            GameObject totalVal = CreateText(totalRow.transform, "TotalVal", "100.000 %", 21, TextAlignmentOptions.Right, cuteFont, new Color(0.25f, 0.15f, 0.45f));
+            SetRect(totalVal, new Vector2(0.75f, 0), new Vector2(1, 1), Vector2.zero, new Vector2(-25, 0));
+
+            // Policy / Explanation Card
+            GameObject probNotesCard = CreateImage(probCard.transform, "NotesCard", packageCardSprite, new Vector2(0.5f, 1), new Vector2(0, -745), new Vector2(770, 160));
+            probNotesCard.GetComponent<Image>().type = Image.Type.Sliced;
+            probNotesCard.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.96f);
+
+            string notesStr = "<b>[안내 사항]</b>\n" +
+                              "• 스페셜 말랑이를 중복 획득 시 <b>스페셜 조각 60개</b>로 지급되어 즉시 돌파 가능합니다.\n" +
+                              "• 획득한 말랑이 조각은 <b>[말랑이 관리 & 돌파]</b> 메뉴에서 능력치를 영구 강화할 수 있습니다.\n" +
+                              "• 소환 확률은 독립 시행으로 적용되며, 구매 전 확률 정보를 상시 확인할 수 있습니다.";
+            GameObject probNotesTxt = CreateText(probNotesCard.transform, "NotesTxt", notesStr, 17, TextAlignmentOptions.Left, cuteFont, new Color(0.38f, 0.28f, 0.52f));
+            SetRect(probNotesTxt, Vector2.zero, Vector2.one, new Vector2(20, -10), new Vector2(-20, 10));
+
+            // Confirm Button
+            GameObject probConfirmBtn = CreateButton(probCard.transform, "BtnConfirm", "확인", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 55), new Vector2(240, 68), btnPinkSprite, 26, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+
             // --- Gacha Ball Opening Presentation Modal ---
             GameObject gachaModalObj = new GameObject("GachaPresentationModal", typeof(RectTransform), typeof(GachaPresentationController));
             gachaModalObj.transform.SetParent(canvasObj.transform, false);
@@ -2023,6 +2235,7 @@ namespace BlockBlast.Editor
                 tabVerticalActiveSprite, tabVerticalInactiveSprite,
                 sCoinTxt.GetComponent<TMP_Text>(), sDiaTxt.GetComponent<TMP_Text>()
             );
+            lobbyMgr.SetupPickupBannerController(bannerCtrl);
             lobbyMgr.SetupShopPackagesAndSummon(packageBtns, btnSummon1, btnSummon10);
             lobbyMgr.SetupShopMascots(mascotShopActionBtns, mascotShopActionTexts);
             lobbyMgr.SetupShopThemes(bgImgComp, allThemeSprites, themeActionBtns, themeActionTMPs);
@@ -2060,11 +2273,18 @@ namespace BlockBlast.Editor
                 btnPinkSprite,
                 tabPillSprite
             );
+            lobbyMgr.SetupProbabilityModal(
+                probModalObj,
+                probCloseBtn.GetComponent<Button>(),
+                probConfirmBtn.GetComponent<Button>(),
+                probDarkBgBtn
+            );
+            lobbyMgr.SetupMobileSettings(btnHaptic, hapticTxt, btnPrivacy);
             EditorUtility.SetDirty(lobbyMgr);
 
             // 6. Fairy Screen Transition Overlay (Dissolve + 1-Sec Corner Sparkles)
             Sprite fairyRippleSprite = CuteBlockTextureGenerator.GetOrCreateFairyRippleSprite();
-            Sprite fairySparkleSprite = CuteBlockTextureGenerator.GetOrCreateFairySparkleSprite();
+            fairySparkleSprite = CuteBlockTextureGenerator.GetOrCreateFairySparkleSprite();
             Sprite fairyTrailSprite = CuteBlockTextureGenerator.GetOrCreateFairyTrailSprite();
 
             GameObject transObj = new GameObject("FairyScreenTransitionOverlay", typeof(RectTransform));
@@ -2091,7 +2311,14 @@ namespace BlockBlast.Editor
             // 8. Save Scene
             string scenePath = "Assets/Scenes/BlockBlastScene.unity";
             EditorSceneManager.SaveScene(newScene, scenePath);
+            string active1003Path = "Assets/Scenes/10-03.unity";
+            if (System.IO.File.Exists(active1003Path))
+            {
+                EditorSceneManager.SaveScene(newScene, active1003Path);
+            }
             AssetDatabase.Refresh();
+
+            InspectUIMenu.ApplyMobileStoreSettings();
 
             Debug.Log("<color=#FF7AA2><b>[Block Blast]</b> 10종 이상의 젤리 그래픽 에셋, 주아체 고해상도 폰트가 적용된 프리미엄 씬이 완성되었습니다!</color>");
         }

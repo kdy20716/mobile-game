@@ -5120,6 +5120,74 @@ namespace BlockBlast.Editor
             return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
         }
 
+        public static Sprite GetOrCreateShootingStarSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Shooting_Star.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int width = 256;
+            int height = 64;
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+
+            float headX = width - 36f;
+            float cy = (height - 1) * 0.5f;
+
+            for (int y = 0; y < height; y++)
+            {
+                float dy = y - cy;
+                float absDy = Mathf.Abs(dy);
+
+                for (int x = 0; x < width; x++)
+                {
+                    Color pixel = Color.clear;
+
+                    // 1. Tapering Tail (from x = 0 to headX)
+                    if (x <= headX)
+                    {
+                        float t = (float)x / headX; // 0 at tail tip, 1 at head
+                        float maxHalfWidth = Mathf.Lerp(1.0f, 14f, Mathf.Pow(t, 0.7f));
+                        if (absDy <= maxHalfWidth)
+                        {
+                            float crossAlpha = Mathf.Exp(- (absDy * absDy) / (2f * Mathf.Pow(maxHalfWidth * 0.45f, 2f)));
+                            float lengthAlpha = Mathf.Pow(t, 1.4f);
+                            float tailAlpha = crossAlpha * lengthAlpha;
+
+                            Color tailCol = Color.Lerp(new Color(0.6f, 0.85f, 1f, 1f), new Color(1f, 0.95f, 0.7f, 1f), t);
+                            tailCol.a = tailAlpha * 0.95f;
+                            pixel = tailCol;
+                        }
+                    }
+
+                    // 2. Glowing Head Flare (centered at headX, cy)
+                    float distHead = Mathf.Sqrt((x - headX) * (x - headX) + dy * dy);
+                    if (distHead < 28f)
+                    {
+                        float headRatio = distHead / 28f;
+                        float coreAlpha = Mathf.Pow(1f - headRatio, 2.0f);
+                        
+                        // 4-star radiant rays
+                        float crossSpike = Mathf.Max(
+                            Mathf.Exp(- (dy * dy) / 4f) * Mathf.Exp(- Mathf.Pow(x - headX, 2f) / 180f),
+                            Mathf.Exp(- Mathf.Pow(x - headX, 2f) / 4f) * Mathf.Exp(- (dy * dy) / 180f)
+                        );
+
+                        float totalHeadAlpha = Mathf.Clamp01(coreAlpha + crossSpike * 0.85f);
+                        Color headCol = Color.Lerp(new Color(1f, 0.98f, 0.85f, 1f), Color.white, coreAlpha);
+                        headCol.a = totalHeadAlpha;
+
+                        // Blend head over tail
+                        pixel = Color.Lerp(pixel, headCol, headCol.a);
+                        pixel.a = Mathf.Max(pixel.a, totalHeadAlpha);
+                    }
+
+                    tex.SetPixel(x, y, pixel);
+                }
+            }
+            tex.Apply();
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
         [MenuItem("Block Blast/Generate New Shop & Diamond Assets")]
         public static void GenerateNewShopAndDiamondAssets()
         {
