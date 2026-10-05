@@ -200,28 +200,58 @@ namespace BlockBlast.Editor
                 }
                 shopModal.SetActive(true);
 
+                var shopAnimCtrl = shopModal.GetComponent<ShopUIAnimationController>();
+                var allTrans = shopModal.GetComponentsInChildren<Transform>(true);
+                RectTransform recPanel = null, pickPanel = null, mascPanel = null, inGamePanel = null, lobbyPanel = null;
+
+                foreach (var t in allTrans)
+                {
+                    if (t.name == "RecommendedPanel") recPanel = t.GetComponent<RectTransform>();
+                    if (t.name == "PickupPanel") pickPanel = t.GetComponent<RectTransform>();
+                    if (t.name == "MascotsPanel") mascPanel = t.GetComponent<RectTransform>();
+                    if (t.name == "InGameThemesPanel") inGamePanel = t.GetComponent<RectTransform>();
+                    if (t.name == "LobbyThemesPanel") lobbyPanel = t.GetComponent<RectTransform>();
+                }
+                var bannerCtrl = shopModal.GetComponentInChildren<AnimatedPickupBannerController>(true);
+
+                System.Action<int, RectTransform> prepTab = (idx, panel) =>
+                {
+                    if (lobbyMgr != null) lobbyMgr.SelectShopTab(idx);
+                    if (shopAnimCtrl != null) shopAnimCtrl.SnapTab(idx, panel);
+                    if (panel != null)
+                    {
+                        var cg = panel.GetComponent<CanvasGroup>();
+                        if (cg != null) cg.alpha = 1f;
+                    }
+                    if (idx == 1 && bannerCtrl != null)
+                    {
+                        bannerCtrl.StopVideo();
+                    }
+                    Canvas.ForceUpdateCanvases();
+                };
+
                 // 1. Capture Pickup Tab (Tab 1)
-                if (lobbyMgr != null) lobbyMgr.SelectShopTab(1);
+                prepTab(1, pickPanel);
                 CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_shop_pickup_horizontal_animated.png"));
 
                 // 2. Capture Recommended Tab (Tab 0)
-                if (lobbyMgr != null) lobbyMgr.SelectShopTab(0);
+                prepTab(0, recPanel);
                 CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_shop_rec_horizontal.png"));
 
                 // 3. Capture Mascot Tab (Tab 2)
-                if (lobbyMgr != null) lobbyMgr.SelectShopTab(2);
+                prepTab(2, mascPanel);
                 CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_shop_mascots_horizontal.png"));
 
                 // 4. Capture In-Game Themes Tab (Tab 3)
-                if (lobbyMgr != null) lobbyMgr.SelectShopTab(3);
+                prepTab(3, inGamePanel);
                 CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_shop_themes_horizontal.png"));
 
                 // 5. Capture Lobby Themes Tab (Tab 4)
-                if (lobbyMgr != null) lobbyMgr.SelectShopTab(4);
+                prepTab(4, lobbyPanel);
                 CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_shop_lobbythemes_horizontal.png"));
 
                 // Back to Pickup Tab
-                if (lobbyMgr != null) lobbyMgr.SelectShopTab(1);
+                prepTab(1, pickPanel);
 
                 Debug.Log("[InspectUIMenu] Successfully captured Shop Horizontal Tabs screenshots!");
             }

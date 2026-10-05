@@ -214,6 +214,7 @@ namespace BlockBlast
         [SerializeField] private GameObject shopInGameThemesPanel;
         [SerializeField] private GameObject shopLobbyThemesPanel;
         [SerializeField] private AnimatedPickupBannerController pickupBannerController;
+        [SerializeField] private ShopUIAnimationController shopAnimController;
 
         [Header("Shop Packages & Summons & Mascot Items")]
         [SerializeField] private Button[] shopPackageButtons;
@@ -1447,6 +1448,7 @@ namespace BlockBlast
                 RefreshThemeShopUI();
                 RefreshLobbyThemeShopUI();
                 shopModal.SetActive(true);
+                if (shopAnimController != null) shopAnimController.AnimateOpen();
             }
         }
 
@@ -1454,8 +1456,18 @@ namespace BlockBlast
         {
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (pickupBannerController != null) pickupBannerController.StopVideo();
-            if (shopModal != null) shopModal.SetActive(false);
             if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
+            if (shopAnimController != null)
+            {
+                shopAnimController.AnimateClose(() =>
+                {
+                    if (shopModal != null) shopModal.SetActive(false);
+                });
+            }
+            else
+            {
+                if (shopModal != null) shopModal.SetActive(false);
+            }
         }
 
         public void BuyOrEquipTheme(int themeIdx)
@@ -1674,6 +1686,18 @@ namespace BlockBlast
             if (shopInGameThemesPanel != null) shopInGameThemesPanel.SetActive(_currentShopTab == 3);
             if (shopLobbyThemesPanel != null) shopLobbyThemesPanel.SetActive(_currentShopTab == 4);
 
+            GameObject activePanel = null;
+            if (_currentShopTab == 0) activePanel = shopRecommendedPanel;
+            else if (_currentShopTab == 1) activePanel = shopPickupPanel;
+            else if (_currentShopTab == 2) activePanel = shopMascotsPanel;
+            else if (_currentShopTab == 3) activePanel = shopInGameThemesPanel;
+            else if (_currentShopTab == 4) activePanel = shopLobbyThemesPanel;
+
+            if (shopAnimController != null && activePanel != null)
+            {
+                shopAnimController.AnimateTabGlide(_currentShopTab, activePanel.GetComponent<RectTransform>());
+            }
+
             if (_currentShopTab == 1)
             {
                 if (pickupBannerController != null)
@@ -1695,7 +1719,11 @@ namespace BlockBlast
                 {
                     if (shopTabBgs[i] == null) continue;
                     bool isActive = (i == _currentShopTab);
-                    if (tabVerticalActiveSprite != null && tabVerticalInactiveSprite != null)
+                    if (shopAnimController != null)
+                    {
+                        shopTabBgs[i].color = Color.clear;
+                    }
+                    else if (tabVerticalActiveSprite != null && tabVerticalInactiveSprite != null)
                     {
                         shopTabBgs[i].sprite = isActive ? tabVerticalActiveSprite : tabVerticalInactiveSprite;
                         shopTabBgs[i].color = Color.white;
@@ -1713,7 +1741,7 @@ namespace BlockBlast
                 {
                     if (shopTabTexts[i] == null) continue;
                     bool isActive = (i == _currentShopTab);
-                    shopTabTexts[i].color = isActive ? Color.white : new Color(0.40f, 0.30f, 0.55f, 1f);
+                    shopTabTexts[i].color = isActive ? Color.white : new Color(0.70f, 0.68f, 0.85f, 1f);
                     shopTabTexts[i].fontStyle = isActive ? FontStyles.Bold : FontStyles.Normal;
                 }
             }
@@ -2585,6 +2613,11 @@ namespace BlockBlast
         public void SetupPickupBannerController(AnimatedPickupBannerController bannerCtrl)
         {
             pickupBannerController = bannerCtrl;
+        }
+
+        public void SetupShopAnimationController(ShopUIAnimationController animCtrl)
+        {
+            shopAnimController = animCtrl;
         }
 
         public void SetupShopMascots(Button[] actionBtns, TMP_Text[] actionTexts)
