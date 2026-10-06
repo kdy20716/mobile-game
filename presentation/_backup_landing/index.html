@@ -1,0 +1,397 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>말랑 블라스트 (Mallang Blast) - 젤리 요정과 함께하는 글로벌 힐링 블록 퍼즐</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="icon" type="image/png" href="assets/char_pink.png">
+</head>
+<body>
+  <!-- 캔디 오로라 & 별빛 배경 효과 -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+  <div class="stars-canvas" id="starsBg"></div>
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <img src="assets/char_pink.png" alt="Mallang Mascot" class="brand-mascot">
+        <span class="brand-text">말랑 블라스트</span>
+        <span class="brand-tag">공식 쇼케이스</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#about">게임 소개</a>
+        <a href="#characters">캐릭터</a>
+        <a href="#features">핵심 특징</a>
+        <a href="#media">인게임 갤러리</a>
+        <a href="#architecture">개발 스토리</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="_backup_deck/index.html" class="nav-deck-btn" title="프레젠테이션 발표 모드로 보기">
+          📊 발표 덱 모드
+        </a>
+        <a href="#download" class="cta-nav-btn">지금 시작하기 ✨</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 히어로 섹션 -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="hero-pill">
+          <span class="pill-sparkle">✨</span>
+          <span>손끝에서 터지는 말랑말랑 힐링 쾌감!</span>
+        </div>
+        <div class="hero-logo-box">
+          <img src="assets/logo - korea-Photoroom.png" alt="말랑 블라스트 공식 로고" class="hero-main-logo">
+        </div>
+        <p class="hero-tagline">
+          일상의 스트레스를 지워주는 사랑스러운 젤리 요정들의 대모험!<br>
+          통통 튀는 피직스와 눈부신 별빛 콤보가 선사하는 궁극의 힐링 블록 퍼즐.
+        </p>
+        <div class="hero-badges">
+          <span class="badge-item">🎮 Unity 6 (URP)</span>
+          <span class="badge-item">📱 iOS / Android / WebGL</span>
+          <span class="badge-item">🌐 4개국어 지원 (한·영·일·중)</span>
+        </div>
+        <div class="hero-cta-group">
+          <a href="#media" class="btn-primary-glow">
+            <span class="btn-icon">▶</span>
+            <span>인게임 플레이 보기</span>
+          </a>
+          <a href="_backup_deck/index.html" class="btn-glass">
+            <span>발표자료 슬라이드 보기</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <img id="heroScreenImg" src="assets/gameplay_shot_3.png" alt="Mallang Blast Gameplay" class="screen-content">
+            <div class="screen-overlay-badge">
+              <span class="pulse-dot"></span>
+              <span>LIVE DEMO</span>
+            </div>
+          </div>
+          <div class="floating-mascot mascot-float-1">
+            <img src="assets/char_pink.png" alt="체리 핑크 젤리">
+          </div>
+          <div class="floating-mascot mascot-float-2">
+            <img src="assets/char_gold.png" alt="킹 허니 젤리">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 게임 핵심 강점 섹션 -->
+  <section id="about" class="section section-dark">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">CORE VALUE</span>
+        <h2 class="section-title">왜 ‘말랑 블라스트’에 열광할까요?</h2>
+        <p class="section-desc">기존의 딱딱한 나무·돌 퍼즐에서 벗어나, 만지고 싶은 탄성과 시청각 쾌감을 담았습니다.</p>
+      </div>
+
+      <div class="grid-feature-cards">
+        <div class="glass-card feature-card">
+          <div class="card-icon-wrap icon-pink">🍮</div>
+          <h3>생생한 젤리 피직스</h3>
+          <p>블록을 집어 올리고 놓을 때 부드러운 스쿼시 & 스트레치 애니메이션과 함께 통통 튀는 리얼한 탄성을 전달합니다.</p>
+          <div class="card-tag">#촉각적_손맛</div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="card-icon-wrap icon-gold">⭐</div>
+          <h3>환상적인 별 폭탄 & 콤보</h3>
+          <p>연속 라인 클리어 시 터지는 화려한 불꽃놀이 파티클과 위기 상황을 역전시키는 '슈퍼 스타 폭탄'의 짜릿한 쾌감!</p>
+          <div class="card-tag">#도파민_피버</div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="card-icon-wrap icon-mint">🏰</div>
+          <h3>나만의 테마 & 로비 꾸미기</h3>
+          <p>크리스탈 머메이드, 별빛 은하수 등 환상적인 룸 테마와 특별한 마스코트 블록들을 수집하고 배치하는 재미를 선사합니다.</p>
+          <div class="card-tag">#수집과_힐링</div>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="card-icon-wrap icon-purple">🌍</div>
+          <h3>직관적인 글로벌 플레이</h3>
+          <p>언어의 장벽 없이 남녀노소 누구나 3초 만에 룰을 익히고 출퇴근길 3분 동안 가볍게 힐링할 수 있습니다.</p>
+          <div class="card-tag">#접근성_극대화</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 캐릭터 섹션 -->
+  <section id="characters" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">MEET THE MASCOTS</span>
+        <h2 class="section-title">말랑월드의 4대 시그니처 젤리</h2>
+        <p class="section-desc">3D 글래스 아트로 정성스럽게 빚어낸 사랑스러운 마스코트들을 만나보세요.</p>
+      </div>
+
+      <div class="grid-mascots">
+        <div class="glass-card mascot-show-card theme-pink">
+          <div class="mascot-img-box">
+            <img src="assets/char_pink.png" alt="체리 핑크 젤리">
+          </div>
+          <div class="mascot-info">
+            <div class="mascot-pill pill-pink">메인 마스코트</div>
+            <h3>체리 핑크 젤리</h3>
+            <span class="mascot-en">Cherry Pink Jelly</span>
+            <p>발그레한 볼과 초롱초롱한 눈망울을 지닌 주인공 젤리. 블록을 맞출 때마다 사랑스러운 미소로 응원해 줍니다.</p>
+          </div>
+        </div>
+
+        <div class="glass-card mascot-show-card theme-mint">
+          <div class="mascot-img-box">
+            <img src="assets/char_mint.png" alt="페퍼 민트 젤리">
+          </div>
+          <div class="mascot-info">
+            <div class="mascot-pill pill-mint">에너지 요정</div>
+            <h3>페퍼 민트 젤리</h3>
+            <span class="mascot-en">Pepper Mint Jelly</span>
+            <p>양손을 번쩍 들고 방방 뛰는 쾌활한 분위기 메이커! 청량한 콤보 사운드로 플레이어에게 시원한 리듬감을 불어넣습니다.</p>
+          </div>
+        </div>
+
+        <div class="glass-card mascot-show-card theme-gold">
+          <div class="mascot-img-box">
+            <img src="assets/char_gold.png" alt="킹 허니 젤리">
+          </div>
+          <div class="mascot-info">
+            <div class="mascot-pill pill-gold">행운 & 챔피언</div>
+            <h3>킹 허니 젤리</h3>
+            <span class="mascot-en">King Honey Jelly</span>
+            <p>달콤한 꿀빛 광채와 반짝이는 황금 왕관을 쓴 행운의 상징. 하이스코어 달성 시 찬란한 황금빛 오라를 뿜어냅니다.</p>
+          </div>
+        </div>
+
+        <div class="glass-card mascot-show-card theme-purple">
+          <div class="mascot-img-box">
+            <img src="assets/char_purple.png" alt="포도 퍼플 젤리">
+          </div>
+          <div class="mascot-info">
+            <div class="mascot-pill pill-purple">신비 & 차분함</div>
+            <h3>포도 퍼플 젤리</h3>
+            <span class="mascot-en">Grape Purple Jelly</span>
+            <p>은은한 별빛 가루를 머금고 차분한 미소를 짓는 힐링 요정. 플레이어가 지쳤을 때 마법 같은 안식을 선사합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 인게임 인터랙티브 갤러리 섹션 -->
+  <section id="media" class="section section-dark">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">SCREENSHOT SHOWCASE</span>
+        <h2 class="section-title">모바일 9:16 인게임 비주얼</h2>
+        <p class="section-desc">세밀하게 다듬어진 UI와 동화 같은 파스텔 색감의 인게임 장면을 확인하세요.</p>
+      </div>
+
+      <div class="gallery-wrapper">
+        <div class="gallery-main-frame">
+          <div class="mobile-device">
+            <div class="speaker-pill"></div>
+            <img id="galleryMainImg" src="assets/gameplay_shot_3.png" alt="Main Showcase">
+          </div>
+        </div>
+
+        <div class="gallery-selector">
+          <div class="thumb-card active" onclick="switchGallery('assets/gameplay_shot_3.png', '동화 같은 로비 룸', '크리스탈 궁전과 4대 젤리들이 유저를 맞이하는 감성 가득한 시작 화면입니다.', this)">
+            <img src="assets/gameplay_shot_3.png" alt="Lobby Screen">
+            <div class="thumb-text">
+              <h4>01. 환상적인 마법 로비</h4>
+              <p>파스텔 크리스탈 궁전과 캐릭터 인터랙션</p>
+            </div>
+          </div>
+
+          <div class="thumb-card" onclick="switchGallery('assets/gameplay_shot_4.png', '8x8 퍼즐 보드 인게임', '타이머 게이지와 스킵/스핀 특수 기믹이 결합된 본 게임 화면입니다.', this)">
+            <img src="assets/gameplay_shot_4.png" alt="Gameplay Screen">
+            <div class="thumb-text">
+              <h4>02. 8x8 말랑 퍼즐 보드</h4>
+              <p>직관적인 블록 배치 및 실시간 스코어링</p>
+            </div>
+          </div>
+
+          <div class="thumb-card" onclick="switchGallery('assets/gameplay_shot_1.png', '스위트 팝업 & 일시정지', '게임 흐름을 방해하지 않는 둥근 모달과 젤리 캐릭터 모션입니다.', this)">
+            <img src="assets/gameplay_shot_1.png" alt="Pause Modal">
+            <div class="thumb-text">
+              <h4>03. 큐티 팝업 & 시스템 모달</h4>
+              <p>부드러운 애니메이션과 직관적인 메뉴</p>
+            </div>
+          </div>
+
+          <div class="thumb-card" onclick="switchGallery('assets/gameplay_shot_2.png', '감성 타이틀 인트로', '화면을 터치하면 별빛과 함께 로비로 입장하는 오프닝 화면입니다.', this)">
+            <img src="assets/gameplay_shot_2.png" alt="Intro Screen">
+            <div class="thumb-text">
+              <h4>04. 오프닝 타이틀 화면</h4>
+              <p>몽환적인 밤하늘 배경과 입체 젤리 로고</p>
+            </div>
+          </div>
+
+          <div class="gallery-caption-box" id="galleryCaption">
+            <h3 id="galleryTitle">동화 같은 로비 룸</h3>
+            <p id="galleryDesc">크리스탈 궁전과 4대 젤리들이 유저를 맞이하는 감성 가득한 시작 화면입니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 테마 & 스킨 쇼케이스 -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">THEME EXPANSION</span>
+        <h2 class="section-title">눈을 사로잡는 환상적인 세계관</h2>
+        <p class="section-desc">플레이어의 성취에 따라 열리는 아름다운 테마 배경 에셋입니다.</p>
+      </div>
+
+      <div class="grid-themes">
+        <div class="theme-card">
+          <div class="theme-img-wrap">
+            <img src="assets/Theme_Crystal_Mermaid.jpg" alt="크리스탈 머메이드">
+          </div>
+          <div class="theme-info">
+            <span class="theme-badge">테마 01</span>
+            <h3>크리스탈 머메이드 (Ocean)</h3>
+            <p>영롱한 바닷속 진주와 조개, 파스텔빛 산호가 수놓아진 신비로운 해저 왕국</p>
+          </div>
+        </div>
+
+        <div class="theme-card">
+          <div class="theme-img-wrap">
+            <img src="assets/Theme_Starry_Nebula.jpg" alt="별빛 은하수">
+          </div>
+          <div class="theme-info">
+            <span class="theme-badge">테마 02</span>
+            <h3>별빛 네뷸라 (Starry Sky)</h3>
+            <p>솜사탕 구름과 무지개 은하수, 반짝이는 별자리가 펼쳐진 몽환의 밤하늘</p>
+          </div>
+        </div>
+
+        <div class="theme-card">
+          <div class="theme-img-wrap">
+            <img src="assets/Theme_Candy_Wonderland.jpg" alt="캔디 원더랜드">
+          </div>
+          <div class="theme-info">
+            <span class="theme-badge">테마 03</span>
+            <h3>캔디 원더랜드 (Sweets)</h3>
+            <p>알록달록 젤리빈과 달콤한 마시멜로 숲으로 가득 찬 동화 속 과자 나라</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 테크 스택 & 아키텍처 -->
+  <section id="architecture" class="section section-dark">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">ENGINEERING & POLISHING</span>
+        <h2 class="section-title">견고한 설계와 섬세한 최적화</h2>
+        <p class="section-desc">유니티 6 URP 기반의 고효율 파이프라인과 모바일 반응형 설계를 적용했습니다.</p>
+      </div>
+
+      <div class="grid-tech">
+        <div class="glass-card tech-card">
+          <div class="tech-icon">📐</div>
+          <h4>BlockGridManager</h4>
+          <p>8x8 그리드에 대한 비트마스크 기반 빠른 연산, 가로·세로 다중 라인 동시 클리어 판정 및 스코어 승수 알고리즘을 구현했습니다.</p>
+        </div>
+        <div class="glass-card tech-card">
+          <div class="tech-icon">✨</div>
+          <h4>FairyTouchFXManager</h4>
+          <p>터치 좌표를 따라 생성되는 트레일 글로우와 별빛 스파클 파티클 풀링(Object Pooling)으로 프레임 드랍 없이 화려한 피드백을 완성했습니다.</p>
+        </div>
+        <div class="glass-card tech-card">
+          <div class="tech-icon">🎵</div>
+          <h4>Adaptive Audio System</h4>
+          <p>연속 콤보에 맞춰 피치가 한 음계씩 올라가는 ASMR 효과음과 상황별 배경음악 크로스페이드로 몰입감을 극대화했습니다.</p>
+        </div>
+        <div class="glass-card tech-card">
+          <div class="tech-icon">📱</div>
+          <h4>Multi-Aspect Adapter</h4>
+          <p>스마트폰의 노치(Safe Area)와 다양한 화면비(16:9, 19.5:9, 21:9) 및 태블릿 환경까지 완벽히 대응하는 반응형 UI 시스템을 탑재했습니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 다운로드 & 콜투액션 섹션 -->
+  <section id="download" class="cta-banner-section">
+    <div class="cta-card-main">
+      <img src="assets/char_pink.png" class="cta-mascot-left" alt="Pink">
+      <img src="assets/char_gold.png" class="cta-mascot-right" alt="Gold">
+
+      <div class="cta-inner-text">
+        <h2 class="cta-title">지금 말랑 젤리들의 세계로 떠나보세요!</h2>
+        <p class="cta-sub">부드러운 손맛과 힐링이 필요한 당신을 위한 최고의 캐주얼 퍼즐</p>
+        
+        <div class="cta-button-cluster">
+          <a href="#" class="store-badge-btn" onclick="alert('출시 준비 중입니다! 곧 스토어에서 만나요 ✨'); return false;">
+            <span class="store-icon">🍏</span>
+            <div class="store-text">
+              <small>Download on the</small>
+              <strong>App Store</strong>
+            </div>
+          </a>
+          <a href="#" class="store-badge-btn" onclick="alert('출시 준비 중입니다! 곧 스토어에서 만나요 ✨'); return false;">
+            <span class="store-icon">🤖</span>
+            <div class="store-text">
+              <small>GET IT ON</small>
+              <strong>Google Play</strong>
+            </div>
+          </a>
+          <a href="_backup_deck/index.html" class="store-badge-btn deck-style">
+            <span class="store-icon">📄</span>
+            <div class="store-text">
+              <small>발표 및 심사용</small>
+              <strong>Presentation Deck</strong>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 푸터 -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-left">
+        <div class="footer-brand">
+          <img src="assets/char_pink.png" alt="Logo">
+          <span>말랑 블라스트 (Mallang Blast)</span>
+        </div>
+        <p>© 2026 Mallang Blast Project Team. All rights reserved.</p>
+        <p class="footer-sub">Designed with Unity 6 & URP | Hyper-casual Block Puzzle</p>
+      </div>
+      <div class="footer-links">
+        <a href="_backup_deck/index.html">발표 덱 바로가기</a>
+        <a href="#about">게임 소개</a>
+        <a href="#characters">캐릭터</a>
+        <a href="#media">갤러리</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/landing.js"></script>
+</body>
+</html>
