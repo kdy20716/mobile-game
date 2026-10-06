@@ -33,18 +33,36 @@ namespace BlockBlast
         public static readonly string[] LobbyThemeNames = new string[] { "몽환의 방", "달콤 캔디룸", "신비 바다룸" };
         public static readonly string[] LobbyThemeDescs = new string[] { "기본 로비 - 아늑한 파스텔 방", "달콤한 디저트와 와플 무대", "신비로운 바다 궁전 무대" };
 
-        public static readonly string[] MascotNames = new string[] { "핑크 말랑이", "민트 말랑이", "골드 말랑이", "퍼플 말랑이", "스페셜 말랑이" };
-        public static readonly string[] MascotTitles = new string[] { "기본 말랑이", "스킵 마스터", "보물 사냥꾼", "매직 큐브", "올 클리어 엔젤" };
+        public const string KEY_MASCOT_BREAKTHROUGH_PREFIX = "Mallang_Mascot_Breakthrough_";
+
+        public static readonly string[] MascotNames = new string[]
+        {
+            "핑크 말랑이", "민트 말랑이", "골드 말랑이", "퍼플 말랑이",
+            "블루 말랑이", "베리 말랑이", "레몬 말랑이", "클라우드 말랑이",
+            "스페셜 말랑이"
+        };
+        public static readonly string[] MascotTitles = new string[]
+        {
+            "기본 말랑이", "스킵 마스터", "보물 사냥꾼", "매직 큐브",
+            "아쿠아 쉴드", "슈가 버스트", "번개 팡", "푹신 구름",
+            "올 클리어 엔젤"
+        };
         public static readonly string[] MascotAbilities = new string[]
         {
-            "고유능력: 추가 시간 +1초\n(첫 턴 3분 1초 / 최소 6초)",
-            "고유능력: 추가 스킵 스택\n(시작 2개 / 최대 4개)",
-            "고유능력: 라인 추가 점수\n(클리어 줄마다 +100점 추가)",
-            "고유능력: 2×2 매직 블록\n(5% 확률로 2×2 보라 블록 3개 소환)",
-            "고유능력: 보드 올 클리어\n(스킬 터치 시 모든 블록 폭파!\n30줄 클리어마다 쿨타임 충전)"
+            "고유능력: 추가 시간 보너스\n(턴 제한 시간이 넉넉해집니다)",
+            "고유능력: 스킵 스택 강화\n(시작 2개 / 최대 4개 보유 가능)",
+            "고유능력: 라인 추가 점수\n(블록 라인 클리어 시 골드 보너스)",
+            "고유능력: 2×2 매직 블록\n(확률적으로 보라 매직 블록 소환)",
+            "고유능력: 아쿠아 쉴드\n(게임오버 위기 시 1회 부활 & 재배치)",
+            "고유능력: 슈가 버스트\n(콤보 달성 시 추가 폭파 & +15% 점수)",
+            "고유능력: 번개 팡\n(3연속 콤보 시 가로 한 줄 즉시 폭파)",
+            "고유능력: 푹신 구름\n(시간 감소 속도 20% 완화 & 몽글 피버)",
+            "고유능력: 보드 올 클리어\n(스킬 터치 시 모든 블록 폭파!)"
         };
-        public static readonly int[] MascotPricesCoins = new int[] { 0, 1000, 2000, 3000, 0 };
-        public static readonly int[] MascotPricesDiamonds = new int[] { 0, 50, 100, 150, 0 };
+        public static readonly int[] BreakthroughCostsNormal = new int[] { 30, 40, 50, 60, 77 }; // 5 breakthroughs
+        public static readonly int[] BreakthroughCostsSpecial = new int[] { 60, 60, 60, 60, 60 }; // 60 shards each
+        public static readonly int[] MascotPricesCoins = new int[] { 0, 1000, 2000, 3000, 0, 0, 0, 0, 0 };
+        public static readonly int[] MascotPricesDiamonds = new int[] { 0, 50, 100, 150, 0, 0, 0, 0, 0 };
 
         public static int GetMascotShards(int idx)
         {
@@ -71,27 +89,82 @@ namespace BlockBlast
             PlayerPrefs.SetInt(KEY_MASCOT_LEVEL_PREFIX + idx, Mathf.Max(1, level));
         }
 
+        public static int GetBreakthroughStars(int idx)
+        {
+            return Mathf.Clamp(PlayerPrefs.GetInt(KEY_MASCOT_BREAKTHROUGH_PREFIX + idx, 0), 0, 5);
+        }
+
+        public static void SetBreakthroughStars(int idx, int stars)
+        {
+            PlayerPrefs.SetInt(KEY_MASCOT_BREAKTHROUGH_PREFIX + idx, Mathf.Clamp(stars, 0, 5));
+        }
+
+        public static int GetMaxLevelCap(int idx)
+        {
+            int stars = GetBreakthroughStars(idx);
+            return Mathf.Clamp(50 + stars * 10, 50, 100);
+        }
+
+        public static int GetBreakthroughCost(int idx)
+        {
+            int stars = GetBreakthroughStars(idx);
+            if (stars >= 5) return -1;
+            if (idx == 8) return BreakthroughCostsSpecial[stars];
+            return BreakthroughCostsNormal[stars];
+        }
+
+        public static int GetLevelUpCoinCost(int idx)
+        {
+            int curLvl = GetMascotLevel(idx);
+            return curLvl * 20;
+        }
+
+        public static string GetLocalizedMascotName(int idx)
+        {
+            return LocalizationManager.Get($"mascot_{idx}_name", (idx >= 0 && idx < MascotNames.Length) ? MascotNames[idx] : "");
+        }
+
+        public static string GetLocalizedMascotTitle(int idx)
+        {
+            return LocalizationManager.Get($"mascot_{idx}_title", (idx >= 0 && idx < MascotTitles.Length) ? MascotTitles[idx] : "");
+        }
+
+        public static string GetLocalizedMascotDesc(int idx)
+        {
+            return LocalizationManager.Get($"mascot_{idx}_desc", GetMascotAbilityDescription(idx, GetMascotLevel(idx)));
+        }
+
         public static string GetMascotAbilityDescription(int idx, int level)
         {
             level = Mathf.Max(1, level);
             switch (idx)
             {
                 case 0:
-                    float sec = 1.0f + (level - 1) * 0.2f;
-                    return $"고유능력: 추가 시간 +{sec:F1}초\n(첫 턴 {180 + sec:F1}초 / 최소 {5 + sec:F1}초)";
+                    float sec = 1.0f + (level - 1) * 0.05f;
+                    return $"고유능력: 추가 시간 +{sec:F2}초\n(첫 턴 {180 + sec:F1}초 / 최소 {5 + sec:F1}초)";
                 case 1:
-                    int startStock = 1 + Mathf.Min(3, level);
-                    int maxStock = 3 + level;
+                    int startStock = 1 + Mathf.Min(3, level / 20);
+                    int maxStock = 3 + (level / 15);
                     return $"고유능력: 스킵 스택 강화\n(시작 {startStock}개 / 최대 {maxStock}개 보유)";
                 case 2:
-                    int bonus = 100 + (level - 1) * 25;
+                    int bonus = 100 + (level - 1) * 5;
                     return $"고유능력: 라인 추가 점수\n(줄당 +{bonus}점 추가 보너스)";
                 case 3:
-                    int rate = 5 + (level - 1);
-                    return $"고유능력: 2×2 매직 블록\n({rate}% 확률로 2×2 보라 블록 3개 소환)";
+                    int rate = 5 + (level / 10);
+                    return $"고유능력: 2×2 매직 블록\n({rate}% 확률로 2×2 보라 블록 소환)";
                 case 4:
-                    int lines = Mathf.Max(15, 30 - (level - 1) * 2);
-                    return $"고유능력: 보드 올 클리어\n(스킬 터치 시 모든 블록 폭파!\n{lines}줄 클리어마다 쿨타임 충전)";
+                    return $"고유능력: 아쿠아 쉴드\n(게임오버 위기 시 1회 부활 & 재배치)";
+                case 5:
+                    float burst = 15f + (level - 1) * 0.2f;
+                    return $"고유능력: 슈가 버스트\n(콤보 달성 시 추가 폭파 & +{burst:F1}% 점수)";
+                case 6:
+                    return $"고유능력: 번개 팡\n(3연속 콤보 시 가로 한 줄 번개 즉시 폭파)";
+                case 7:
+                    float slow = Mathf.Min(40f, 20f + (level - 1) * 0.2f);
+                    return $"고유능력: 푹신 구름\n(시간 감소 속도 {slow:F1}% 완화 & 몽글 피버)";
+                case 8:
+                    int lines = Mathf.Max(15, 30 - (level / 10));
+                    return $"고유능력: 보드 올 클리어\n(스킬 터치 시 모든 블록 폭파!\n{lines}줄 클리어마다 충전)";
                 default:
                     return "";
             }
@@ -158,7 +231,7 @@ namespace BlockBlast
         [SerializeField] private TMP_Text shopDiamondsText;
         [SerializeField] private Button btnCloseShop;
 
-        [Header("Mascot Management Modal")]
+        [Header("Mascot Management Modal (Legacy Support)")]
         [SerializeField] private GameObject mascotModal;
         [SerializeField] private Button btnCloseMascotModal;
         [SerializeField] private Button[] mascotActionButtons;
@@ -169,6 +242,51 @@ namespace BlockBlast
         [SerializeField] private TMP_Text[] mascotLevelTexts;
         [SerializeField] private TMP_Text[] mascotShardTexts;
         [SerializeField] private TMP_Text[] mascotAbilityTexts;
+
+        [Header("Mascot Codex Modal (냥냥시노비 도감 스타일)")]
+        [SerializeField] private GameObject mascotCodexModal;
+        [SerializeField] private Button btnCloseMascotCodex;
+        [SerializeField] private TMP_Text codexTitleText;
+        [SerializeField] private TMP_Text codexSubtitleText;
+        [SerializeField] private TMP_Text codexCollectionCountText;
+        [SerializeField] private Button[] codexCardButtons;
+        [SerializeField] private Image[] codexCardAvatars;
+        [SerializeField] private TMP_Text[] codexCardNames;
+        [SerializeField] private TMP_Text[] codexCardLevels;
+        [SerializeField] private TMP_Text[] codexCardStars;
+        [SerializeField] private GameObject[] codexCardLockedOverlays;
+        [SerializeField] private TMP_Text[] codexCardStatusBadges;
+        [SerializeField] private TMP_Text[] codexCardRarityTexts;
+
+        [Header("Mascot Detail & Growth Modal (강화/돌파/장착 팝업)")]
+        [SerializeField] private GameObject mascotDetailModal;
+        [SerializeField] private Button btnCloseMascotDetail;
+        [SerializeField] private Image detailMascotAvatar;
+        [SerializeField] private TMP_Text detailMascotName;
+        [SerializeField] private TMP_Text detailMascotTitle;
+        [SerializeField] private TMP_Text detailRarityText;
+        [SerializeField] private TMP_Text detailStarsText;
+        [SerializeField] private TMP_Text detailLevelText;
+        [SerializeField] private Image detailLevelFill;
+        [SerializeField] private TMP_Text detailShardsText;
+        [SerializeField] private TMP_Text detailAbilityDesc;
+        [SerializeField] private Button btnDetailLevelUp;
+        [SerializeField] private TMP_Text txtDetailLevelUp;
+        [SerializeField] private Button btnDetailBreakthrough;
+        [SerializeField] private TMP_Text txtDetailBreakthrough;
+        [SerializeField] private Button btnDetailEquip;
+        [SerializeField] private TMP_Text txtDetailEquip;
+        private int _selectedDetailMascotIdx = 0;
+
+        [Header("Pickup Skill Details Modal")]
+        [SerializeField] private GameObject pickupSkillDetailModal;
+        [SerializeField] private Button btnClosePickupSkillDetail;
+        [SerializeField] private Button btnOpenPickupSkillDetail;
+        [SerializeField] private TMP_Text txtPickupBannerBadge;
+        [SerializeField] private TMP_Text txtPickupSummon1;
+        [SerializeField] private TMP_Text txtPickupSummon10;
+        [SerializeField] private TMP_Text txtPickupBtnRates;
+        [SerializeField] private TMP_Text txtPickupBtnDetail;
 
         [Header("Legal & Compliance: Probability Modal")]
         [SerializeField] private GameObject probabilityModal;
@@ -299,6 +417,9 @@ namespace BlockBlast
         [Header("Shop Action Button Sprites")]
         [SerializeField] private Sprite shopEquipBtnSprite;
         [SerializeField] private Sprite shopEquippedBtnSprite;
+        [SerializeField] private Sprite shopCreamBtnSprite;
+        [SerializeField] private Sprite shopGoldBtnSprite;
+        [SerializeField] private Sprite shopPurpleBtnSprite;
 
         private int _currentAvatarIdx = 0;
         private string _currentNickname = "";
@@ -351,6 +472,28 @@ namespace BlockBlast
                 return;
             }
 
+            // Migrate V1 (5 mascots, special=4) to V2 (9 mascots, special=8)
+            if (PlayerPrefs.GetInt("Mallang_Migrated_V2", 0) == 0)
+            {
+                if (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + 4, 0) == 1)
+                {
+                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 8, 1);
+                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 4, 0); // 4 is now Blue Mascot
+                }
+                if (PlayerPrefs.GetInt(KEY_SELECTED_MASCOT, 0) == 4)
+                {
+                    PlayerPrefs.SetInt(KEY_SELECTED_MASCOT, 8);
+                }
+                int oldSpecialShards = PlayerPrefs.GetInt(KEY_MASCOT_SHARDS_PREFIX + 4, 0);
+                if (oldSpecialShards > 0)
+                {
+                    PlayerPrefs.SetInt(KEY_MASCOT_SHARDS_PREFIX + 8, oldSpecialShards);
+                    PlayerPrefs.SetInt(KEY_MASCOT_SHARDS_PREFIX + 4, 0);
+                }
+                PlayerPrefs.SetInt("Mallang_Migrated_V2", 1);
+                PlayerPrefs.Save();
+            }
+
             PerformAutoLogin();
             EnsurePartyTipReference();
         }
@@ -390,6 +533,10 @@ namespace BlockBlast
             if (quitModal != null) quitModal.SetActive(false);
             if (mascotModal != null) mascotModal.SetActive(false);
             if (summonResultModal != null) summonResultModal.SetActive(false);
+            if (mascotCodexModal != null) mascotCodexModal.SetActive(false);
+            if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+            if (probabilityModal != null) probabilityModal.SetActive(false);
+            if (pickupSkillDetailModal != null) pickupSkillDetailModal.SetActive(false);
 
             _currentAspectIdx = PlayerPrefs.GetInt(KEY_ASPECT_RATIO_INDEX, 3);
             if (_currentAspectIdx < 0 || _currentAspectIdx > 3) _currentAspectIdx = 3;
@@ -949,7 +1096,8 @@ namespace BlockBlast
                     }
                     if (partyLabelTexts != null && i < partyLabelTexts.Length && partyLabelTexts[i] != null)
                     {
-                        partyLabelTexts[i].color = isSel ? MenuColors[i] : new Color(0.35f, 0.25f, 0.45f, 0.9f);
+                        partyLabelTexts[i].color = Color.white;
+                        partyLabelTexts[i].fontStyle = FontStyles.Bold;
                     }
                 }
             }
@@ -994,6 +1142,7 @@ namespace BlockBlast
                 SetNickEditMode(false);
                 SetNickStatus("", Color.white);
                 RefreshProfileUI();
+                profileModal.transform.SetAsLastSibling();
                 profileModal.SetActive(true);
             }
         }
@@ -1447,6 +1596,7 @@ namespace BlockBlast
                 SelectShopTab(_currentShopTab);
                 RefreshThemeShopUI();
                 RefreshLobbyThemeShopUI();
+                shopModal.transform.SetAsLastSibling();
                 shopModal.SetActive(true);
                 if (shopAnimController != null) shopAnimController.AnimateOpen();
             }
@@ -1592,7 +1742,9 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = LocalizationManager.Get("shop_btn_equip");
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f); // Dark Berry Magenta
+                            txt.color = Color.white;
+                            txt.enableAutoSizing = true;
+                            txt.fontSizeMin = 13f;
                         }
                         if (btnImg != null)
                         {
@@ -1604,17 +1756,27 @@ namespace BlockBlast
                     else
                     {
                         int price = (i < ThemePrices.Length) ? ThemePrices[i] : 0;
+                        bool canAfford = (_currentCoins >= price);
                         if (txt != null)
                         {
                             txt.text = $"{price:N0} C " + LocalizationManager.Get("shop_btn_buy");
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
+                            txt.color = canAfford ? Color.white : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.enableAutoSizing = true;
+                            txt.fontSizeMin = 13f;
                         }
                         if (btnImg != null)
                         {
-                            if (shopEquipBtnSprite != null) btnImg.sprite = shopEquipBtnSprite;
+                            if (canAfford)
+                            {
+                                btnImg.sprite = (shopGoldBtnSprite != null) ? shopGoldBtnSprite : shopEquipBtnSprite;
+                            }
+                            else
+                            {
+                                btnImg.sprite = (shopCreamBtnSprite != null) ? shopCreamBtnSprite : shopEquipBtnSprite;
+                            }
                             btnImg.color = Color.white;
                         }
-                        themeActionButtons[i].interactable = (_currentCoins >= price);
+                        themeActionButtons[i].interactable = true;
                     }
                 }
             }
@@ -1664,12 +1826,16 @@ namespace BlockBlast
             RefreshThemeShopUI();
         }
 
-        public void SetupShopButtonSprites(Sprite equipSp, Sprite equippedSp)
+        public void SetupShopButtonSprites(Sprite equipSp, Sprite equippedSp, Sprite creamSp = null, Sprite goldSp = null, Sprite purpleSp = null)
         {
             shopEquipBtnSprite = equipSp;
             shopEquippedBtnSprite = equippedSp;
+            if (creamSp != null) shopCreamBtnSprite = creamSp;
+            if (goldSp != null) shopGoldBtnSprite = goldSp;
+            if (purpleSp != null) shopPurpleBtnSprite = purpleSp;
             RefreshThemeShopUI();
             RefreshLobbyThemeShopUI();
+            RefreshMascotShopUI();
         }
 
         // ==========================================
@@ -1774,12 +1940,22 @@ namespace BlockBlast
 
         public void OpenMascotModal()
         {
-            if (mascotModal != null)
+            if (mascotCodexModal != null)
+            {
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
+                if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                RefreshMascotCodexUI();
+                mascotCodexModal.transform.SetAsLastSibling();
+                mascotCodexModal.SetActive(true);
+            }
+            else if (mascotModal != null)
             {
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 RefreshMascotModalUI();
+                mascotModal.transform.SetAsLastSibling();
                 mascotModal.SetActive(true);
             }
         }
@@ -1787,13 +1963,131 @@ namespace BlockBlast
         public void CloseMascotModal()
         {
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (mascotDetailModal != null && mascotDetailModal.activeSelf)
+            {
+                mascotDetailModal.SetActive(false);
+            }
+            if (mascotCodexModal != null) mascotCodexModal.SetActive(false);
             if (mascotModal != null) mascotModal.SetActive(false);
             if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
         }
 
+        public void OpenMascotDetail(int idx)
+        {
+            if (idx < 0 || idx >= 9) return;
+            _selectedDetailMascotIdx = idx;
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+            if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+            RefreshMascotDetailUI();
+            if (mascotDetailModal != null)
+            {
+                mascotDetailModal.transform.SetAsLastSibling();
+                mascotDetailModal.SetActive(true);
+            }
+        }
+
+        public void CloseMascotDetail()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+            if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+            RefreshMascotCodexUI();
+        }
+
+        public void OnClickDetailLevelUp()
+        {
+            int idx = _selectedDetailMascotIdx;
+            bool isOwned = (idx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + idx, 0) == 1);
+            if (!isOwned) return;
+
+            int curLvl = GetMascotLevel(idx);
+            int maxCap = GetMaxLevelCap(idx);
+            int cost = GetLevelUpCoinCost(idx);
+
+            if (curLvl < maxCap && _currentCoins >= cost)
+            {
+                _currentCoins -= cost;
+                PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
+                SetMascotLevel(idx, curLvl + 1);
+                PlayerPrefs.Save();
+
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+                if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                RefreshCurrenciesUI();
+                RefreshMascotDetailUI();
+                RefreshMascotCodexUI();
+            }
+            else
+            {
+                PlayClickSound();
+            }
+        }
+
+        public void OnClickDetailBreakthrough()
+        {
+            int idx = _selectedDetailMascotIdx;
+            bool isOwned = (idx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + idx, 0) == 1);
+            if (!isOwned) return;
+
+            int stars = GetBreakthroughStars(idx);
+            if (stars >= 5) return;
+
+            int cost = GetBreakthroughCost(idx);
+            int shards = GetMascotShards(idx);
+
+            if (shards >= cost)
+            {
+                SetMascotShards(idx, shards - cost);
+                SetBreakthroughStars(idx, stars + 1);
+                PlayerPrefs.Save();
+
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayFairyMagic();
+                if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                RefreshMascotDetailUI();
+                RefreshMascotCodexUI();
+            }
+            else
+            {
+                PlayClickSound();
+            }
+        }
+
+        public void OnClickDetailEquipOrUnlock()
+        {
+            int idx = _selectedDetailMascotIdx;
+            bool isOwned = (idx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + idx, 0) == 1);
+
+            if (!isOwned)
+            {
+                int shards = GetMascotShards(idx);
+                if (shards >= 60)
+                {
+                    SetMascotShards(idx, shards - 60);
+                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + idx, 1);
+                    PlayerPrefs.SetInt(KEY_SELECTED_MASCOT, idx);
+                    PlayerPrefs.Save();
+
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayFairyMagic();
+                    if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                    RefreshMascotDetailUI();
+                    RefreshMascotCodexUI();
+                    RefreshMascotShopUI();
+                }
+                else
+                {
+                    PlayClickSound();
+                }
+            }
+            else
+            {
+                EquipMascot(idx);
+                RefreshMascotDetailUI();
+                RefreshMascotCodexUI();
+            }
+        }
+
         public void EquipMascot(int mascotIdx)
         {
-            if (mascotIdx < 0 || mascotIdx >= 5) return;
+            if (mascotIdx < 0 || mascotIdx >= 9) return;
             bool isOwned = (mascotIdx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + mascotIdx, 0) == 1);
             if (!isOwned)
             {
@@ -1806,29 +2100,318 @@ namespace BlockBlast
             PlayClickSound();
             if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
             RefreshMascotModalUI();
+            RefreshMascotCodexUI();
             RefreshMascotShopUI();
         }
 
         public void TryUpgradeMascot(int idx)
         {
-            if (idx < 0 || idx >= 5) return;
+            if (idx < 0 || idx >= 9) return;
             int shards = GetMascotShards(idx);
-            if (shards >= 60)
+            int cost = GetBreakthroughCost(idx);
+            if (cost > 0 && shards >= cost)
             {
-                SetMascotShards(idx, shards - 60);
-                int curLvl = GetMascotLevel(idx);
-                SetMascotLevel(idx, curLvl + 1);
+                SetMascotShards(idx, shards - cost);
+                int stars = GetBreakthroughStars(idx);
+                SetBreakthroughStars(idx, stars + 1);
                 PlayerPrefs.Save();
 
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
 
                 RefreshMascotModalUI();
+                RefreshMascotCodexUI();
                 RefreshMascotShopUI();
             }
             else
             {
                 PlayClickSound();
+            }
+        }
+
+        public void RefreshMascotCodexUI()
+        {
+            int selectedMascot = PlayerPrefs.GetInt(KEY_SELECTED_MASCOT, 0);
+            int ownedCount = 0;
+
+            for (int i = 0; i < 9; i++)
+            {
+                bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + i, 0) == 1);
+                if (isOwned) ownedCount++;
+
+                int stars = GetBreakthroughStars(i);
+                int lvl = GetMascotLevel(i);
+                int maxCap = GetMaxLevelCap(i);
+                int shards = GetMascotShards(i);
+
+                if (codexCardNames != null && i < codexCardNames.Length && codexCardNames[i] != null)
+                {
+                    codexCardNames[i].text = GetLocalizedMascotName(i);
+                }
+
+                if (codexCardLevels != null && i < codexCardLevels.Length && codexCardLevels[i] != null)
+                {
+                    codexCardLevels[i].text = $"Lv.{lvl}/{maxCap}";
+                }
+
+                if (codexCardStars != null && i < codexCardStars.Length && codexCardStars[i] != null)
+                {
+                    string starsStr = "";
+                    for (int s = 0; s < 5; s++)
+                    {
+                        starsStr += (s < stars) ? "<color=#FFD700>★</color>" : "<color=#B0A8C0>☆</color>";
+                    }
+                    codexCardStars[i].text = starsStr;
+                }
+
+                if (codexCardLockedOverlays != null && i < codexCardLockedOverlays.Length && codexCardLockedOverlays[i] != null)
+                {
+                    codexCardLockedOverlays[i].SetActive(!isOwned);
+                }
+
+                if (codexCardStatusBadges != null && i < codexCardStatusBadges.Length && codexCardStatusBadges[i] != null)
+                {
+                    if (selectedMascot == i)
+                    {
+                        codexCardStatusBadges[i].text = $"<color=#00B894>● {LocalizationManager.Get("codex_equipped")}</color>";
+                    }
+                    else if (isOwned)
+                    {
+                        codexCardStatusBadges[i].text = $"<color=#6C5CE7>조각 {shards}개</color>";
+                    }
+                    else
+                    {
+                        codexCardStatusBadges[i].text = $"<color=#E17055>미보유 {shards}/60</color>";
+                    }
+                }
+
+                if (codexCardRarityTexts != null && i < codexCardRarityTexts.Length && codexCardRarityTexts[i] != null)
+                {
+                    if (i < 4) codexCardRarityTexts[i].text = LocalizationManager.Get("codex_badge_common");
+                    else if (i < 8) codexCardRarityTexts[i].text = LocalizationManager.Get("codex_badge_rare");
+                    else codexCardRarityTexts[i].text = LocalizationManager.Get("codex_badge_special");
+                }
+            }
+
+            if (codexCollectionCountText != null)
+            {
+                codexCollectionCountText.text = $"{LocalizationManager.Get("codex_collected")}: <color=#FFAA00><b>{ownedCount}</b></color> / 9";
+            }
+            if (codexTitleText != null) codexTitleText.text = LocalizationManager.Get("codex_title");
+            if (codexSubtitleText != null) codexSubtitleText.text = LocalizationManager.Get("codex_subtitle");
+        }
+
+        public void RefreshMascotDetailUI()
+        {
+            int idx = _selectedDetailMascotIdx;
+            bool isOwned = (idx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + idx, 0) == 1);
+            int selectedMascot = PlayerPrefs.GetInt(KEY_SELECTED_MASCOT, 0);
+            int curLvl = GetMascotLevel(idx);
+            int stars = GetBreakthroughStars(idx);
+            int maxCap = GetMaxLevelCap(idx);
+            int shards = GetMascotShards(idx);
+            int breakthroughCost = GetBreakthroughCost(idx);
+            int levelUpCost = GetLevelUpCoinCost(idx);
+
+            if (detailMascotAvatar != null && mascotAvatars != null && idx < mascotAvatars.Length)
+            {
+                detailMascotAvatar.sprite = mascotAvatars[idx];
+            }
+            if (detailMascotName != null) detailMascotName.text = GetLocalizedMascotName(idx);
+            if (detailMascotTitle != null) detailMascotTitle.text = $"[{GetLocalizedMascotTitle(idx)}]";
+            if (detailAbilityDesc != null) detailAbilityDesc.text = GetLocalizedMascotDesc(idx);
+
+            if (mascotDetailModal != null)
+            {
+                var card = mascotDetailModal.transform.Find("DialogCard");
+                if (card != null)
+                {
+                    var t = card.Find("Title")?.GetComponent<TMP_Text>();
+                    if (t != null) t.text = LocalizationManager.Get("mascot_detail_title");
+                    var hdr = card.Find("AbilityBox/AbilHeader")?.GetComponent<TMP_Text>();
+                    if (hdr != null) hdr.text = LocalizationManager.Get("mascot_detail_ability_header");
+                }
+            }
+
+            if (detailRarityText != null)
+            {
+                if (idx < 4) detailRarityText.text = LocalizationManager.Get("codex_badge_common");
+                else if (idx < 8) detailRarityText.text = LocalizationManager.Get("codex_badge_rare");
+                else detailRarityText.text = LocalizationManager.Get("codex_badge_special");
+            }
+
+            if (detailStarsText != null)
+            {
+                string starsStr = "";
+                for (int s = 0; s < 5; s++)
+                {
+                    starsStr += (s < stars) ? "<color=#FFD700>★ </color>" : "<color=#D0C8E0>☆ </color>";
+                }
+                detailStarsText.text = starsStr.TrimEnd();
+            }
+
+            if (detailLevelText != null)
+            {
+                detailLevelText.text = $"{LocalizationManager.Get("mascot_detail_level")} {curLvl} / {maxCap}";
+            }
+            if (detailLevelFill != null)
+            {
+                detailLevelFill.fillAmount = Mathf.Clamp01((float)curLvl / maxCap);
+            }
+
+            if (detailShardsText != null)
+            {
+                if (breakthroughCost > 0)
+                {
+                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: <color=#2E86DE><b>{shards}</b></color> / {breakthroughCost}개";
+                }
+                else
+                {
+                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: {shards}개 ({LocalizationManager.Get("mascot_max_breakthrough")})";
+                }
+            }
+
+            // [강화 / Level Up] Button
+            if (btnDetailLevelUp != null)
+            {
+                bool canLevelUp = isOwned && (curLvl < maxCap) && (_currentCoins >= levelUpCost);
+                btnDetailLevelUp.interactable = canLevelUp;
+                if (txtDetailLevelUp != null)
+                {
+                    if (curLvl >= maxCap)
+                        txtDetailLevelUp.text = LocalizationManager.Get("mascot_max_level");
+                    else
+                        txtDetailLevelUp.text = $"{LocalizationManager.Get("mascot_btn_levelup")}\n{levelUpCost:N0} G";
+                }
+            }
+
+            // [돌파 / Breakthrough] Button
+            if (btnDetailBreakthrough != null)
+            {
+                bool canBreakthrough = isOwned && (stars < 5) && (breakthroughCost > 0) && (shards >= breakthroughCost);
+                btnDetailBreakthrough.interactable = canBreakthrough;
+                if (txtDetailBreakthrough != null)
+                {
+                    if (stars >= 5)
+                        txtDetailBreakthrough.text = LocalizationManager.Get("mascot_max_breakthrough");
+                    else
+                        txtDetailBreakthrough.text = $"{LocalizationManager.Get("mascot_btn_breakthrough")}\n조각 {shards}/{breakthroughCost}";
+                }
+            }
+
+            // [장착 / Equip] Button
+            if (btnDetailEquip != null)
+            {
+                if (!isOwned)
+                {
+                    bool canUnlock = (shards >= 60);
+                    btnDetailEquip.interactable = canUnlock;
+                    if (txtDetailEquip != null)
+                    {
+                        txtDetailEquip.text = canUnlock ? LocalizationManager.Get("mascot_btn_unlock") : LocalizationManager.Get("mascot_obtain_pickup");
+                    }
+                }
+                else
+                {
+                    bool isEquipped = (selectedMascot == idx);
+                    btnDetailEquip.interactable = !isEquipped;
+                    if (txtDetailEquip != null)
+                    {
+                        txtDetailEquip.text = isEquipped ? LocalizationManager.Get("mascot_btn_equipped") : LocalizationManager.Get("mascot_btn_equip");
+                    }
+                }
+            }
+        }
+
+        public void SetupCodexModal(
+            GameObject cModal, Button cClose, TMP_Text cTitle, TMP_Text cSub, TMP_Text cCount,
+            Button[] cardBtns, Image[] cardAvatars, TMP_Text[] cardNames, TMP_Text[] cardLevels,
+            TMP_Text[] cardStars, GameObject[] cardLocked, TMP_Text[] cardStatuses, TMP_Text[] cardRarities)
+        {
+            mascotCodexModal = cModal;
+            btnCloseMascotCodex = cClose;
+            codexTitleText = cTitle;
+            codexSubtitleText = cSub;
+            codexCollectionCountText = cCount;
+            codexCardButtons = cardBtns;
+            codexCardAvatars = cardAvatars;
+            codexCardNames = cardNames;
+            codexCardLevels = cardLevels;
+            codexCardStars = cardStars;
+            codexCardLockedOverlays = cardLocked;
+            codexCardStatusBadges = cardStatuses;
+            codexCardRarityTexts = cardRarities;
+
+            if (mascotCodexModal != null) mascotCodexModal.SetActive(false);
+
+            if (btnCloseMascotCodex != null)
+            {
+                btnCloseMascotCodex.onClick.RemoveAllListeners();
+                btnCloseMascotCodex.onClick.AddListener(CloseMascotModal);
+            }
+
+            if (codexCardButtons != null)
+            {
+                for (int i = 0; i < codexCardButtons.Length; i++)
+                {
+                    int idx = i;
+                    if (codexCardButtons[i] != null)
+                    {
+                        codexCardButtons[i].onClick.RemoveAllListeners();
+                        codexCardButtons[i].onClick.AddListener(() => OpenMascotDetail(idx));
+                    }
+                }
+            }
+        }
+
+        public void SetupMascotDetailModal(
+            GameObject dModal, Button dClose, Image dAvatar, TMP_Text dName, TMP_Text dTitle,
+            TMP_Text dRarity, TMP_Text dStars, TMP_Text dLevel, Image dLevelFill, TMP_Text dShards,
+            TMP_Text dDesc, Button dBtnLevelUp, TMP_Text dTxtLevelUp, Button dBtnBreakthrough,
+            TMP_Text dTxtBreakthrough, Button dBtnEquip, TMP_Text dTxtEquip)
+        {
+            mascotDetailModal = dModal;
+            btnCloseMascotDetail = dClose;
+            detailMascotAvatar = dAvatar;
+            detailMascotName = dName;
+            detailMascotTitle = dTitle;
+            detailRarityText = dRarity;
+            detailStarsText = dStars;
+            detailLevelText = dLevel;
+            detailLevelFill = dLevelFill;
+            detailShardsText = dShards;
+            detailAbilityDesc = dDesc;
+            btnDetailLevelUp = dBtnLevelUp;
+            txtDetailLevelUp = dTxtLevelUp;
+            btnDetailBreakthrough = dBtnBreakthrough;
+            txtDetailBreakthrough = dTxtBreakthrough;
+            btnDetailEquip = dBtnEquip;
+            txtDetailEquip = dTxtEquip;
+
+            if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+
+            if (btnCloseMascotDetail != null)
+            {
+                btnCloseMascotDetail.onClick.RemoveAllListeners();
+                btnCloseMascotDetail.onClick.AddListener(CloseMascotDetail);
+            }
+
+            if (btnDetailLevelUp != null)
+            {
+                btnDetailLevelUp.onClick.RemoveAllListeners();
+                btnDetailLevelUp.onClick.AddListener(OnClickDetailLevelUp);
+            }
+
+            if (btnDetailBreakthrough != null)
+            {
+                btnDetailBreakthrough.onClick.RemoveAllListeners();
+                btnDetailBreakthrough.onClick.AddListener(OnClickDetailBreakthrough);
+            }
+
+            if (btnDetailEquip != null)
+            {
+                btnDetailEquip.onClick.RemoveAllListeners();
+                btnDetailEquip.onClick.AddListener(OnClickDetailEquipOrUnlock);
             }
         }
 
@@ -1854,7 +2437,7 @@ namespace BlockBlast
                     {
                         if (txt != null)
                         {
-                            txt.text = "사용 중";
+                            txt.text = LocalizationManager.Get("codex_equipped");
                             txt.color = new Color(0.06f, 0.35f, 0.26f, 1f);
                         }
                         if (btnImg != null && shopEquippedBtnSprite != null)
@@ -1868,7 +2451,7 @@ namespace BlockBlast
                     {
                         if (txt != null)
                         {
-                            txt.text = "선택하기";
+                            txt.text = LocalizationManager.Get("mascot_btn_equip");
                             txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
                         }
                         if (btnImg != null && shopEquipBtnSprite != null)
@@ -1882,7 +2465,7 @@ namespace BlockBlast
                     {
                         if (txt != null)
                         {
-                            txt.text = (i == 4) ? "소환 전용" : "미보유 (잠김)";
+                            txt.text = (i >= 4) ? LocalizationManager.Get("mascot_obtain_pickup") : LocalizationManager.Get("codex_locked");
                             txt.color = new Color(0.45f, 0.45f, 0.50f, 1f);
                         }
                         if (btnImg != null)
@@ -1903,7 +2486,7 @@ namespace BlockBlast
                     bool isSelected = (selectedMascot == i);
                     if (isSelected)
                     {
-                        mascotStatusTexts[i].text = "<color=#2ECC71>● 장착 중</color>";
+                        mascotStatusTexts[i].text = $"<color=#2ECC71>● {LocalizationManager.Get("codex_equipped")}</color>";
                     }
                     else if (isOwned)
                     {
@@ -1911,7 +2494,7 @@ namespace BlockBlast
                     }
                     else
                     {
-                        mascotStatusTexts[i].text = (i == 4) ? "<color=#9B59B6>픽업 소환 전용</color>" : "<color=#95A5A6>상점에서 획득</color>";
+                        mascotStatusTexts[i].text = (i >= 4) ? "<color=#9B59B6>픽업 소환 전용</color>" : "<color=#95A5A6>상점에서 획득</color>";
                     }
                 }
             }
@@ -1932,7 +2515,10 @@ namespace BlockBlast
                 {
                     if (mascotShardTexts[i] == null) continue;
                     int shards = GetMascotShards(i);
-                    mascotShardTexts[i].text = $"말랑 조각: <color=#3498DB>{shards}</color> / 60";
+                    int cost = GetBreakthroughCost(i);
+                    mascotShardTexts[i].text = (cost > 0)
+                        ? $"말랑 조각: <color=#3498DB>{shards}</color> / {cost}"
+                        : $"말랑 조각: {shards} (최대 돌파)";
                 }
             }
 
@@ -1941,8 +2527,7 @@ namespace BlockBlast
                 for (int i = 0; i < mascotAbilityTexts.Length; i++)
                 {
                     if (mascotAbilityTexts[i] == null) continue;
-                    int lvl = GetMascotLevel(i);
-                    mascotAbilityTexts[i].text = GetMascotAbilityDescription(i, lvl);
+                    mascotAbilityTexts[i].text = GetLocalizedMascotDesc(i);
                 }
             }
 
@@ -1952,12 +2537,13 @@ namespace BlockBlast
                 {
                     if (mascotUpgradeButtons[i] == null) continue;
                     int shards = GetMascotShards(i);
-                    bool canUpgrade = shards >= 60;
+                    int cost = GetBreakthroughCost(i);
+                    bool canUpgrade = (cost > 0) && (shards >= cost);
                     mascotUpgradeButtons[i].interactable = canUpgrade;
 
                     if (mascotUpgradeTexts != null && i < mascotUpgradeTexts.Length && mascotUpgradeTexts[i] != null)
                     {
-                        mascotUpgradeTexts[i].text = canUpgrade ? "돌파 가능!" : "돌파 (60)";
+                        mascotUpgradeTexts[i].text = canUpgrade ? LocalizationManager.Get("mascot_btn_breakthrough") : $"돌파 ({cost})";
                         mascotUpgradeTexts[i].color = canUpgrade ? new Color(0.06f, 0.35f, 0.26f, 1f) : new Color(0.45f, 0.45f, 0.50f, 1f);
                     }
                 }
@@ -1970,18 +2556,37 @@ namespace BlockBlast
 
         public void BuyOrEquipMascot(int mascotIdx)
         {
-            if (mascotIdx < 0 || mascotIdx >= 5) return;
+            if (mascotIdx < 0 || mascotIdx >= 9) return;
             bool isOwned = (mascotIdx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + mascotIdx, 0) == 1);
 
             if (isOwned)
             {
                 EquipMascot(mascotIdx);
             }
-            else if (mascotIdx == 4)
+            else if (mascotIdx >= 4)
             {
-                // Navigate directly to Pickup tab!
-                PlayClickSound();
-                SelectShopTab(1);
+                int shards = GetMascotShards(mascotIdx);
+                if (shards >= 60)
+                {
+                    SetMascotShards(mascotIdx, shards - 60);
+                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + mascotIdx, 1);
+                    PlayerPrefs.SetInt(KEY_SELECTED_MASCOT, mascotIdx);
+                    PlayerPrefs.Save();
+
+                    RefreshCurrenciesUI();
+                    RefreshMascotShopUI();
+                    RefreshMascotModalUI();
+                    RefreshMascotCodexUI();
+
+                    if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+                }
+                else
+                {
+                    // Rare & Special mascots: Navigate directly to Pickup tab!
+                    PlayClickSound();
+                    SelectShopTab(1);
+                }
             }
             else
             {
@@ -1997,6 +2602,7 @@ namespace BlockBlast
                     RefreshCurrenciesUI();
                     RefreshMascotShopUI();
                     RefreshMascotModalUI();
+                    RefreshMascotCodexUI();
 
                     if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                     if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
@@ -2028,12 +2634,19 @@ namespace BlockBlast
 
                     Image btnImg = mascotShopActionButtons[i].GetComponent<Image>();
 
+                    if (txt != null)
+                    {
+                        txt.enableAutoSizing = true;
+                        txt.fontSizeMin = 13f;
+                        txt.margin = new Vector4(10f, 0f, 10f, 0f);
+                    }
+
                     if (isSelected)
                     {
                         if (txt != null)
                         {
                             txt.text = LocalizationManager.Get("shop_btn_equipped");
-                            txt.color = new Color(0.06f, 0.35f, 0.26f, 1f);
+                            txt.color = Color.white;
                         }
                         if (btnImg != null && shopEquippedBtnSprite != null)
                         {
@@ -2047,7 +2660,7 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = LocalizationManager.Get("shop_btn_equip");
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
+                            txt.color = Color.white;
                         }
                         if (btnImg != null && shopEquipBtnSprite != null)
                         {
@@ -2056,34 +2669,60 @@ namespace BlockBlast
                         }
                         mascotShopActionButtons[i].interactable = true;
                     }
-                    else if (i == 4)
+                    else if (i >= 4)
                     {
-                        if (txt != null)
+                        int shards = GetMascotShards(i);
+                        if (shards >= 60)
                         {
-                            txt.text = "픽업 소환 전용";
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
+                            if (txt != null)
+                            {
+                                txt.text = $"{LocalizationManager.Get("mascot_btn_unlock")}";
+                                txt.color = Color.white;
+                            }
+                            if (btnImg != null && shopEquipBtnSprite != null)
+                            {
+                                btnImg.sprite = shopEquipBtnSprite;
+                                btnImg.color = Color.white;
+                            }
+                            mascotShopActionButtons[i].interactable = true;
                         }
-                        if (btnImg != null && shopEquipBtnSprite != null)
+                        else
                         {
-                            btnImg.sprite = shopEquipBtnSprite;
-                            btnImg.color = Color.white;
+                            if (txt != null)
+                            {
+                                txt.text = (i == 8) ? "★ 특별 소환" : "픽업 소환 전용";
+                                txt.color = Color.white;
+                            }
+                            if (btnImg != null)
+                            {
+                                btnImg.sprite = (shopPurpleBtnSprite != null) ? shopPurpleBtnSprite : shopEquipBtnSprite;
+                                btnImg.color = Color.white;
+                            }
+                            mascotShopActionButtons[i].interactable = true;
                         }
-                        mascotShopActionButtons[i].interactable = true;
                     }
                     else
                     {
                         int price = MascotPricesCoins[i];
+                        bool canAfford = (_currentCoins >= price);
                         if (txt != null)
                         {
                             txt.text = $"{price:N0} G " + LocalizationManager.Get("shop_btn_buy");
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
+                            txt.color = canAfford ? Color.white : new Color(0.42f, 0.32f, 0.52f, 1f);
                         }
-                        if (btnImg != null && shopEquipBtnSprite != null)
+                        if (btnImg != null)
                         {
-                            btnImg.sprite = shopEquipBtnSprite;
+                            if (canAfford)
+                            {
+                                btnImg.sprite = (shopGoldBtnSprite != null) ? shopGoldBtnSprite : shopEquipBtnSprite;
+                            }
+                            else
+                            {
+                                btnImg.sprite = (shopCreamBtnSprite != null) ? shopCreamBtnSprite : shopEquipBtnSprite;
+                            }
                             btnImg.color = Color.white;
                         }
-                        mascotShopActionButtons[i].interactable = (_currentCoins >= price);
+                        mascotShopActionButtons[i].interactable = true;
                     }
                 }
             }
@@ -2149,38 +2788,48 @@ namespace BlockBlast
 
                 int specialCount = 0;
                 int duplicateSpecialCount = 0;
-                int[] shardGains = new int[5]; // 0: Pink, 1: Mint, 2: Gold, 3: Purple, 4: Special
+                int[] shardGains = new int[9]; // 0~3: Common, 4~7: Rare, 8: Special
                 List<GachaDropItem> dropsList = new List<GachaDropItem>();
 
                 for (int c = 0; c < count; c++)
                 {
                     float roll = Random.Range(0f, 100f);
-                    if (roll < 0.1f) // 0.1% chance for Special Mascot!
+                    if (roll < 1.0f) // 1.0% chance for Special Mascot!
                     {
-                        bool alreadyOwned = PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + 4, 0) == 1;
+                        bool alreadyOwned = PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + 8, 0) == 1;
                         if (alreadyOwned)
                         {
                             // Duplicate: instantly convert to 60 Special Shards for instant breakthrough!
-                            AddMascotShards(4, 60);
-                            shardGains[4] += 60;
+                            AddMascotShards(8, 60);
+                            shardGains[8] += 60;
                             duplicateSpecialCount++;
-                            dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 4, shardCount = 60, isDuplicateSpecial = true });
+                            dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 8, shardCount = 60, isDuplicateSpecial = true });
                         }
                         else
                         {
                             // First time unlock!
-                            PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 4, 1);
+                            PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 8, 1);
                             specialCount++;
-                            dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 4, shardCount = 0, isDuplicateSpecial = false });
+                            dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 8, shardCount = 0, isDuplicateSpecial = false });
                         }
                     }
                     else
                     {
-                        // 99.9% chance: Drops 5 Shards of random basic mascot (0, 1, 2, or 3)
-                        int basicIdx = Random.Range(0, 4);
-                        AddMascotShards(basicIdx, 5);
-                        shardGains[basicIdx] += 5;
-                        dropsList.Add(new GachaDropItem { isSpecial = false, mascotIndex = basicIdx, shardCount = 5, isDuplicateSpecial = false });
+                        // 99.0% chance: Drops 1 or 5 Shards of Common (0~3) or Rare (4~7) mascot!
+                        int shardAmount = (Random.value < 0.5f) ? 1 : 5;
+                        int chosenIdx = Random.Range(0, 8); // 0..7
+                        AddMascotShards(chosenIdx, shardAmount);
+                        shardGains[chosenIdx] += shardAmount;
+
+                        // Auto-unlock if 60 shards collected and not owned yet
+                        bool alreadyOwned = (chosenIdx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + chosenIdx, 0) == 1);
+                        if (!alreadyOwned && GetMascotShards(chosenIdx) >= 60)
+                        {
+                            SetMascotShards(chosenIdx, GetMascotShards(chosenIdx) - 60);
+                            PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + chosenIdx, 1);
+                        }
+
+                        dropsList.Add(new GachaDropItem { isSpecial = false, mascotIndex = chosenIdx, shardCount = shardAmount, isDuplicateSpecial = false });
                     }
                 }
 
@@ -2188,6 +2837,7 @@ namespace BlockBlast
                 RefreshCurrenciesUI();
                 RefreshMascotShopUI();
                 RefreshMascotModalUI();
+                RefreshMascotCodexUI();
 
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 if (BlockAudioManager.Instance != null)
@@ -2242,39 +2892,39 @@ namespace BlockBlast
 
             if (summonResultTitleText != null)
             {
-                summonResultTitleText.text = $"{count}회 소환 결과";
+                summonResultTitleText.text = $"{count}{LocalizationManager.Get("summon_result_count_suffix")}";
             }
 
             if (summonResultHighlightText != null)
             {
                 if (specialCount > 0)
                 {
-                    summonResultHighlightText.text = "<color=#FFE600>★ [스페셜 말랑이] 획득! ★</color>\n<size=22><color=#A6E3E9>최초 소환 성공! 강력한 보드 올 클리어 능력이 해금되었습니다!</color></size>";
+                    summonResultHighlightText.text = $"<color=#FFE600>★ [{GetLocalizedMascotName(8)}] {LocalizationManager.Get("summon_result_unlocked")} ★</color>\n<size=20><color=#554B64>{LocalizationManager.Get("summon_result_unlocked_desc")}</color></size>";
                 }
                 else if (duplicateSpecialCount > 0)
                 {
-                    summonResultHighlightText.text = "<color=#FFE600>★ [스페셜 말랑이] 중복 획득! ★</color>\n<size=22><color=#A6E3E9>스페셜 조각 60개로 즉시 변환되어 바로 돌파 가능!</color></size>";
+                    summonResultHighlightText.text = $"<color=#FFE600>★ [{GetLocalizedMascotName(8)}] {LocalizationManager.Get("summon_result_duplicate")} ★</color>\n<size=20><color=#554B64>{LocalizationManager.Get("summon_result_duplicate_desc")}</color></size>";
                 }
                 else
                 {
-                    summonResultHighlightText.text = "<color=#845EC2>말랑이 조각 획득 완료!</color>\n<size=20><color=#554B64>조각 60개를 모아 능력을 돌파하세요!</color></size>";
+                    summonResultHighlightText.text = $"<color=#845EC2>{LocalizationManager.Get("summon_result_shards_title")}</color>\n<size=20><color=#554B64>{LocalizationManager.Get("summon_result_shards_desc")}</color></size>";
                 }
             }
 
             if (summonResultMascotIcon != null)
             {
-                if (specialCount > 0 || duplicateSpecialCount > 0 || shardGains[4] > 0)
+                if (specialCount > 0 || duplicateSpecialCount > 0 || (shardGains != null && shardGains.Length > 8 && shardGains[8] > 0))
                 {
-                    if (mascotAvatars != null && mascotAvatars.Length > 4 && mascotAvatars[4] != null)
+                    if (mascotAvatars != null && mascotAvatars.Length > 8 && mascotAvatars[8] != null)
                     {
-                        summonResultMascotIcon.sprite = mascotAvatars[4];
+                        summonResultMascotIcon.sprite = mascotAvatars[8];
                     }
                     summonResultMascotIcon.gameObject.SetActive(true);
                 }
-                else
+                else if (shardGains != null)
                 {
                     int maxIdx = 0;
-                    for (int i = 1; i < 4; i++)
+                    for (int i = 1; i < shardGains.Length; i++)
                     {
                         if (shardGains[i] > shardGains[maxIdx]) maxIdx = i;
                     }
@@ -2286,15 +2936,15 @@ namespace BlockBlast
                 }
             }
 
-            if (summonResultShardsText != null)
+            if (summonResultShardsText != null && shardGains != null)
             {
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < shardGains.Length; i++)
                 {
                     if (shardGains[i] > 0)
                     {
-                        string colTag = (i == 4) ? "#E056FD" : (i == 0) ? "#FF6B8B" : (i == 1) ? "#20BF6B" : (i == 2) ? "#FA8231" : "#8854D0";
-                        sb.AppendLine($"<color={colTag}>• {MascotNames[i]} 조각: +{shardGains[i]}개 (보유: {GetMascotShards(i)}개)</color>");
+                        string colTag = (i == 8) ? "#E056FD" : (i >= 4) ? "#3498DB" : "#FF6B8B";
+                        sb.AppendLine($"<color={colTag}>• {GetLocalizedMascotName(i)}: +{shardGains[i]}개 ({LocalizationManager.Get("mascot_owned_shards")}: {GetMascotShards(i)})</color>");
                     }
                 }
                 summonResultShardsText.text = sb.ToString().TrimEnd();
@@ -2354,6 +3004,57 @@ namespace BlockBlast
             {
                 btnProbabilityDarkBg.onClick.RemoveAllListeners();
                 btnProbabilityDarkBg.onClick.AddListener(CloseProbabilityModal);
+            }
+        }
+
+        // ==========================================
+        // PICKUP SKILL DETAILS MODAL
+        // ==========================================
+
+        public void SetupPickupSkillDetailModal(
+            GameObject pModal, Button pClose, Button pOpen,
+            TMP_Text badgeTxt, TMP_Text s1Txt, TMP_Text s10Txt, TMP_Text ratesTxt, TMP_Text detailTxt)
+        {
+            pickupSkillDetailModal = pModal;
+            btnClosePickupSkillDetail = pClose;
+            btnOpenPickupSkillDetail = pOpen;
+            txtPickupBannerBadge = badgeTxt;
+            txtPickupSummon1 = s1Txt;
+            txtPickupSummon10 = s10Txt;
+            txtPickupBtnRates = ratesTxt;
+            txtPickupBtnDetail = detailTxt;
+
+            if (pickupSkillDetailModal != null) pickupSkillDetailModal.SetActive(false);
+
+            if (btnClosePickupSkillDetail != null)
+            {
+                btnClosePickupSkillDetail.onClick.RemoveAllListeners();
+                btnClosePickupSkillDetail.onClick.AddListener(ClosePickupSkillDetail);
+            }
+
+            if (btnOpenPickupSkillDetail != null)
+            {
+                btnOpenPickupSkillDetail.onClick.RemoveAllListeners();
+                btnOpenPickupSkillDetail.onClick.AddListener(OpenPickupSkillDetail);
+            }
+        }
+
+        public void OpenPickupSkillDetail()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (pickupSkillDetailModal != null)
+            {
+                pickupSkillDetailModal.transform.SetAsLastSibling();
+                pickupSkillDetailModal.SetActive(true);
+            }
+        }
+
+        public void ClosePickupSkillDetail()
+        {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+            if (pickupSkillDetailModal != null)
+            {
+                pickupSkillDetailModal.SetActive(false);
             }
         }
 
@@ -2517,7 +3218,9 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = LocalizationManager.Get("shop_btn_equipped");
-                            txt.color = new Color(0.06f, 0.35f, 0.26f, 1f); // Dark Forest Teal
+                            txt.color = Color.white;
+                            txt.enableAutoSizing = true;
+                            txt.fontSizeMin = 13f;
                         }
                         if (btnImg != null)
                         {
@@ -2531,7 +3234,9 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = LocalizationManager.Get("shop_btn_equip");
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f); // Dark Berry Magenta
+                            txt.color = Color.white;
+                            txt.enableAutoSizing = true;
+                            txt.fontSizeMin = 13f;
                         }
                         if (btnImg != null)
                         {
@@ -2543,17 +3248,27 @@ namespace BlockBlast
                     else
                     {
                         int price = (i < LobbyThemePrices.Length) ? LobbyThemePrices[i] : 0;
+                        bool canAfford = (_currentCoins >= price);
                         if (txt != null)
                         {
                             txt.text = $"{price:N0} C " + LocalizationManager.Get("shop_btn_buy");
-                            txt.color = new Color(0.46f, 0.08f, 0.24f, 1f);
+                            txt.color = canAfford ? Color.white : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.enableAutoSizing = true;
+                            txt.fontSizeMin = 13f;
                         }
                         if (btnImg != null)
                         {
-                            if (shopEquipBtnSprite != null) btnImg.sprite = shopEquipBtnSprite;
+                            if (canAfford)
+                            {
+                                btnImg.sprite = (shopGoldBtnSprite != null) ? shopGoldBtnSprite : shopEquipBtnSprite;
+                            }
+                            else
+                            {
+                                btnImg.sprite = (shopCreamBtnSprite != null) ? shopCreamBtnSprite : shopEquipBtnSprite;
+                            }
                             btnImg.color = Color.white;
                         }
-                        lobbyThemeActionButtons[i].interactable = (_currentCoins >= price);
+                        lobbyThemeActionButtons[i].interactable = true;
                     }
                 }
             }
@@ -2787,6 +3502,7 @@ namespace BlockBlast
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                settingsModal.transform.SetAsLastSibling();
                 settingsModal.SetActive(true);
             }
         }
@@ -3575,6 +4291,55 @@ namespace BlockBlast
             // Refresh Shop Buttons ("적용 중", "장착하기", "내 코인")
             RefreshThemeShopUI();
             RefreshLobbyThemeShopUI();
+
+            // Update Mascot Codex & Detail UI
+            RefreshMascotCodexUI();
+            if (mascotDetailModal != null && mascotDetailModal.activeSelf)
+            {
+                RefreshMascotDetailUI();
+            }
+
+            // Update Pickup Banner & Action Buttons
+            if (txtPickupBannerBadge != null) txtPickupBannerBadge.text = LocalizationManager.Get("pickup_banner_badge");
+            if (txtPickupBtnRates != null) txtPickupBtnRates.text = LocalizationManager.Get("pickup_btn_rates");
+            if (txtPickupBtnDetail != null) txtPickupBtnDetail.text = LocalizationManager.Get("pickup_btn_skill_detail");
+            if (txtPickupSummon1 != null) txtPickupSummon1.text = $"{LocalizationManager.Get("pickup_summon_1")}\n◆ 100";
+            if (txtPickupSummon10 != null) txtPickupSummon10.text = $"{LocalizationManager.Get("pickup_summon_10")}\n◆ 1,000";
+
+            // Update Pickup Skill Detail Modal Content
+            if (pickupSkillDetailModal != null)
+            {
+                var card = pickupSkillDetailModal.transform.Find("DialogCard");
+                if (card != null)
+                {
+                    var t = card.Find("Title")?.GetComponent<TMP_Text>();
+                    if (t != null) t.text = LocalizationManager.Get("pickup_modal_skill_title");
+                    var hl = card.Find("ShowcaseCard/HeadTxt")?.GetComponent<TMP_Text>();
+                    if (hl != null) hl.text = LocalizationManager.Get("pickup_modal_skill_headline");
+                    var sub = card.Find("ShowcaseCard/SubTxt")?.GetComponent<TMP_Text>();
+                    if (sub != null) sub.text = LocalizationManager.Get("pickup_modal_skill_sub");
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var feat = card.Find($"Feature_{i}/FeatTxt")?.GetComponent<TMP_Text>();
+                        if (feat != null) feat.text = LocalizationManager.Get($"pickup_modal_feature_{i + 1}");
+                    }
+                    var confirm = card.Find("BtnConfirm")?.GetComponentInChildren<TMP_Text>();
+                    if (confirm != null) confirm.text = LocalizationManager.Get("help_confirm");
+                }
+            }
+
+            // Update Probability Modal Content
+            if (probabilityModal != null)
+            {
+                var pCard = probabilityModal.transform.Find("DialogCard");
+                if (pCard != null)
+                {
+                    var pTitle = pCard.Find("Title")?.GetComponent<TMP_Text>();
+                    if (pTitle != null) pTitle.text = LocalizationManager.Get("pickup_btn_rates");
+                    var pConfirm = pCard.Find("BtnConfirm")?.GetComponentInChildren<TMP_Text>();
+                    if (pConfirm != null) pConfirm.text = LocalizationManager.Get("help_confirm");
+                }
+            }
 
             // Update Lobby Logo based on language
             if (lobbyLogoImage != null && languageLogos != null && (int)lang >= 0 && (int)lang < languageLogos.Length)

@@ -292,6 +292,11 @@ namespace BlockBlast
             }
         }
 
+        public void PlayFairyMagic()
+        {
+            PlayFairyChime();
+        }
+
         private AudioClip CreateFairyChimeClip()
         {
             int sampleRate = 44100;
@@ -453,6 +458,40 @@ namespace BlockBlast
             _bgmSource.Stop();
             _bgmSource.clip = null;
             _bgmSource.volume = bgmVolume;
+        }
+
+        private Coroutine _duckCoroutine;
+        private bool _isDucked = false;
+
+        public void DuckBGM(float duckFactor = 0.20f, float duration = 0.4f)
+        {
+            if (_bgmSource == null || !_bgmSource.isPlaying) return;
+            if (_duckCoroutine != null) StopCoroutine(_duckCoroutine);
+            _isDucked = true;
+            _duckCoroutine = StartCoroutine(DuckBGMRoutine(bgmVolume * Mathf.Clamp01(duckFactor), duration));
+        }
+
+        public void UnduckBGM(float duration = 0.6f)
+        {
+            if (_bgmSource == null || !_bgmSource.isPlaying) return;
+            if (!_isDucked) return;
+            if (_duckCoroutine != null) StopCoroutine(_duckCoroutine);
+            _isDucked = false;
+            _duckCoroutine = StartCoroutine(DuckBGMRoutine(bgmVolume, duration));
+        }
+
+        private IEnumerator DuckBGMRoutine(float targetVol, float duration)
+        {
+            float startVol = _bgmSource.volume;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                _bgmSource.volume = Mathf.Lerp(startVol, targetVol, elapsed / duration);
+                yield return null;
+            }
+            _bgmSource.volume = targetVol;
+            _duckCoroutine = null;
         }
 
         public void SetBGMVolume(float sliderValue)

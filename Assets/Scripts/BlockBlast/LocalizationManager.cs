@@ -225,11 +225,99 @@ namespace BlockBlast
             { "quit_modal_yes", new[] { "종료", "Quit", "終了", "退出" } },
             { "quit_modal_no", new[] { "취소", "Cancel", "キャンセル", "取消" } },
 
-            // Shop Modal
+            // Shop Modal & Pickup
             { "shop_title", new[] { "말랑 상점", "Mallang Shop", "マランショップ", "软萌商店" } },
             { "shop_btn_equip", new[] { "장착하기", "Equip", "装備", "装备" } },
             { "shop_btn_equipped", new[] { "적용 중", "Equipped", "適用中", "使用中" } },
             { "shop_btn_buy", new[] { "구매", "Buy", "購入", "购买" } },
+            { "pickup_event_title", new[] { "스페셜 픽업 소환", "Special Pickup", "スペシャルピックアップ", "特选限时精选" } },
+            { "pickup_banner_badge", new[] { "1.0% 확률 UP!", "1.0% Rate UP!", "1.0% 確率UP!", "1.0% 概率提升!" } },
+            { "pickup_btn_rates", new[] { "확률 정보", "Drop Rates", "確率情報", "概率详情" } },
+            { "pickup_btn_skill_detail", new[] { "ⓘ 스킬 & 픽업 상세", "ⓘ Skill Details", "ⓘ スキル詳細", "ⓘ 技能与精选详情" } },
+            { "pickup_summon_1", new[] { "1회 소환", "1x Summon", "1回召喚", "单次召唤" } },
+            { "pickup_summon_10", new[] { "10회 소환", "10x Summon", "10回召喚", "十连召唤" } },
+            { "pickup_dia_100", new[] { "◆ 100 다이아", "◆ 100 Dia", "◆ 100 ダイヤ", "◆ 100 钻石" } },
+            { "pickup_dia_1000", new[] { "◆ 1,000 다이아", "◆ 1,000 Dia", "◆ 1,000 ダイヤ", "◆ 1,000 钻石" } },
+            { "pickup_modal_skill_title", new[] { "스페셜 픽업 상세 안내", "Special Pickup Details", "ピックアップ詳細案内", "特选精选详情说明" } },
+            { "pickup_modal_skill_headline", new[] { "★ [올 클리어 엔젤] 스페셜 말랑이 능력 미리보기 ★", "★ [All Clear Angel] Special Skill Preview ★", "★ [オールクリアエンジェル] 能力プレビュー ★", "★ [全清天使] 特选团子能力前瞻 ★" } },
+            { "pickup_modal_skill_sub", new[] { "궁극기: [올 클리어 엔젤 폭파술] - 보드의 모든 블록을 한 번에 정화!", "Ultimate: [All Clear Angel Burst] - Clears all blocks on the board at once!", "アルティメット: [オールクリアエンジェル爆破術] - 盤面の全ブロックを一掃！", "大招: [全清天使引爆术] - 一键引爆清除棋盘上所有方块！" } },
+            { "pickup_modal_feature_1", new[] { "• 30줄 클리어 시 스킬 게이지 100% 충전 (버튼 점등!)", "• Clears 30 lines to fully charge skill gauge!", "• 30ライン消去でスキルゲージ100%充電！", "• 累计消除30行即可蓄满100%大招能量！" } },
+            { "pickup_modal_feature_2", new[] { "• 버튼 터치 시 화면의 모든 블록 폭파 + 뾰로롱 마법 연출!", "• Tap the skill button to clear all blocks on the board!", "• スキル発動で盤面の全ブロックが一掃爆破！", "• 点击技能按钮即可瞬间引爆消除棋盘所有方块！" } },
+            { "pickup_modal_feature_3", new[] { "• 픽업 확률 1.0%! 중복 획득 시 60조각 즉시 지급 (바로 1회 돌파!)", "• 1.0% Rate! Duplicates grant 60 shards for instant breakthrough!", "• 確率1.0%！重複時は欠片60個即時支給で即座突破！", "• 概率提升至1.0%！重复获得直接转化60碎片立即突破！" } },
+            { "pickup_modal_feature_4", new[] { "• 일반/희귀 말랑이 조각 1개 또는 5개 획득! 60개 수집 시 즉시 획득!", "• Common/Rare shards (1 or 5) drop! Collect 60 shards to unlock!", "• ノーマル/レアの欠片1個または5個獲得！60個で解放！", "• 掉落1个或5个普通/稀有碎片！集齐60个即可解锁！" } },
+
+            // Summon Result Modal
+            { "summon_result_count_suffix", new[] { "회 소환 결과", "x Summon Results", "回召喚結果", "连召唤结果" } },
+            { "summon_result_unlocked", new[] { "획득 완료!", "Acquired!", "獲得完了！", "获得成功！" } },
+            { "summon_result_unlocked_desc", new[] { "최초 소환 성공! 강력한 보드 올 클리어 능력이 해금되었습니다!", "First summon success! Board All Clear skill is unlocked!", "初召喚成功！強力なボード全消去能力が解放されました！", "首次召唤成功！强力全屏引爆技能已解锁！" } },
+            { "summon_result_duplicate", new[] { "중복 획득!", "Duplicate Acquired!", "重複獲得！", "重复获得！" } },
+            { "summon_result_duplicate_desc", new[] { "스페셜 조각 60개로 즉시 변환되어 바로 돌파 가능!", "Instantly converted to 60 Special Shards for breakthrough!", "スペシャル欠片60個に即座変換！すぐに突破可能！", "直接转化为60个特选碎片，可立即进行突破！" } },
+            { "summon_result_shards_title", new[] { "말랑이 조각 획득!", "Mallang Shards Acquired!", "マランの欠片獲得！", "获得伙伴碎片！" } },
+            { "summon_result_shards_desc", new[] { "조각 60개를 모으면 해당 말랑이를 획득할 수 있어요!", "Collect 60 shards to acquire the mascot!", "欠片60個を集めるとマランを獲得できます！", "集齐60个碎片即可解锁该吉祥物！" } },
+            { "mascot_owned_shards", new[] { "보유", "Owned", "所持", "持有" } },
+
+            // Mascot Codex (냥냥시노비 도감 스타일)
+            { "codex_title", new[] { "말랑이 도감", "Mascot Codex", "マラン図鑑", "软萌图鉴" } },
+            { "codex_subtitle", new[] { "말랑이들을 모아 강화하고 강력한 능력을 돌파하세요!", "Collect Mallangs, level them up, and breakthrough!", "マランたちを集めて強化・限界突破しよう！", "收集软萌小伙伴，升级并突破更强上限！" } },
+            { "codex_collected", new[] { "수집 완료", "Collection", "収集完了", "收集进度" } },
+            { "codex_equipped", new[] { "장착 중", "Equipped", "装着中", "出战中" } },
+            { "codex_locked", new[] { "미보유 (잠김)", "Locked", "未所持 (ロック)", "未获得 (已锁定)" } },
+            { "codex_badge_common", new[] { "일반", "Common", "ノーマル", "普通" } },
+            { "codex_badge_rare", new[] { "희귀", "Rare", "レア", "稀有" } },
+            { "codex_badge_special", new[] { "스페셜", "Special", "スペシャル", "特选" } },
+
+            // Mascot Growth & Detail Modal
+            { "mascot_detail_title", new[] { "말랑이 육성 & 상세 정보", "Mascot Growth & Info", "マラン育成・詳細情報", "伙伴养成与详情" } },
+            { "mascot_detail_ability_header", new[] { "★ 고유 능력 상세 (Ability & Effects)", "★ Ability & Effects Details", "★ 固有能力詳細 (Ability & Effects)", "★ 专属能力详情 (Ability & Effects)" } },
+            { "mascot_detail_level", new[] { "레벨", "Level", "レベル", "等级" } },
+            { "mascot_detail_breakthrough", new[] { "돌파 단계", "Breakthrough", "限界突破", "突破阶段" } },
+            { "mascot_detail_shards", new[] { "말랑 조각", "Shards", "マランの欠片", "伙伴碎片" } },
+            { "mascot_btn_levelup", new[] { "레벨업", "Level Up", "レベルアップ", "升级" } },
+            { "mascot_btn_breakthrough", new[] { "돌파", "Breakthrough", "限界突破", "突破" } },
+            { "mascot_btn_equip", new[] { "장착하기", "Equip", "装着する", "出战" } },
+            { "mascot_btn_equipped", new[] { "장착 중", "Equipped", "装着中", "出战中" } },
+            { "mascot_btn_unlock", new[] { "해금하기 (조각 60개)", "Unlock (60 Shards)", "解放する (欠片60個)", "解锁 (60碎片)" } },
+            { "mascot_max_level", new[] { "최고 레벨 달성", "MAX Level", "最大レベル達成", "已达最高等级" } },
+            { "mascot_max_breakthrough", new[] { "최대 돌파 완료 (5★)", "MAX Breakthrough (5★)", "最大突破完了 (5★)", "已满星突破 (5★)" } },
+            { "mascot_need_shards", new[] { "조각 60개로 해금", "Need 60 Shards", "欠片60個で解放", "需集齐60碎片解锁" } },
+            { "mascot_obtain_pickup", new[] { "획득처: 픽업 소환", "Obtained via: Pickup Gacha", "獲得先: ピックアップ召喚", "获取途径：精选召唤" } },
+
+            // 9 Mascots: Names, Titles, Abilities
+            { "mascot_0_name", new[] { "핑크 말랑이", "Pink Mallang", "ピンクマラン", "粉萌团子" } },
+            { "mascot_0_title", new[] { "기본 말랑이", "Starter Mallang", "基本マラン", "初识团子" } },
+            { "mascot_0_desc", new[] { "고유능력: 추가 시간 보너스\n(턴 제한 시간이 넉넉해집니다)", "Ability: Extra Turn Time\n(Gives you more time per turn)", "固有能力: 追加時間ボーナス\n(ターンの制限時間が延長されます)", "固有能力: 额外时间加成\n(每回合放置方块时间更从容)" } },
+
+            { "mascot_1_name", new[] { "민트 말랑이", "Mint Mallang", "ミントマラン", "薄荷团子" } },
+            { "mascot_1_title", new[] { "스킵 마스터", "Skip Master", "スキップマスター", "跳过大师" } },
+            { "mascot_1_desc", new[] { "고유능력: 스킵 스택 강화\n(시작 2개 / 최대 4개 보유 가능)", "Ability: Skip Stack Boost\n(Start with 2 / Hold up to 4 skips)", "固有能力: スキップスタック強化\n(開始2個 / 最大4個ストック可能)", "固有能力: 跳过次数强化\n(初始2次 / 最大可存4次跳过)" } },
+
+            { "mascot_2_name", new[] { "골드 말랑이", "Gold Mallang", "ゴールドマラン", "黄金团子" } },
+            { "mascot_2_title", new[] { "보물 사냥꾼", "Treasure Hunter", "トレジャーハンター", "寻宝猎人" } },
+            { "mascot_2_desc", new[] { "고유능력: 라인 추가 점수\n(클리어 줄마다 +100점 추가 보너스)", "Ability: Line Clear Score\n(+100 extra bonus pts per cleared line)", "固有能力: ライン追加スコア\n(消去列ごとに+100点ボーナス)", "固有能力: 消除整行额外加分\n(每消除一行额外加100分)" } },
+
+            { "mascot_3_name", new[] { "퍼플 말랑이", "Purple Mallang", "パープルマラン", "紫晶团子" } },
+            { "mascot_3_title", new[] { "매직 큐브", "Magic Cube", "マジックキューブ", "魔方使者" } },
+            { "mascot_3_desc", new[] { "고유능력: 2×2 매직 블록\n(5% 확률로 2×2 보라 블록 3개 소환)", "Ability: 2x2 Magic Blocks\n(5% chance to spawn 3 2x2 purple blocks)", "固有能力: 2×2マジックブロック\n(5%の確率で2×2紫ブロック3個召喚)", "固有能力: 2×2魔方方块\n(5%概率召唤3个2×2紫色方块)" } },
+
+            { "mascot_4_name", new[] { "블루 말랑이", "Blue Mallang", "ブルーマラン", "碧蓝团子" } },
+            { "mascot_4_title", new[] { "아쿠아 쉴드", "Aqua Shield", "アクアシールド", "水波护盾" } },
+            { "mascot_4_desc", new[] { "고유능력: 아쿠아 쉴드\n(게임오버 위기 시 1회 부활 & 블록 재배치)", "Ability: Aqua Shield\n(Revives once upon game over & reshuffles)", "固有能力: アクアシールド\n(ピンチ時1回復活＆ブロック再配置)", "固有能力: 水波护盾\n(陷入死局时触发1次复活重抽方块)" } },
+
+            { "mascot_5_name", new[] { "베리 말랑이", "Berry Mallang", "ベリーマラン", "莓果团子" } },
+            { "mascot_5_title", new[] { "슈가 버스트", "Sugar Burst", "シュガーバースト", "糖爆甜心" } },
+            { "mascot_5_desc", new[] { "고유능력: 슈가 버스트\n(콤보 달성 시 주변 블록 추가 폭파 & +15% 점수)", "Ability: Sugar Burst\n(Extra blast & +15% score on combos)", "固有能力: シュガーバースト\n(コンボ時周囲追加爆破＆スコア+15%)", "固有能力: 糖爆甜心\n(达成连击时额外爆破周围并提升15%分数)" } },
+
+            { "mascot_6_name", new[] { "레몬 말랑이", "Lemon Mallang", "レモンマラン", "柠檬团子" } },
+            { "mascot_6_title", new[] { "번개 팡", "Lemon Spark", "レモンスパーク", "闪电爆破" } },
+            { "mascot_6_desc", new[] { "고유능력: 번개 팡\n(3연속 콤보 시 가로 한 줄 번개 즉시 폭파)", "Ability: Lemon Spark\n(Instantly zaps and clears a row at 3 combos)", "固有能力: レモンスパーク\n(3連続コンボ時雷で横1列即座爆破)", "固有能力: 闪电爆破\n(达成3连击时触发闪电瞬间消灭整行)" } },
+
+            { "mascot_7_name", new[] { "클라우드 말랑이", "Cloud Mallang", "クラウドマラン", "云朵团子" } },
+            { "mascot_7_title", new[] { "푹신 구름", "Fluffy Cloud", "ふわふわクラウド", "蓬松云朵" } },
+            { "mascot_7_desc", new[] { "고유능력: 푹신 구름\n(시간 감소 속도 20% 완화 & 슬로우 피버)", "Ability: Fluffy Cloud\n(Slows time decay by 20% for cozy puzzle play)", "固有能力: ふわふわクラウド\n(時間減少速度20%緩和＆まったりプレイ)", "固有能力: 蓬松云朵\n(时间衰减速度减缓20%，更轻松畅快)" } },
+
+            { "mascot_8_name", new[] { "스페셜 말랑이", "Special Angel", "スペシャルマラン", "星天使团子" } },
+            { "mascot_8_title", new[] { "올 클리어 엔젤", "All Clear Angel", "オールクリアエンジェル", "全清天使" } },
+            { "mascot_8_desc", new[] { "고유능력: 보드 올 클리어\n(스킬 터치 시 보드의 모든 블록 전멸 폭파!)", "Ability: Board Wipe Magic\n(Tap skill button to blast all blocks away!)", "固有能力: オールクリア\n(スキルタップで全ブロック一掃爆破！)", "固有能力: 全屏清盘魔法\n(点击专属大招按钮瞬间清除全场方块！)" } },
 
             // In-Game Themes
             { "theme_game_0_name", new[] { "몽환의 밤", "Dreamy Night", "夢幻の夜", "梦幻之夜" } },

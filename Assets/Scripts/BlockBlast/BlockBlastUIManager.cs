@@ -651,13 +651,19 @@ namespace BlockBlast
 
         private void UpdateTurnMaxTime()
         {
-            // Pink Mascot Ability: +1.0 second base (+0.2s per upgrade level) extra time
+            // Pink Mascot (0): +1.0s base (+0.05s per upgrade level) extra time
+            // Cloud Mascot (7): +2.0s base (+0.1s per upgrade level) extra cozy time
             int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
             float bonusSec = 0f;
             if (mascot == 0)
             {
                 int lvl = LobbyManager.GetMascotLevel(0);
-                bonusSec = 1.0f + (lvl - 1) * 0.2f;
+                bonusSec = 1.0f + (lvl - 1) * 0.05f;
+            }
+            else if (mascot == 7)
+            {
+                int lvl = LobbyManager.GetMascotLevel(7);
+                bonusSec = 2.0f + (lvl - 1) * 0.1f;
             }
             _currentTurnMaxTime = Mathf.Max(minTurnMaxTime + bonusSec, (initialTurnMaxTime + bonusSec) - _totalLinesCleared * timeDecreasePerLine);
         }
@@ -926,9 +932,9 @@ namespace BlockBlast
 
             // 🌟 Special Mascot Skill: Charge board clear skill (30 lines, reduced by upgrade level)
             int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
-            if (mascot == 4)
+            if (mascot == 8)
             {
-                int lvl = LobbyManager.GetMascotLevel(4);
+                int lvl = LobbyManager.GetMascotLevel(8);
                 _specialLinesRequired = Mathf.Max(15, 30 - (lvl - 1) * 2);
                 _specialLinesProgress += totalLines;
                 if (_specialLinesProgress >= _specialLinesRequired)
@@ -1062,9 +1068,9 @@ namespace BlockBlast
             }
             _skipLinesProgress = 0;
 
-            if (mascot == 4)
+            if (mascot == 8)
             {
-                int lvl = LobbyManager.GetMascotLevel(4);
+                int lvl = LobbyManager.GetMascotLevel(8);
                 _specialLinesRequired = Mathf.Max(15, 30 - (lvl - 1) * 2);
                 _specialLinesProgress = _specialLinesRequired;
                 _isSpecialSkillReady = true;
@@ -1499,7 +1505,7 @@ namespace BlockBlast
         public void UpdateSpecialSkillUI()
         {
             int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
-            if (mascot != 4)
+            if (mascot != 8)
             {
                 if (btnBoardClear != null) btnBoardClear.gameObject.SetActive(false);
                 return;
@@ -1549,7 +1555,7 @@ namespace BlockBlast
         public void UseBoardClearSkill()
         {
             int mascot = PlayerPrefs.GetInt("Selected_Mascot_Idx", 0);
-            if (mascot != 4 || !_isSpecialSkillReady) return;
+            if (mascot != 8 || !_isSpecialSkillReady) return;
 
             _isSpecialSkillReady = false;
             _specialLinesProgress = 0;

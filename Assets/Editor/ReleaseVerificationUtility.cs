@@ -158,6 +158,50 @@ namespace BlockBlast.Editor
             }
         }
 
+        [MenuItem("Block Blast/Debug/Show Lobby Screen")]
+        public static void ShowLobbyScreen()
+        {
+            if (LobbyManager.Instance != null)
+            {
+                LobbyManager.Instance.ShowLobby();
+                Debug.Log("<color=cyan>[ReleaseVerification] Showed Lobby Screen!</color>");
+            }
+        }
+
+        [MenuItem("Block Blast/Debug/Shop Switch To Mascots Tab")]
+        public static void ShopSwitchToMascotsTab()
+        {
+            if (LobbyManager.Instance != null)
+            {
+                LobbyManager.Instance.SelectShopTab(2);
+                Debug.Log("<color=cyan>[ReleaseVerification] Switched Shop to Mascots Tab!</color>");
+            }
+        }
+
+        [MenuItem("Block Blast/Debug/Open Rare Mascot Detail (Blue)")]
+        public static void OpenMascotDetailBlue()
+        {
+            if (LobbyManager.Instance != null) LobbyManager.Instance.OpenMascotDetail(4);
+        }
+
+        [MenuItem("Block Blast/Debug/Open Rare Mascot Detail (Berry)")]
+        public static void OpenMascotDetailBerry()
+        {
+            if (LobbyManager.Instance != null) LobbyManager.Instance.OpenMascotDetail(5);
+        }
+
+        [MenuItem("Block Blast/Debug/Open Rare Mascot Detail (Lemon)")]
+        public static void OpenMascotDetailLemon()
+        {
+            if (LobbyManager.Instance != null) LobbyManager.Instance.OpenMascotDetail(6);
+        }
+
+        [MenuItem("Block Blast/Debug/Open Rare Mascot Detail (Cloud)")]
+        public static void OpenMascotDetailCloud()
+        {
+            if (LobbyManager.Instance != null) LobbyManager.Instance.OpenMascotDetail(7);
+        }
+
         [MenuItem("Block Blast/Debug/Shop Switch To Pickup Tab")]
         public static void ShopSwitchToPickupTab()
         {

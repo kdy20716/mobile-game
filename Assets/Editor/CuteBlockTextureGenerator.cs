@@ -208,9 +208,7 @@ namespace BlockBlast.Editor
 
         public static Sprite GetOrCreateCloseXButtonSprite()
         {
-            EnsureFolder();
-            string path = $"{Folder}/Jelly_Button_Close_X.png";
-            return ForceGetOrImportSingleSprite(path);
+            return GetOrCreateNanoBananaCandyCloseButtonSprite(false);
         }
 
         private static void EnsureFallbackFont(TMP_FontAsset fontAsset)
@@ -862,6 +860,76 @@ namespace BlockBlast.Editor
             EnsureSpecialMascotCutout();
             string path = $"{Folder}/Block_Special_Mascot.png";
             return ForceGetOrImportSingleSprite(path) ?? GetOrCreateMascotSprite();
+        }
+
+        public static Sprite GetOrCreateBlueMascotSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Block_Blue_Mascot.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateMintMascotSprite();
+        }
+
+        public static Sprite GetOrCreateBerryMascotSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Block_Berry_Mascot.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreatePinkMascotSprite();
+        }
+
+        public static Sprite GetOrCreateLemonMascotSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Block_Lemon_Mascot.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateGoldMascotSprite();
+        }
+
+        public static Sprite GetOrCreateCloudMascotSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Block_Cloud_Mascot.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateSpecialMascotSprite();
+        }
+
+        public static Sprite GetOrCreateCodexCardFrameSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Codex_Card_Frame.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateCuteCardSprite();
+        }
+
+        public static Sprite GetOrCreateBadgeCommonSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Badge_Common.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateTabPillSprite();
+        }
+
+        public static Sprite GetOrCreateBadgeRareSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Badge_Rare.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateTabPillSprite();
+        }
+
+        public static Sprite GetOrCreateBadgeSpecialSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Badge_Special.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateTabPillSprite();
+        }
+
+        public static Sprite GetOrCreateStarActiveSprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Star_Active.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateFireworksSparkleStarSprite();
+        }
+
+        public static Sprite GetOrCreateStarEmptySprite()
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Star_Empty.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateFireworksSparkleStarSprite();
         }
 
         public static Sprite GetOrCreateSideWingLeftSprite()
@@ -2234,16 +2302,6 @@ namespace BlockBlast.Editor
             DrawBlush(tex, cx + r * 0.35f, cy + r * 0.35f, r * 0.35f, Color.white);
         }
 
-        public static Sprite GetOrCreateBlueMascotSprite()
-        {
-            // Blue mascot does not exist in Mallang Blast; ensure any remnants are deleted and return null.
-            string path = $"{Folder}/Jelly_Mascot_Blue.png";
-            if (File.Exists(path))
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
-            return null;
-        }
 
         public static Sprite GetOrCreateRedMascotSprite()
         {
@@ -3418,73 +3476,7 @@ namespace BlockBlast.Editor
 
         public static Sprite GetOrCreateFairyActionButtonSprite()
         {
-            EnsureFolder();
-            string path = $"{Folder}/Lobby_Btn_Action_3D.png";
-
-            int w = 256;
-            int h = 104;
-            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            float radius = 42f;
-
-            Color bottomShadow = new Color(0.80f, 0.76f, 0.88f); // soft grounding pearl
-            Color topGlow = new Color(1.0f, 1.0f, 1.0f);         // clean bright white
-
-            for (int y = 0; y < h; y++)
-            {
-                float normY = (float)y / (h - 1);
-                for (int x = 0; x < w; x++)
-                {
-                    float cx = Mathf.Clamp(x, radius, w - 1 - radius);
-                    float cy = Mathf.Clamp(y, radius, h - 1 - radius);
-                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy));
-
-                    if (dist > radius + 0.5f)
-                    {
-                        tex.SetPixel(x, y, Color.clear);
-                    }
-                    else
-                    {
-                        float alpha = Mathf.Clamp01(radius + 0.5f - dist);
-                        
-                        // Pure continuous smooth vertical gradient
-                        Color baseColor = Color.Lerp(bottomShadow, topGlow, normY);
-
-                        // Top curved glass shine arc
-                        if (normY > 0.40f)
-                        {
-                            float shineAlpha = Mathf.SmoothStep(0.40f, 0.90f, normY) * 0.35f;
-                            baseColor = Color.Lerp(baseColor, Color.white, shineAlpha);
-                        }
-
-                        // Bottom 3D bevel depth
-                        if (normY < 0.15f)
-                        {
-                            float shadowAlpha = (1f - normY / 0.15f) * 0.25f;
-                            baseColor = Color.Lerp(baseColor, new Color(0.45f, 0.40f, 0.55f), shadowAlpha);
-                        }
-
-                        baseColor.a *= alpha;
-                        tex.SetPixel(x, y, baseColor);
-                    }
-                }
-            }
-
-            tex.Apply();
-            SafeWriteAllBytes(path, tex.EncodeToPNG());
-            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-
-            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (importer != null)
-            {
-                importer.textureType = TextureImporterType.Sprite;
-                importer.alphaIsTransparency = true;
-                importer.filterMode = FilterMode.Bilinear;
-                importer.spritePixelsPerUnit = 100;
-                importer.spriteBorder = new Vector4(46, 36, 46, 36); // 9-slice
-                importer.SaveAndReimport();
-            }
-
-            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            return GetOrCreateJellyButtonPinkSprite(false);
         }
 
         public static Sprite GetOrCreateCuteCardSprite()
@@ -4058,36 +4050,12 @@ namespace BlockBlast.Editor
 
         public static Sprite GetOrCreateShopEquipButtonSprite(bool force = false)
         {
-            EnsureFolder();
-            string path = $"{Folder}/UI_Btn_Shop_Equip.png";
-            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
-
-            Color outer = new Color(0.85f, 0.20f, 0.42f, 1f);     // Crisp strawberry rim
-            Color bevTop = new Color(1.0f, 0.55f, 0.72f, 1f);     // Sweet candy pink bevel
-            Color bevBot = new Color(0.95f, 0.30f, 0.52f, 1f);     // Vibrant berry rose
-            Color fillTop = new Color(1.0f, 0.94f, 0.97f, 1f);    // Soft light pink interior
-            Color fillBot = new Color(1.0f, 0.84f, 0.91f, 1f);    // Gentle pastel pink interior
-            Color shadow = new Color(0.30f, 0.05f, 0.15f, 0.24f);
-
-            Texture2D tex = GenerateShopActionButtonTexture(256, 96, 28f, outer, bevTop, bevBot, fillTop, fillBot, shadow);
-            return SaveAndConfigureSprite(path, tex, new Vector4(32, 24, 32, 24), true);
+            return GetOrCreateJellyButtonPinkSprite(force);
         }
 
         public static Sprite GetOrCreateShopEquippedButtonSprite(bool force = false)
         {
-            EnsureFolder();
-            string path = $"{Folder}/UI_Btn_Shop_Equipped.png";
-            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
-
-            Color outer = new Color(0.10f, 0.65f, 0.48f, 1f);     // Crisp mint green rim
-            Color bevTop = new Color(0.35f, 0.88f, 0.72f, 1f);    // Pastel mint candy bevel
-            Color bevBot = new Color(0.18f, 0.75f, 0.58f, 1f);    // Spring teal candy
-            Color fillTop = new Color(0.94f, 0.99f, 0.96f, 1f);   // Soft mint cream interior
-            Color fillBot = new Color(0.82f, 0.96f, 0.90f, 1f);   // Gentle pastel mint interior
-            Color shadow = new Color(0.05f, 0.22f, 0.16f, 0.24f);
-
-            Texture2D tex = GenerateShopActionButtonTexture(256, 96, 28f, outer, bevTop, bevBot, fillTop, fillBot, shadow);
-            return SaveAndConfigureSprite(path, tex, new Vector4(32, 24, 32, 24), true);
+            return GetOrCreateJellyButtonMintSprite(force);
         }
 
         public static Sprite GetOrCreateShopItemCardSprite(bool force = false)
@@ -4402,6 +4370,10 @@ namespace BlockBlast.Editor
                 GetOrCreateHighResAvatarSprite("Avatar_Mint", "Block_Mint_Mascot.png", force),
                 GetOrCreateHighResAvatarSprite("Avatar_Gold", "Block_Gold_Mascot.png", force),
                 GetOrCreateHighResAvatarSprite("Avatar_Purple", "Block_Purple_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Blue", "Block_Blue_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Berry", "Block_Berry_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Lemon", "Block_Lemon_Mascot.png", force),
+                GetOrCreateHighResAvatarSprite("Avatar_Cloud", "Block_Cloud_Mascot.png", force),
                 GetOrCreateHighResAvatarSprite("Avatar_Special", "Block_Special_Mascot.png", force)
             };
         }
@@ -5186,6 +5158,294 @@ namespace BlockBlast.Editor
             }
             tex.Apply();
             return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        // =========================================================
+        // NANOBANANA JUICY 3D JELLY CANDY BUTTON GENERATOR
+        // =========================================================
+
+        public static Sprite GetOrCreateNanoBananaJellyButtonSprite(string name, Color baseCol, Color cushionCol, Color rimCol, bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/{name}.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int width = 256;
+            int height = 96;
+            Texture2D tex = GenerateNanoBananaJellyButtonTexture(width, height, baseCol, cushionCol, rimCol);
+            return SaveAndConfigureSprite(path, tex, new Vector4(46, 38, 46, 38), true);
+        }
+
+        public static Sprite GetOrCreateJellyButtonPinkSprite(bool force = false) =>
+            GetOrCreateNanoBananaJellyButtonSprite("UI_Btn_Jelly_Pink", new Color(1f, 0.38f, 0.60f, 1f), new Color(0.82f, 0.16f, 0.40f, 1f), new Color(0.92f, 0.22f, 0.48f, 1f), force);
+
+        public static Sprite GetOrCreateJellyButtonMintSprite(bool force = false) =>
+            GetOrCreateNanoBananaJellyButtonSprite("UI_Btn_Jelly_Mint", new Color(0.00f, 0.82f, 0.70f, 1f), new Color(0.00f, 0.54f, 0.48f, 1f), new Color(0.00f, 0.68f, 0.58f, 1f), force);
+
+        public static Sprite GetOrCreateJellyButtonGoldSprite(bool force = false) =>
+            GetOrCreateNanoBananaJellyButtonSprite("UI_Btn_Jelly_Gold", new Color(1f, 0.70f, 0.14f, 1f), new Color(0.82f, 0.48f, 0.05f, 1f), new Color(0.92f, 0.60f, 0.08f, 1f), force);
+
+        public static Sprite GetOrCreateJellyButtonPurpleSprite(bool force = false) =>
+            GetOrCreateNanoBananaJellyButtonSprite("UI_Btn_Jelly_Purple", new Color(0.68f, 0.40f, 0.98f, 1f), new Color(0.48f, 0.20f, 0.78f, 1f), new Color(0.58f, 0.28f, 0.88f, 1f), force);
+
+        public static Sprite GetOrCreateJellyButtonCreamSprite(bool force = false) =>
+            GetOrCreateNanoBananaJellyButtonSprite("UI_Btn_Jelly_Cream", new Color(0.99f, 0.97f, 1.0f, 1f), new Color(0.88f, 0.84f, 0.94f, 1f), new Color(0.82f, 0.76f, 0.90f, 1f), force);
+
+        public static Sprite GetOrCreateNanoBananaCandyCloseButtonSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Btn_Jelly_Close.png";
+            if (!force && File.Exists(path)) return ForceGetOrImportSingleSprite(path);
+
+            int size = 128;
+            Texture2D tex = GenerateNanoBananaCandyCloseTexture(size);
+            return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
+        }
+
+        private static Texture2D GenerateNanoBananaJellyButtonTexture(int width, int height, Color baseCol, Color cushionCol, Color rimCol)
+        {
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            float bevelHeight = 10f;
+            float radius = (height - bevelHeight) * 0.46f;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    // 1. Soft Drop Shadow
+                    float shCx = Mathf.Clamp(x, radius + 4f, width - 1 - radius - 4f);
+                    float shCy = radius + 2f;
+                    float shDist = Vector2.Distance(new Vector2(x, y), new Vector2(shCx, shCy));
+                    float shAlpha = 0f;
+                    if (y < radius + 8f && shDist <= radius + 5f)
+                    {
+                        shAlpha = Mathf.Clamp01((radius + 5f - shDist) / 5f) * 0.24f;
+                    }
+
+                    // 2. 3D Bottom Base Cushion
+                    float extCx = Mathf.Clamp(x, radius, width - 1 - radius);
+                    float extCy = radius + 2f;
+                    float extDist = Vector2.Distance(new Vector2(x, y), new Vector2(extCx, extCy));
+                    float extAlpha = 0f;
+                    Color extColor = cushionCol;
+                    if (y <= radius + bevelHeight + 2f && extDist <= radius + 1f)
+                    {
+                        extAlpha = Mathf.Clamp01(radius + 1f - extDist);
+                        float ny = Mathf.Clamp01(y / (radius + bevelHeight));
+                        extColor = Color.Lerp(cushionCol * 0.85f, cushionCol, ny);
+                    }
+
+                    // 3. Top Gelatin Face Pill
+                    float topCx = Mathf.Clamp(x, radius, width - 1 - radius);
+                    float topCy = radius + bevelHeight;
+                    float topDist = Vector2.Distance(new Vector2(x, y), new Vector2(topCx, topCy));
+                    float topAlpha = 0f;
+                    Color faceColor = Color.clear;
+
+                    if (topDist <= radius + 1f)
+                    {
+                        topAlpha = Mathf.Clamp01(radius + 1f - topDist);
+                        float faceNormY = Mathf.Clamp01((y - bevelHeight) / (height - bevelHeight));
+
+                        Color colLight = Color.Lerp(baseCol, Color.white, 0.22f);
+                        Color colDeep = baseCol;
+                        faceColor = Color.Lerp(colDeep, colLight, Mathf.SmoothStep(0.05f, 0.95f, faceNormY));
+
+                        // Soft Subsurface Scattering along bottom curve
+                        if (y < topCy && topDist > radius - 8f)
+                        {
+                            float rimUp = (topDist - (radius - 8f)) / 8f;
+                            faceColor = Color.Lerp(faceColor, Color.Lerp(baseCol, Color.white, 0.45f), rimUp * 0.35f);
+                        }
+
+                        // Top Crescent Glass Gloss Arc
+                        if (faceNormY > 0.48f)
+                        {
+                            float arcT = (faceNormY - 0.48f) / 0.52f;
+                            float glossIntensity = Mathf.SmoothStep(0f, 1f, arcT) * 0.55f;
+                            faceColor = Color.Lerp(faceColor, Color.white, glossIntensity);
+                        }
+
+                        // Topmost fine glaze highlight
+                        if (y > height - 12 && topDist < radius - 2f)
+                        {
+                            float fineGlow = Mathf.Clamp01((y - (height - 12)) / 8f);
+                            faceColor = Color.Lerp(faceColor, Color.white, fineGlow * 0.40f);
+                        }
+
+                        // Outer Crisp Rim / Stroke
+                        if (topDist > radius - 2.5f)
+                        {
+                            float rimT = (topDist - (radius - 2.5f)) / 2.5f;
+                            faceColor = Color.Lerp(faceColor, rimCol, rimT * 0.85f);
+                        }
+                    }
+
+                    Color pix = Color.clear;
+                    if (shAlpha > 0f)
+                    {
+                        Color shadow = new Color(cushionCol.r * 0.3f, cushionCol.g * 0.15f, cushionCol.b * 0.3f, shAlpha);
+                        pix = shadow;
+                    }
+                    if (extAlpha > 0f)
+                    {
+                        extColor.a = extAlpha;
+                        pix = (pix.a > 0f) ? Color.Lerp(pix, extColor, extAlpha) : extColor;
+                        pix.a = Mathf.Max(pix.a, extAlpha);
+                    }
+                    if (topAlpha > 0f)
+                    {
+                        faceColor.a = topAlpha;
+                        pix = (pix.a > 0f) ? Color.Lerp(pix, faceColor, topAlpha) : faceColor;
+                        pix.a = Mathf.Max(pix.a, topAlpha);
+                    }
+
+                    tex.SetPixel(x, y, pix);
+                }
+            }
+
+            // Draw cute glossy gleam spot on left shoulder
+            float spotX = radius + 8f;
+            float spotY = height - 20f;
+            DrawSoftGleamSpot(tex, spotX, spotY, 14f, 7f, 0.70f);
+
+            tex.Apply();
+            return tex;
+        }
+
+        private static Texture2D GenerateNanoBananaCandyCloseTexture(int size)
+        {
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float cx = size * 0.5f;
+            float cy = size * 0.5f + 3f;
+            float radius = size * 0.42f;
+
+            Color baseCol = new Color(1f, 0.38f, 0.58f, 1f);     // Juicy strawberry candy
+            Color cushionCol = new Color(0.80f, 0.14f, 0.38f, 1f); // Deep raspberry base
+            Color rimCol = new Color(0.92f, 0.20f, 0.48f, 1f);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    // 1. Soft Drop Shadow
+                    float shDist = Vector2.Distance(new Vector2(x, y), new Vector2(cx, radius + 2f));
+                    float shAlpha = 0f;
+                    if (shDist <= radius + 5f)
+                    {
+                        shAlpha = Mathf.Clamp01((radius + 5f - shDist) / 5f) * 0.25f;
+                    }
+
+                    // 2. 3D Cushion Base
+                    float extDist = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy - 6f));
+                    float extAlpha = 0f;
+                    if (extDist <= radius + 1f)
+                    {
+                        extAlpha = Mathf.Clamp01(radius + 1f - extDist);
+                    }
+
+                    // 3. Top Sphere
+                    float topDist = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy));
+                    float topAlpha = 0f;
+                    Color faceColor = Color.clear;
+
+                    if (topDist <= radius + 1f)
+                    {
+                        topAlpha = Mathf.Clamp01(radius + 1f - topDist);
+                        float normY = Mathf.Clamp01((y - (cy - radius)) / (2f * radius));
+
+                        faceColor = Color.Lerp(cushionCol, Color.Lerp(baseCol, Color.white, 0.3f), normY);
+
+                        if (normY > 0.55f)
+                        {
+                            float gT = (normY - 0.55f) / 0.45f;
+                            faceColor = Color.Lerp(faceColor, Color.white, gT * 0.50f);
+                        }
+
+                        if (topDist > radius - 2.5f)
+                        {
+                            float rT = (topDist - (radius - 2.5f)) / 2.5f;
+                            faceColor = Color.Lerp(faceColor, rimCol, rT);
+                        }
+                    }
+
+                    Color pix = Color.clear;
+                    if (shAlpha > 0f)
+                    {
+                        pix = new Color(0.3f, 0.05f, 0.15f, shAlpha);
+                    }
+                    if (extAlpha > 0f)
+                    {
+                        Color ext = cushionCol; ext.a = extAlpha;
+                        pix = (pix.a > 0f) ? Color.Lerp(pix, ext, extAlpha) : ext;
+                        pix.a = Mathf.Max(pix.a, extAlpha);
+                    }
+                    if (topAlpha > 0f)
+                    {
+                        faceColor.a = topAlpha;
+                        pix = (pix.a > 0f) ? Color.Lerp(pix, faceColor, topAlpha) : faceColor;
+                        pix.a = Mathf.Max(pix.a, topAlpha);
+                    }
+
+                    tex.SetPixel(x, y, pix);
+                }
+            }
+
+            // Draw cute specular highlight spot on top-left
+            DrawSoftGleamSpot(tex, cx - radius * 0.42f, cy + radius * 0.42f, 10f, 6f, 0.85f);
+
+            // Draw clean white rounded 'X' cross
+            float armLen = radius * 0.42f;
+            float thickness = 4.8f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = Mathf.Abs(x - cx);
+                    float dy = Mathf.Abs(y - cy);
+                    float d1 = Mathf.Abs((x - cx) - (y - cy)) / 1.414f;
+                    float d2 = Mathf.Abs((x - cx) + (y - cy)) / 1.414f;
+                    float distLine = Mathf.Min(d1, d2);
+                    float maxD = Mathf.Max(dx, dy);
+
+                    if (maxD <= armLen && distLine <= thickness + 1.2f)
+                    {
+                        float a = Mathf.Clamp01(thickness + 1.2f - distLine);
+                        Color orig = tex.GetPixel(x, y);
+                        tex.SetPixel(x, y, Color.Lerp(orig, Color.white, a));
+                    }
+                }
+            }
+
+            tex.Apply();
+            return tex;
+        }
+
+        private static void DrawSoftGleamSpot(Texture2D tex, float cx, float cy, float rx, float ry, float maxAlpha)
+        {
+            int minX = Mathf.Max(0, Mathf.FloorToInt(cx - rx * 1.5f));
+            int maxX = Mathf.Min(tex.width - 1, Mathf.CeilToInt(cx + rx * 1.5f));
+            int minY = Mathf.Max(0, Mathf.FloorToInt(cy - ry * 1.5f));
+            int maxY = Mathf.Min(tex.height - 1, Mathf.CeilToInt(cy + ry * 1.5f));
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    float dx = (x - cx) / rx;
+                    float dy = (y - cy) / ry;
+                    float distSq = dx * dx + dy * dy;
+                    if (distSq <= 1f)
+                    {
+                        float a = Mathf.SmoothStep(1f, 0f, Mathf.Sqrt(distSq)) * maxAlpha;
+                        Color orig = tex.GetPixel(x, y);
+                        if (orig.a > 0.1f)
+                        {
+                            tex.SetPixel(x, y, Color.Lerp(orig, Color.white, a));
+                        }
+                    }
+                }
+            }
         }
 
         [MenuItem("Block Blast/Generate New Shop & Diamond Assets")]

@@ -146,6 +146,7 @@ namespace BlockBlast
                 videoPlayer.Stop();
             }
             _isPlayingVideo = false;
+            BlockAudioManager.Instance?.UnduckBGM(0.5f);
         }
 
         private void OnDestroy()
@@ -506,7 +507,8 @@ namespace BlockBlast
 
             videoPlayer.time = 0;
             videoPlayer.Play();
-            Debug.Log("<color=cyan><b>[AnimatedPickupBanner]</b> Playing mallang_pick1 intro animation...</color>");
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.DuckBGM(0.25f, 0.4f);
+            Debug.Log("<color=cyan><b>[AnimatedPickupBanner]</b> Playing mallang_pick1 intro animation with BGM ducking...</color>");
         }
 
         private void OnVideoFinished(VideoPlayer vp)
@@ -527,6 +529,7 @@ namespace BlockBlast
 
         public void StopVideo()
         {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.UnduckBGM(0.5f);
             if (videoPlayer != null && videoPlayer.isPlaying)
             {
                 videoPlayer.Stop();
@@ -541,6 +544,7 @@ namespace BlockBlast
 
         private void TransitionToLiveElements()
         {
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.UnduckBGM(0.8f);
             if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
             _fadeCoroutine = StartCoroutine(CrossFadeToLiveRoutine());
         }

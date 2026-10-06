@@ -460,6 +460,171 @@ namespace BlockBlast.Editor
                 if (lobbyCG != null) lobbyCG.alpha = origAlpha;
             }
         }
+
+        [MenuItem("Block Blast/Debug/Capture All Pastel Modals And Codex")]
+        public static void CaptureAllPastelModalsAndCodex()
+        {
+            string brainDir = @"C:\Users\kdy02\.gemini\antigravity\brain\11e13a30-67ac-4ca4-aa02-999cf9c4f657";
+            var lobbyMgr = Object.FindObjectOfType<LobbyManager>(true);
+            var bannerCtrl = Object.FindObjectOfType<AnimatedPickupBannerController>(true);
+            var all = Resources.FindObjectsOfTypeAll<GameObject>();
+
+            GameObject shopModal = null;
+            GameObject lobbyScreen = null;
+            GameObject probModal = null;
+            GameObject pickupSkillModal = null;
+            GameObject codexModal = null;
+            GameObject mascotDetailModal = null;
+            GameObject sumResModal = null;
+            GameObject splashScreen = null;
+            GameObject mainMenu = null;
+            GameObject setModal = null;
+            GameObject profModal = null;
+            GameObject quitModal = null;
+            GameObject fairyTrans = null;
+            GameObject fairyTouch = null;
+            Canvas mainCanvas = null;
+            Camera mainCam = Camera.main ?? Object.FindObjectOfType<Camera>();
+
+            foreach (var g in all)
+            {
+                if (!g.scene.isLoaded) continue;
+                if (g.name == "SplashScreen" || g.name == "SplashScreenOverlay") splashScreen = g;
+                if (g.name == "MainMenuScreen") mainMenu = g;
+                if (g.name == "ShopModal") shopModal = g;
+                if (g.name == "LobbyScreen") lobbyScreen = g;
+                if (g.name == "SettingsModal") setModal = g;
+                if (g.name == "ProfileModal") profModal = g;
+                if (g.name == "QuitConfirmModal") quitModal = g;
+                if (g.name == "ProbabilityModal") probModal = g;
+                if (g.name == "PickupSkillDetailModal") pickupSkillModal = g;
+                if (g.name == "MascotCodexModal") codexModal = g;
+                if (g.name == "MascotDetailModal") mascotDetailModal = g;
+                if (g.name == "SummonResultModal") sumResModal = g;
+                if (g.name == "FairyScreenTransitionOverlay") fairyTrans = g;
+                if (g.name == "FairyTouchFXOverlay") fairyTouch = g;
+                if ((g.name == "Canvas" || g.name == "BlockBlastCanvas") && mainCanvas == null) mainCanvas = g.GetComponent<Canvas>();
+            }
+
+            if (mainCanvas == null) return;
+
+            RenderMode origMode = mainCanvas.renderMode;
+            Camera origCam = mainCanvas.worldCamera;
+            CanvasGroup lobbyCG = lobbyScreen != null ? lobbyScreen.GetComponent<CanvasGroup>() : null;
+            float origAlpha = lobbyCG != null ? lobbyCG.alpha : 1f;
+
+            try
+            {
+                mainCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                mainCanvas.worldCamera = mainCam;
+                mainCanvas.planeDistance = 5f;
+
+                if (splashScreen != null) splashScreen.SetActive(false);
+                if (mainMenu != null) mainMenu.SetActive(false);
+                if (setModal != null) setModal.SetActive(false);
+                if (profModal != null) profModal.SetActive(false);
+                if (quitModal != null) quitModal.SetActive(false);
+                if (probModal != null) probModal.SetActive(false);
+                if (pickupSkillModal != null) pickupSkillModal.SetActive(false);
+                if (codexModal != null) codexModal.SetActive(false);
+                if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+                if (sumResModal != null) sumResModal.SetActive(false);
+                if (shopModal != null) shopModal.SetActive(false);
+                if (fairyTrans != null) fairyTrans.SetActive(false);
+                if (fairyTouch != null) fairyTouch.SetActive(false);
+
+                if (lobbyScreen != null)
+                {
+                    lobbyScreen.SetActive(true);
+                    if (lobbyCG != null) lobbyCG.alpha = 1f;
+                }
+
+                // 1. Capture Clean Pickup Tab
+                if (shopModal != null)
+                {
+                    shopModal.SetActive(true);
+                    if (lobbyMgr != null) lobbyMgr.SelectShopTab(1);
+                    if (bannerCtrl != null) bannerCtrl.ShowLiveElements(true);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_shop_pickup_clean.png"));
+                    shopModal.SetActive(false);
+                }
+
+                // 2. Capture Probability Modal (Soft pastel ivory card, 1.0% rate table)
+                if (probModal != null)
+                {
+                    probModal.SetActive(true);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_probability_modal_pastel.png"));
+                    probModal.SetActive(false);
+                }
+
+                // 3. Capture Pickup Skill Detail Modal
+                if (pickupSkillModal != null)
+                {
+                    pickupSkillModal.SetActive(true);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_pickup_skill_detail_modal.png"));
+                    pickupSkillModal.SetActive(false);
+                }
+
+                // 4. Capture Mascot Codex Modal (3x3 Grid, 9 mascots)
+                if (codexModal != null)
+                {
+                    if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+                    if (lobbyMgr != null) lobbyMgr.OpenMascotModal();
+                    else codexModal.SetActive(true);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_mascot_codex_grid.png"));
+                }
+
+                // 5. Capture Mascot Detail Modal (냥냥시노비 도감 육성 팝업)
+                if (mascotDetailModal != null)
+                {
+                    if (lobbyMgr != null) lobbyMgr.OpenMascotDetail(0);
+                    else mascotDetailModal.SetActive(true);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_mascot_detail_modal.png"));
+                }
+
+                // 6. Test Language Switch (Switch to English and Japanese and capture previews)
+                if (lobbyMgr != null)
+                {
+                    lobbyMgr.SelectLanguage(GameLanguage.EN);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_mascot_detail_en.png"));
+
+                    lobbyMgr.SelectLanguage(GameLanguage.JA);
+                    Canvas.ForceUpdateCanvases();
+                    CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_mascot_detail_ja.png"));
+
+                    if (pickupSkillModal != null)
+                    {
+                        if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+                        if (codexModal != null) codexModal.SetActive(false);
+                        pickupSkillModal.SetActive(true);
+                        Canvas.ForceUpdateCanvases();
+                        CaptureCameraView(mainCam, Path.Combine(brainDir, "verify_pickup_skill_ja.png"));
+                        pickupSkillModal.SetActive(false);
+                    }
+
+                    // Restore to Korean
+                    lobbyMgr.SelectLanguage(GameLanguage.KO);
+                }
+
+                // Close opened modals
+                if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
+                if (codexModal != null) codexModal.SetActive(false);
+
+                Debug.Log("[InspectUIMenu] Successfully captured all pastel modals and codex previews!");
+            }
+            finally
+            {
+                mainCanvas.renderMode = origMode;
+                mainCanvas.worldCamera = origCam;
+                if (lobbyCG != null) lobbyCG.alpha = origAlpha;
+            }
+        }
     }
 }
 #endif
