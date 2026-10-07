@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: f9b01f3b14ecccd4886a350f94e7750e
+guid: 0f2391a498cee7148bcc43484f710618
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -995475044034226474
-    second: Block_Cloud_Mascot_0
+      213: 5786481614539614370
+    second: UI_Btn_Jelly_Inactive_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +52,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteBorder: {x: 36, y: 28, z: 36, w: 28}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Block_Cloud_Mascot_0
+      name: UI_Btn_Jelly_Inactive_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 512
-        height: 512
+        width: 256
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6d6d291c8bc5f22f0800000000000000
-      internalID: -995475044034226474
+      spriteID: 2a866fdce56bd4050800000000000000
+      internalID: 5786481614539614370
       vertices: []
       indices: 
       edges: []

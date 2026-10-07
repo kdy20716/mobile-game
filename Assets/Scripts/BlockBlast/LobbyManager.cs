@@ -2,13 +2,23 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 namespace BlockBlast
 {
     public class LobbyManager : MonoBehaviour
     {
-        public static LobbyManager Instance { get; private set; }
+        private static LobbyManager _instance;
+        public static LobbyManager Instance
+        {
+            get
+            {
+                if (_instance == null) _instance = FindFirstObjectByType<LobbyManager>();
+                return _instance;
+            }
+            private set => _instance = value;
+        }
 
         private const string KEY_NICKNAME = "Mallang_Nickname";
         private const string KEY_BIO = "Mallang_Bio";
@@ -405,6 +415,8 @@ namespace BlockBlast
 
         [SerializeField] private Sprite screenActiveSprite;
         [SerializeField] private Sprite screenInactiveSprite;
+        [SerializeField] private Sprite languageActiveSprite;
+        [SerializeField] private Sprite languageInactiveSprite;
 
         private const string KEY_ASPECT_RATIO_INDEX = "Mallang_AspectRatio_Idx";
         private const string KEY_WINDOW_MODE_INDEX = "Mallang_WindowMode_Idx";
@@ -465,10 +477,10 @@ namespace BlockBlast
 
         private void Awake()
         {
-            if (Instance == null) Instance = this;
-            else
+            if (_instance == null) _instance = this;
+            else if (_instance != this)
             {
-                Destroy(gameObject);
+                Destroy(this);
                 return;
             }
 
@@ -968,6 +980,82 @@ namespace BlockBlast
             if (btnCloseHelp != null) btnCloseHelp.onClick.AddListener(() => { PlayClickSound(); CloseHelpModal(); });
             if (btnConfirmHelp != null) btnConfirmHelp.onClick.AddListener(() => { PlayClickSound(); CloseHelpModal(); });
 
+            // Mascot Codex Modal
+            if (btnCloseMascotCodex != null)
+            {
+                btnCloseMascotCodex.onClick.RemoveAllListeners();
+                btnCloseMascotCodex.onClick.AddListener(() => { PlayClickSound(); CloseMascotModal(); });
+            }
+
+            // Mascot Detail Modal
+            if (btnCloseMascotDetail != null)
+            {
+                btnCloseMascotDetail.onClick.RemoveAllListeners();
+                btnCloseMascotDetail.onClick.AddListener(() => { PlayClickSound(); CloseMascotDetail(); });
+            }
+
+            // Pickup Skill Detail Modal
+            if (btnClosePickupSkillDetail != null)
+            {
+                btnClosePickupSkillDetail.onClick.RemoveAllListeners();
+                btnClosePickupSkillDetail.onClick.AddListener(() => { PlayClickSound(); ClosePickupSkillDetail(); });
+            }
+
+            // Probability Modal
+            if (btnCloseProbability != null)
+            {
+                btnCloseProbability.onClick.RemoveAllListeners();
+                btnCloseProbability.onClick.AddListener(() => { PlayClickSound(); CloseProbabilityModal(); });
+            }
+            if (btnConfirmProbability != null)
+            {
+                btnConfirmProbability.onClick.RemoveAllListeners();
+                btnConfirmProbability.onClick.AddListener(() => { PlayClickSound(); CloseProbabilityModal(); });
+            }
+            if (btnProbabilityDarkBg != null)
+            {
+                btnProbabilityDarkBg.onClick.RemoveAllListeners();
+                btnProbabilityDarkBg.onClick.AddListener(() => { PlayClickSound(); CloseProbabilityModal(); });
+            }
+
+            // Summon Result Modal
+            if (btnCloseSummonResult != null)
+            {
+                btnCloseSummonResult.onClick.RemoveAllListeners();
+                btnCloseSummonResult.onClick.AddListener(() => { PlayClickSound(); CloseSummonResultModal(); });
+            }
+
+            // Quit Modal
+            if (btnQuitConfirmNo != null)
+            {
+                btnQuitConfirmNo.onClick.RemoveAllListeners();
+                btnQuitConfirmNo.onClick.AddListener(() => { PlayClickSound(); CloseQuitModal(); });
+            }
+            if (btnQuitDarkBg != null)
+            {
+                btnQuitDarkBg.onClick.RemoveAllListeners();
+                btnQuitDarkBg.onClick.AddListener(() => { PlayClickSound(); CloseQuitModal(); });
+            }
+            if (btnQuitConfirmYes != null)
+            {
+                btnQuitConfirmYes.onClick.RemoveAllListeners();
+                btnQuitConfirmYes.onClick.AddListener(QuitGame);
+            }
+
+            // Universal modal close wire-up (guarantees (X) buttons, Confirm buttons, DarkBg click-outside, and z-order)
+            WireModalAutoClose(shopModal, CloseShopModal);
+            WireModalAutoClose(mascotCodexModal, CloseMascotModal);
+            WireModalAutoClose(mascotDetailModal, CloseMascotDetail);
+            WireModalAutoClose(mascotModal, CloseMascotModal);
+            WireModalAutoClose(settingsModal, CloseSettingsModal);
+            WireModalAutoClose(profileModal, CloseProfileModal);
+            WireModalAutoClose(loginModal, CloseLoginModal);
+            WireModalAutoClose(pickupSkillDetailModal, ClosePickupSkillDetail);
+            WireModalAutoClose(probabilityModal, CloseProbabilityModal);
+            WireModalAutoClose(summonResultModal, CloseSummonResultModal);
+            WireModalAutoClose(helpModal, CloseHelpModal);
+            WireModalAutoClose(quitModal, CloseQuitModal);
+
             // Party Mascot & Floating Label Clicks
             if (partyMascots != null)
             {
@@ -1142,6 +1230,7 @@ namespace BlockBlast
                 SetNickEditMode(false);
                 SetNickStatus("", Color.white);
                 RefreshProfileUI();
+                WireModalAutoClose(profileModal, CloseProfileModal);
                 profileModal.transform.SetAsLastSibling();
                 profileModal.SetActive(true);
             }
@@ -1412,6 +1501,8 @@ namespace BlockBlast
             PlayClickSound();
             if (loginModal != null)
             {
+                WireModalAutoClose(loginModal, CloseLoginModal);
+                loginModal.transform.SetAsLastSibling();
                 loginModal.SetActive(true);
                 if (loginStatusText != null) loginStatusText.text = "";
                 if (loginIdInput != null) loginIdInput.text = "";
@@ -1596,9 +1687,10 @@ namespace BlockBlast
                 SelectShopTab(_currentShopTab);
                 RefreshThemeShopUI();
                 RefreshLobbyThemeShopUI();
+                WireModalAutoClose(shopModal, CloseShopModal);
                 shopModal.transform.SetAsLastSibling();
                 shopModal.SetActive(true);
-                if (shopAnimController != null) shopAnimController.AnimateOpen();
+                if (shopAnimController != null && shopAnimController.gameObject.activeInHierarchy) shopAnimController.AnimateOpen();
             }
         }
 
@@ -1607,7 +1699,7 @@ namespace BlockBlast
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (pickupBannerController != null) pickupBannerController.StopVideo();
             if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
-            if (shopAnimController != null)
+            if (shopAnimController != null && shopAnimController.gameObject.activeInHierarchy)
             {
                 shopAnimController.AnimateClose(() =>
                 {
@@ -1946,6 +2038,7 @@ namespace BlockBlast
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 RefreshMascotCodexUI();
+                WireModalAutoClose(mascotCodexModal, CloseMascotModal);
                 mascotCodexModal.transform.SetAsLastSibling();
                 mascotCodexModal.SetActive(true);
             }
@@ -1955,6 +2048,7 @@ namespace BlockBlast
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 RefreshMascotModalUI();
+                WireModalAutoClose(mascotModal, CloseMascotModal);
                 mascotModal.transform.SetAsLastSibling();
                 mascotModal.SetActive(true);
             }
@@ -1981,6 +2075,7 @@ namespace BlockBlast
             RefreshMascotDetailUI();
             if (mascotDetailModal != null)
             {
+                WireModalAutoClose(mascotDetailModal, CloseMascotDetail);
                 mascotDetailModal.transform.SetAsLastSibling();
                 mascotDetailModal.SetActive(true);
             }
@@ -2950,6 +3045,8 @@ namespace BlockBlast
                 summonResultShardsText.text = sb.ToString().TrimEnd();
             }
 
+            WireModalAutoClose(summonResultModal, CloseSummonResultModal);
+            summonResultModal.transform.SetAsLastSibling();
             summonResultModal.SetActive(true);
         }
 
@@ -2967,6 +3064,7 @@ namespace BlockBlast
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (probabilityModal != null)
             {
+                WireModalAutoClose(probabilityModal, CloseProbabilityModal);
                 probabilityModal.transform.SetAsLastSibling();
                 probabilityModal.SetActive(true);
             }
@@ -3044,6 +3142,7 @@ namespace BlockBlast
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
             if (pickupSkillDetailModal != null)
             {
+                WireModalAutoClose(pickupSkillDetailModal, ClosePickupSkillDetail);
                 pickupSkillDetailModal.transform.SetAsLastSibling();
                 pickupSkillDetailModal.SetActive(true);
             }
@@ -3502,6 +3601,7 @@ namespace BlockBlast
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                WireModalAutoClose(settingsModal, CloseSettingsModal);
                 settingsModal.transform.SetAsLastSibling();
                 settingsModal.SetActive(true);
             }
@@ -3537,6 +3637,51 @@ namespace BlockBlast
             }
         }
 
+        public void WireModalAutoClose(GameObject modalGo, System.Action closeAction)
+        {
+            if (modalGo == null) return;
+
+            // 1. DarkBg click-to-close outside
+            Transform darkBg = modalGo.transform.Find("DarkBg");
+            if (darkBg != null)
+            {
+                Button dbBtn = darkBg.GetComponent<Button>();
+                if (dbBtn == null) dbBtn = darkBg.gameObject.AddComponent<Button>();
+                dbBtn.transition = Selectable.Transition.None;
+                dbBtn.onClick.RemoveAllListeners();
+                dbBtn.onClick.AddListener(() => { PlayClickSound(); closeAction(); });
+
+                darkBg.SetAsFirstSibling();
+                Image dbImg = darkBg.GetComponent<Image>();
+                if (dbImg != null) dbImg.raycastTarget = true;
+            }
+
+            // 2. All close/cancel/confirm buttons inside this modal
+            Button[] buttons = modalGo.GetComponentsInChildren<Button>(true);
+            foreach (var b in buttons)
+            {
+                if (b == null || (darkBg != null && b.gameObject == darkBg.gameObject)) continue;
+                string bName = b.name.ToLower();
+                if (bName == "btnclose" || bName == "btncancel" || bName == "buttonclose" || bName == "closebtn" ||
+                    (bName == "btnconfirm" && (modalGo == pickupSkillDetailModal || modalGo == probabilityModal || modalGo == summonResultModal || modalGo == helpModal)))
+                {
+                    // Remove conflicting EventTrigger if present
+                    EventTrigger et = b.GetComponent<EventTrigger>();
+                    if (et != null) Destroy(et);
+
+                    // Ensure button is at front of its parent so it is never covered
+                    b.transform.SetAsLastSibling();
+
+                    // Ensure raycast target is active
+                    Image img = b.GetComponent<Image>();
+                    if (img != null) img.raycastTarget = true;
+
+                    b.onClick.RemoveAllListeners();
+                    b.onClick.AddListener(() => { PlayClickSound(); closeAction(); });
+                }
+            }
+        }
+
         private void HandleEscapeKey()
         {
             // 1. Legal Probability Modal
@@ -3546,28 +3691,49 @@ namespace BlockBlast
                 return;
             }
 
-            // 2. Summon Result Modal
+            // 2. Pickup Skill Detail Modal
+            if (pickupSkillDetailModal != null && pickupSkillDetailModal.activeSelf)
+            {
+                ClosePickupSkillDetail();
+                return;
+            }
+
+            // 3. Summon Result Modal
             if (summonResultModal != null && summonResultModal.activeSelf)
             {
                 CloseSummonResultModal();
                 return;
             }
 
-            // 3. Gacha Presentation Sequence
+            // 4. Gacha Presentation Sequence
             if (GachaPresentationController.Instance != null && GachaPresentationController.Instance.IsActive)
             {
                 GachaPresentationController.Instance.CloseModal();
                 return;
             }
 
-            // 4. Mascot Management Modal
+            // 5. Mascot Detail Modal
+            if (mascotDetailModal != null && mascotDetailModal.activeSelf)
+            {
+                CloseMascotDetail();
+                return;
+            }
+
+            // 6. Mascot Codex Modal
+            if (mascotCodexModal != null && mascotCodexModal.activeSelf)
+            {
+                CloseMascotModal();
+                return;
+            }
+
+            // 7. Mascot Management Modal
             if (mascotModal != null && mascotModal.activeSelf)
             {
                 CloseMascotModal();
                 return;
             }
 
-            // 5. Standard Dialogs
+            // 8. Standard Dialogs
             if (quitModal != null && quitModal.activeSelf)
             {
                 CloseQuitModal();
@@ -3599,7 +3765,7 @@ namespace BlockBlast
                 return;
             }
 
-            // 6. If no modal is open in Lobby, prompt quit confirmation
+            // 9. If no modal is open in Lobby, prompt quit confirmation
             OpenQuitModal();
         }
 
@@ -3612,6 +3778,7 @@ namespace BlockBlast
             if (quitModal != null)
             {
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
+                WireModalAutoClose(quitModal, CloseQuitModal);
                 quitModal.transform.SetAsLastSibling();
                 quitModal.SetActive(true);
             }
@@ -3795,6 +3962,8 @@ namespace BlockBlast
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                WireModalAutoClose(helpModal, CloseHelpModal);
+                helpModal.transform.SetAsLastSibling();
                 helpModal.SetActive(true);
             }
         }
@@ -4147,7 +4316,8 @@ namespace BlockBlast
             Button[] langBtns, Image[] langBgs, TMP_Text[] langTexts,
             TMP_Text setT, TMP_Text setB, TMP_Text setS, TMP_Text setL,
             TMP_Text shpT = null, TMP_Text hlT = null, TMP_Text hlC = null, TMP_Text prT = null,
-            TMP_Text verT = null)
+            TMP_Text verT = null,
+            Sprite activeSprite = null, Sprite inactiveSprite = null)
         {
             languageButtons = langBtns;
             languageButtonBgs = langBgs;
@@ -4161,6 +4331,8 @@ namespace BlockBlast
             helpConfirmText = hlC;
             profileTitleText = prT;
             settingsVersionText = verT;
+            if (activeSprite != null) languageActiveSprite = activeSprite;
+            if (inactiveSprite != null) languageInactiveSprite = inactiveSprite;
 
             if (languageButtons != null)
             {
@@ -4198,8 +4370,16 @@ namespace BlockBlast
                     bool isSelected = ((int)lang == i);
                     if (languageButtonBgs != null && i < languageButtonBgs.Length && languageButtonBgs[i] != null)
                     {
-                        // Active: Vibrant Candy Pink / Inactive: Soft Lavender Cream
-                        languageButtonBgs[i].color = isSelected ? new Color(1f, 0.35f, 0.55f, 1f) : new Color(0.92f, 0.90f, 0.96f, 1f);
+                        if (languageActiveSprite != null && languageInactiveSprite != null)
+                        {
+                            languageButtonBgs[i].sprite = isSelected ? languageActiveSprite : languageInactiveSprite;
+                            languageButtonBgs[i].color = Color.white;
+                        }
+                        else
+                        {
+                            // Active: Vibrant Candy Pink / Inactive: Soft Lavender Cream
+                            languageButtonBgs[i].color = isSelected ? new Color(1f, 0.35f, 0.55f, 1f) : new Color(0.92f, 0.90f, 0.96f, 1f);
+                        }
                     }
                     if (languageButtonTexts != null && i < languageButtonTexts.Length && languageButtonTexts[i] != null)
                     {

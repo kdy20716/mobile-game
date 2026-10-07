@@ -5016,6 +5016,52 @@ namespace BlockBlast.Editor
             return SaveAndConfigureSprite(path, tex, Vector4.zero, false);
         }
 
+        public static Sprite GetOrCreateGoldGachaBallSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Gacha_Ball_Gold.png";
+            return ForceGetOrImportSingleSprite(path) ?? GetOrCreateGachaBallRainbowSprite();
+        }
+
+        public static Sprite GetOrCreateSilverCoinSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Gacha_Coin_Silver.png";
+            return ForceGetOrImportSingleSprite(path);
+        }
+
+        public static Sprite GetOrCreateGoldCoinSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Gacha_Coin_Gold.png";
+            return ForceGetOrImportSingleSprite(path);
+        }
+
+        public static Sprite GetOrCreateGachaMachineSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/Gacha_Machine.png";
+            return ForceGetOrImportSingleSprite(path);
+        }
+
+        public static Sprite GetOrCreateJellyButtonInactiveSprite(bool force = false)
+        {
+            EnsureFolder();
+            string path = $"{Folder}/UI_Btn_Jelly_Inactive.png";
+            Sprite sp = ForceGetOrImportSingleSprite(path);
+            if (sp != null && sp.border == Vector4.zero)
+            {
+                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (importer != null)
+                {
+                    importer.spriteBorder = new Vector4(36, 28, 36, 28);
+                    importer.SaveAndReimport();
+                    sp = ForceGetOrImportSingleSprite(path);
+                }
+            }
+            return sp ?? GetOrCreateTabPillSprite();
+        }
+
         public static Sprite GetOrCreateGachaRainbowAuraSprite(bool force = false)
         {
             EnsureFolder();

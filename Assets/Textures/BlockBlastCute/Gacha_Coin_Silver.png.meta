@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: f9b01f3b14ecccd4886a350f94e7750e
+guid: 69f1d1b319f33244996ad9528fab5eeb
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -995475044034226474
-    second: Block_Cloud_Mascot_0
+      213: -3241292412690899151
+    second: Gacha_Coin_Silver_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Block_Cloud_Mascot_0
+      name: Gacha_Coin_Silver_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 512
-        height: 512
+        width: 256
+        height: 256
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6d6d291c8bc5f22f0800000000000000
-      internalID: -995475044034226474
+      spriteID: 13fd36849bd9403d0800000000000000
+      internalID: -3241292412690899151
       vertices: []
       indices: 
       edges: []

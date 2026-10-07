@@ -25,7 +25,7 @@ namespace BlockBlast
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<GachaPresentationController>(true);
+                    _instance = FindFirstObjectByType<GachaPresentationController>();
                 }
                 return _instance;
             }
@@ -41,10 +41,14 @@ namespace BlockBlast
 
         [Header("Sprites")]
         [SerializeField] private Sprite greyBallSprite;
+        [SerializeField] private Sprite goldBallSprite;
         [SerializeField] private Sprite rainbowBallSprite;
         [SerializeField] private Sprite rainbowAuraSprite;
         [SerializeField] private Sprite sunburstSprite;
         [SerializeField] private Sprite sparkleStarSprite;
+        [SerializeField] private Sprite gachaMachineSprite;
+        [SerializeField] private Sprite silverCoinSprite;
+        [SerializeField] private Sprite goldCoinSprite;
         [SerializeField] private Sprite[] mascotAvatars;
         [SerializeField] private Sprite specialMascotCutout;
 
@@ -56,11 +60,51 @@ namespace BlockBlast
         [SerializeField] private TMP_Text climaxSubText;
         [SerializeField] private Button btnClimaxDismiss;
 
+        // Dynamic Gacha Machine & Sequential Reveal Elements
+        private GameObject _machineRoot;
+        private Image _machineImg;
+        private GameObject _coinObj;
+        private Image _coinImg;
+        private GameObject _trayRoot;
+
+        private GameObject _singleRevealRoot;
+        private RectTransform _singleBallRect;
+        private Image _singleBallImg;
+        private Image _singleAuraImg;
+        private GameObject _singleRewardRoot;
+        private Image _singleAvatarImg;
+        private TMP_Text _singleNameText;
+        private TMP_Text _singleRarityText;
+        private TMP_Text _singleShardsText;
+        private Button _fullScreenTapBtn;
+
         private List<GachaDropItem> _currentDrops = new List<GachaDropItem>();
         private List<GachaBallSlot> _slots = new List<GachaBallSlot>();
         private Action _onCompleteCallback;
         private bool _isOpeningAll = false;
+        private bool _stepAdvanceRequested = false;
         private Coroutine _climaxSunburstCoroutine;
+        private Coroutine _currentSequenceCoroutine;
+
+        private static readonly string[] RarityNames = new string[]
+        {
+            "일반", "일반", "일반", "일반",
+            "희귀", "희귀", "희귀", "희귀",
+            "스페셜"
+        };
+
+        private static readonly Color[] RarityColors = new Color[]
+        {
+            new Color(0.35f, 0.45f, 0.65f), // Common: Cool slate blue
+            new Color(0.35f, 0.45f, 0.65f),
+            new Color(0.35f, 0.45f, 0.65f),
+            new Color(0.35f, 0.45f, 0.65f),
+            new Color(1.0f, 0.72f, 0.10f),  // Rare: Radiant Gold
+            new Color(1.0f, 0.72f, 0.10f),
+            new Color(1.0f, 0.72f, 0.10f),
+            new Color(1.0f, 0.72f, 0.10f),
+            new Color(1.0f, 0.40f, 0.85f)   // Special: Iridescent Pink
+        };
 
         private class GachaBallSlot
         {
@@ -109,7 +153,8 @@ namespace BlockBlast
 
         public void SetupSprites(
             Sprite greyBall, Sprite rainbowBall, Sprite rainbowAura,
-            Sprite sunburst, Sprite sparkle, Sprite[] avatars, Sprite specialCutout)
+            Sprite sunburst, Sprite sparkle, Sprite[] avatars, Sprite specialCutout,
+            Sprite goldBall = null, Sprite gachaMachine = null, Sprite silverCoin = null, Sprite goldCoin = null)
         {
             greyBallSprite = greyBall;
             rainbowBallSprite = rainbowBall;
@@ -118,6 +163,11 @@ namespace BlockBlast
             sparkleStarSprite = sparkle;
             mascotAvatars = avatars;
             specialMascotCutout = specialCutout;
+
+            if (goldBall != null) goldBallSprite = goldBall;
+            if (gachaMachine != null) gachaMachineSprite = gachaMachine;
+            if (silverCoin != null) silverCoinSprite = silverCoin;
+            if (goldCoin != null) goldCoinSprite = goldCoin;
         }
 
         public void SetupReferences(
@@ -142,6 +192,190 @@ namespace BlockBlast
             if (climaxOverlay != null) climaxOverlay.SetActive(false);
         }
 
+        public Sprite GetBallSpriteForDrop(GachaDropItem drop)
+        {
+            if (drop.isSpecial || drop.mascotIndex >= 8)
+            {
+                return rainbowBallSprite;
+            }
+            if (drop.mascotIndex >= 4) // Rare (Mascots 4~7: Blue, Berry, Lemon, Cloud)
+            {
+                return (goldBallSprite != null) ? goldBallSprite : rainbowBallSprite;
+            }
+            // Common (Mascots 0~3)
+            return greyBallSprite;
+        }
+
+        private void EnsureDynamicUI()
+        {
+            Transform contentRoot = (modalRoot != null) ? modalRoot.transform.Find("ContentRoot") : transform;
+            if (contentRoot == null) contentRoot = (modalRoot != null) ? modalRoot.transform : transform;
+
+            // 1. Gacha Machine Root
+            if (_machineRoot == null)
+            {
+                _machineRoot = new GameObject("GachaMachineRoot", typeof(RectTransform));
+                _machineRoot.transform.SetParent(contentRoot, false);
+                RectTransform mrt = _machineRoot.GetComponent<RectTransform>();
+                mrt.anchorMin = new Vector2(0.5f, 0.5f);
+                mrt.anchorMax = new Vector2(0.5f, 0.5f);
+                mrt.anchoredPosition = new Vector2(0f, 30f);
+                mrt.sizeDelta = new Vector2(560f, 560f);
+
+                GameObject mImgObj = new GameObject("MachineImage", typeof(RectTransform), typeof(Image));
+                mImgObj.transform.SetParent(_machineRoot.transform, false);
+                RectTransform mirt = mImgObj.GetComponent<RectTransform>();
+                mirt.anchorMin = Vector2.zero;
+                mirt.anchorMax = Vector2.one;
+                mirt.sizeDelta = Vector2.zero;
+                _machineImg = mImgObj.GetComponent<Image>();
+                _machineImg.sprite = gachaMachineSprite;
+                _machineImg.preserveAspect = true;
+                _machineImg.raycastTarget = false;
+
+                // Coin Image (animated)
+                _coinObj = new GameObject("AnimatedCoin", typeof(RectTransform), typeof(Image));
+                _coinObj.transform.SetParent(_machineRoot.transform, false);
+                RectTransform crt = _coinObj.GetComponent<RectTransform>();
+                crt.anchorMin = new Vector2(0.5f, 0.5f);
+                crt.anchorMax = new Vector2(0.5f, 0.5f);
+                crt.anchoredPosition = new Vector2(0f, 280f);
+                crt.sizeDelta = new Vector2(100f, 100f);
+                _coinImg = _coinObj.GetComponent<Image>();
+                _coinImg.preserveAspect = true;
+                _coinImg.raycastTarget = false;
+                _coinObj.SetActive(false);
+
+                // Tray Balls Container (for dropping balls)
+                _trayRoot = new GameObject("TrayBalls", typeof(RectTransform));
+                _trayRoot.transform.SetParent(_machineRoot.transform, false);
+                RectTransform trt = _trayRoot.GetComponent<RectTransform>();
+                trt.anchorMin = new Vector2(0.5f, 0.5f);
+                trt.anchorMax = new Vector2(0.5f, 0.5f);
+                trt.anchoredPosition = new Vector2(100f, -170f);
+                trt.sizeDelta = new Vector2(200f, 120f);
+            }
+
+            // 2. Single Reveal Stage Root
+            if (_singleRevealRoot == null)
+            {
+                _singleRevealRoot = new GameObject("SingleRevealStage", typeof(RectTransform));
+                _singleRevealRoot.transform.SetParent(contentRoot, false);
+                RectTransform srt = _singleRevealRoot.GetComponent<RectTransform>();
+                srt.anchorMin = Vector2.zero;
+                srt.anchorMax = Vector2.one;
+                srt.sizeDelta = Vector2.zero;
+
+                // Full screen transparent tap button to advance
+                GameObject tapBtnObj = new GameObject("FullScreenTapBtn", typeof(RectTransform), typeof(Image), typeof(Button));
+                tapBtnObj.transform.SetParent(_singleRevealRoot.transform, false);
+                RectTransform tprt = tapBtnObj.GetComponent<RectTransform>();
+                tprt.anchorMin = Vector2.zero;
+                tprt.anchorMax = Vector2.one;
+                tprt.sizeDelta = Vector2.zero;
+                Image tpImg = tapBtnObj.GetComponent<Image>();
+                tpImg.color = Color.clear;
+                tpImg.raycastTarget = true;
+                _fullScreenTapBtn = tapBtnObj.GetComponent<Button>();
+                _fullScreenTapBtn.onClick.AddListener(OnScreenTappedToAdvance);
+
+                // Single Ball Object
+                GameObject sBallObj = new GameObject("SingleBall", typeof(RectTransform), typeof(Image), typeof(Button));
+                sBallObj.transform.SetParent(_singleRevealRoot.transform, false);
+                _singleBallRect = sBallObj.GetComponent<RectTransform>();
+                _singleBallRect.anchorMin = new Vector2(0.5f, 0.5f);
+                _singleBallRect.anchorMax = new Vector2(0.5f, 0.5f);
+                _singleBallRect.anchoredPosition = new Vector2(0, 40);
+                _singleBallRect.sizeDelta = new Vector2(250, 250);
+                _singleBallImg = sBallObj.GetComponent<Image>();
+                _singleBallImg.preserveAspect = true;
+                Button sBallBtn = sBallObj.GetComponent<Button>();
+                sBallBtn.onClick.AddListener(OnScreenTappedToAdvance);
+
+                // Aura Glow
+                GameObject sAuraObj = new GameObject("SingleAura", typeof(RectTransform), typeof(Image));
+                sAuraObj.transform.SetParent(sBallObj.transform, false);
+                RectTransform sart = sAuraObj.GetComponent<RectTransform>();
+                sart.anchorMin = Vector2.zero;
+                sart.anchorMax = Vector2.one;
+                sart.sizeDelta = new Vector2(100, 100);
+                _singleAuraImg = sAuraObj.GetComponent<Image>();
+                _singleAuraImg.sprite = rainbowAuraSprite;
+                _singleAuraImg.raycastTarget = false;
+
+                // Reward Container
+                _singleRewardRoot = new GameObject("RewardRoot", typeof(RectTransform));
+                _singleRewardRoot.transform.SetParent(_singleRevealRoot.transform, false);
+                RectTransform rwrt = _singleRewardRoot.GetComponent<RectTransform>();
+                rwrt.anchorMin = new Vector2(0.5f, 0.5f);
+                rwrt.anchorMax = new Vector2(0.5f, 0.5f);
+                rwrt.anchoredPosition = new Vector2(0, 40);
+                rwrt.sizeDelta = new Vector2(400, 400);
+
+                // Avatar
+                GameObject avObj = new GameObject("RewardAvatar", typeof(RectTransform), typeof(Image));
+                avObj.transform.SetParent(_singleRewardRoot.transform, false);
+                RectTransform avrt = avObj.GetComponent<RectTransform>();
+                avrt.anchorMin = new Vector2(0.5f, 0.5f);
+                avrt.anchorMax = new Vector2(0.5f, 0.5f);
+                avrt.anchoredPosition = new Vector2(0, 30);
+                avrt.sizeDelta = new Vector2(230, 230);
+                _singleAvatarImg = avObj.GetComponent<Image>();
+                _singleAvatarImg.preserveAspect = true;
+                _singleAvatarImg.raycastTarget = false;
+
+                // Rarity Tag
+                GameObject rarObj = new GameObject("RarityTag", typeof(RectTransform), typeof(TextMeshProUGUI));
+                rarObj.transform.SetParent(_singleRewardRoot.transform, false);
+                RectTransform rart = rarObj.GetComponent<RectTransform>();
+                rart.anchorMin = new Vector2(0.5f, 0.5f);
+                rart.anchorMax = new Vector2(0.5f, 0.5f);
+                rart.anchoredPosition = new Vector2(0, -115);
+                rart.sizeDelta = new Vector2(300, 36);
+                _singleRarityText = rarObj.GetComponent<TMP_Text>();
+                _singleRarityText.fontSize = 24;
+                _singleRarityText.alignment = TextAlignmentOptions.Center;
+                _singleRarityText.fontStyle = FontStyles.Bold;
+
+                // Mascot Name
+                GameObject nameObj = new GameObject("MascotName", typeof(RectTransform), typeof(TextMeshProUGUI));
+                nameObj.transform.SetParent(_singleRewardRoot.transform, false);
+                RectTransform nrt = nameObj.GetComponent<RectTransform>();
+                nrt.anchorMin = new Vector2(0.5f, 0.5f);
+                nrt.anchorMax = new Vector2(0.5f, 0.5f);
+                nrt.anchoredPosition = new Vector2(0, -155);
+                nrt.sizeDelta = new Vector2(400, 44);
+                _singleNameText = nameObj.GetComponent<TMP_Text>();
+                _singleNameText.fontSize = 32;
+                _singleNameText.alignment = TextAlignmentOptions.Center;
+                _singleNameText.fontStyle = FontStyles.Bold;
+                _singleNameText.color = Color.white;
+
+                // Shards Count
+                GameObject shObj = new GameObject("ShardsText", typeof(RectTransform), typeof(TextMeshProUGUI));
+                shObj.transform.SetParent(_singleRewardRoot.transform, false);
+                RectTransform shrt = shObj.GetComponent<RectTransform>();
+                shrt.anchorMin = new Vector2(0.5f, 0.5f);
+                shrt.anchorMax = new Vector2(0.5f, 0.5f);
+                shrt.anchoredPosition = new Vector2(0, -200);
+                shrt.sizeDelta = new Vector2(400, 40);
+                _singleShardsText = shObj.GetComponent<TMP_Text>();
+                _singleShardsText.fontSize = 26;
+                _singleShardsText.alignment = TextAlignmentOptions.Center;
+                _singleShardsText.fontStyle = FontStyles.Bold;
+
+                if (instructionText != null && instructionText.font != null)
+                {
+                    _singleRarityText.font = instructionText.font;
+                    _singleNameText.font = instructionText.font;
+                    _singleShardsText.font = instructionText.font;
+                }
+            }
+
+            _machineRoot.SetActive(false);
+            _singleRevealRoot.SetActive(false);
+        }
+
         public void StartGachaSequence(List<GachaDropItem> drops, Action onComplete)
         {
             if (drops == null || drops.Count == 0)
@@ -153,10 +387,14 @@ namespace BlockBlast
             _currentDrops = drops;
             _onCompleteCallback = onComplete;
             _isOpeningAll = false;
+            _stepAdvanceRequested = false;
+
+            EnsureDynamicUI();
 
             if (modalRoot == null) modalRoot = gameObject;
             gameObject.SetActive(true);
             modalRoot.SetActive(true);
+
             if (climaxOverlay != null) climaxOverlay.SetActive(false);
             if (btnConfirm != null) btnConfirm.gameObject.SetActive(false);
             if (btnOpenAll != null)
@@ -165,29 +403,311 @@ namespace BlockBlast
                 btnOpenAll.gameObject.SetActive(drops.Count > 1);
             }
 
-            if (instructionText != null)
-            {
-                instructionText.text = (drops.Count == 1)
-                    ? "가챠볼을 터치하여 열어보세요!"
-                    : "10회 소환! 가챠볼을 터치해 하나씩 열어보세요!";
-            }
+            if (ballsContainer != null) ballsContainer.gameObject.SetActive(false);
 
-            BuildBallSlots();
+            if (_currentSequenceCoroutine != null) StopCoroutine(_currentSequenceCoroutine);
+            _currentSequenceCoroutine = StartCoroutine(PlayGachaFlowRoutine());
         }
 
-        private void BuildBallSlots()
+        private IEnumerator PlayGachaFlowRoutine()
         {
-            foreach (var slot in _slots)
+            int count = _currentDrops.Count;
+            bool isSingle = (count == 1);
+
+            // -------------------------------------------------------------
+            // STEP 1: Gacha Machine Presentation
+            // -------------------------------------------------------------
+            _machineRoot.SetActive(true);
+            _machineRoot.transform.localScale = Vector3.one;
+            _machineImg.sprite = gachaMachineSprite;
+
+            // Clear tray
+            foreach (Transform child in _trayRoot.transform)
             {
-                if (slot.rootObj != null) Destroy(slot.rootObj);
+                Destroy(child.gameObject);
+            }
+
+            if (instructionText != null)
+            {
+                instructionText.text = isSingle ? "말랑이 1회 소환 시작!" : "말랑이 10회 연속 소환 시작!";
+            }
+
+            // Coin animation
+            _coinObj.SetActive(true);
+            _coinImg.sprite = isSingle ? silverCoinSprite : goldCoinSprite;
+            RectTransform crt = _coinObj.GetComponent<RectTransform>();
+            crt.anchoredPosition = new Vector2(0f, 320f);
+            crt.localScale = Vector3.one * 1.5f;
+
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+
+            // Coin drop into slot
+            float coinDur = 0.5f;
+            float el = 0f;
+            Vector2 coinStart = new Vector2(0f, 320f);
+            Vector2 coinSlot = new Vector2(25f, 50f);
+            while (el < coinDur)
+            {
+                el += Time.deltaTime;
+                float t = el / coinDur;
+                float easedT = Mathf.SmoothStep(0f, 1f, t);
+                crt.anchoredPosition = Vector2.Lerp(coinStart, coinSlot, easedT);
+                crt.localScale = Vector3.Lerp(Vector3.one * 1.5f, Vector3.one * 0.7f, t);
+                crt.localRotation = Quaternion.Euler(0, 0, t * 360f);
+                yield return null;
+            }
+            _coinObj.SetActive(false);
+
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+
+            // Machine Dial Turn & Shake
+            RectTransform mrt = _machineRoot.GetComponent<RectTransform>();
+            float shakeDur = 0.35f;
+            el = 0f;
+            while (el < shakeDur)
+            {
+                el += Time.deltaTime;
+                float sx = Mathf.Sin(el * 40f) * 6f;
+                mrt.anchoredPosition = new Vector2(sx, 30f);
+                yield return null;
+            }
+            mrt.anchoredPosition = new Vector2(0f, 30f);
+
+            // Ball(s) drop down into tray
+            if (isSingle)
+            {
+                yield return StartCoroutine(DropBallToTrayRoutine(_currentDrops[0], 0, 1));
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    StartCoroutine(DropBallToTrayRoutine(_currentDrops[i], i, count));
+                    yield return new WaitForSeconds(0.045f);
+                }
+                yield return new WaitForSeconds(0.45f);
+            }
+
+            // Dispenser sparkles & sound
+            if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+
+            yield return new WaitForSeconds(0.25f);
+
+            // Smoothly fade out machine
+            float fadeDur = 0.25f;
+            el = 0f;
+            while (el < fadeDur)
+            {
+                el += Time.deltaTime;
+                float scale = Mathf.Lerp(1.0f, 0.85f, el / fadeDur);
+                _machineRoot.transform.localScale = Vector3.one * scale;
+                yield return null;
+            }
+            _machineRoot.SetActive(false);
+
+            // -------------------------------------------------------------
+            // STEP 2: One-By-One Reveal Phase
+            // -------------------------------------------------------------
+            _singleRevealRoot.SetActive(true);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (_isOpeningAll) break;
+
+                var drop = _currentDrops[i];
+                yield return StartCoroutine(PlaySingleBallRevealRoutine(drop, i, count));
+            }
+
+            // -------------------------------------------------------------
+            // STEP 3: Summary Grid (10-Pull 5x2 or 1-Pull Centered)
+            // -------------------------------------------------------------
+            _singleRevealRoot.SetActive(false);
+            if (ballsContainer != null)
+            {
+                ballsContainer.gameObject.SetActive(true);
+                BuildSummaryGrid();
+            }
+
+            if (btnOpenAll != null) btnOpenAll.gameObject.SetActive(false);
+            if (btnConfirm != null)
+            {
+                btnConfirm.gameObject.SetActive(true);
+                btnConfirm.transform.localScale = Vector3.one;
+            }
+
+            if (instructionText != null)
+            {
+                instructionText.text = "소환이 완료되었습니다!";
+            }
+        }
+
+        private IEnumerator DropBallToTrayRoutine(GachaDropItem drop, int index, int total)
+        {
+            GameObject ballObj = new GameObject($"TrayBall_{index}", typeof(RectTransform), typeof(Image));
+            ballObj.transform.SetParent(_trayRoot.transform, false);
+            RectTransform brt = ballObj.GetComponent<RectTransform>();
+            brt.anchorMin = new Vector2(0.5f, 0.5f);
+            brt.anchorMax = new Vector2(0.5f, 0.5f);
+
+            Image bimg = ballObj.GetComponent<Image>();
+            bimg.sprite = GetBallSpriteForDrop(drop);
+            bimg.preserveAspect = true;
+            bimg.raycastTarget = false;
+
+            float ballSize = (total == 1) ? 90f : 55f;
+            brt.sizeDelta = new Vector2(ballSize, ballSize);
+
+            Vector2 startPos = new Vector2(0f, 150f);
+            float targetX = (total == 1) ? 0f : UnityEngine.Random.Range(-55f, 55f);
+            float targetY = (total == 1) ? 0f : UnityEngine.Random.Range(-25f, 25f);
+            Vector2 targetPos = new Vector2(targetX, targetY);
+
+            float dur = 0.35f;
+            float el = 0f;
+            while (el < dur)
+            {
+                el += Time.deltaTime;
+                float t = el / dur;
+                // Bounce drop
+                float y = Mathf.Lerp(startPos.y, targetPos.y, t);
+                if (t < 0.7f)
+                {
+                    y = Mathf.Lerp(startPos.y, targetPos.y, (t / 0.7f) * (t / 0.7f));
+                }
+                else
+                {
+                    float bt = (t - 0.7f) / 0.3f;
+                    y = targetPos.y + Mathf.Sin(bt * Mathf.PI) * 20f;
+                }
+                brt.anchoredPosition = new Vector2(Mathf.Lerp(startPos.x, targetPos.x, t), y);
+                yield return null;
+            }
+            brt.anchoredPosition = targetPos;
+        }
+
+        private IEnumerator PlaySingleBallRevealRoutine(GachaDropItem drop, int index, int total)
+        {
+            _stepAdvanceRequested = false;
+
+            // Setup unopened ball
+            _singleRewardRoot.SetActive(false);
+            _singleBallImg.gameObject.SetActive(true);
+            _singleBallImg.sprite = GetBallSpriteForDrop(drop);
+
+            bool isRareOrSpecial = drop.isSpecial || drop.mascotIndex >= 4;
+            _singleAuraImg.gameObject.SetActive(isRareOrSpecial);
+            if (isRareOrSpecial)
+            {
+                _singleAuraImg.color = drop.isSpecial ? Color.white : new Color(1f, 0.85f, 0.3f, 0.85f);
+            }
+
+            if (instructionText != null)
+            {
+                instructionText.text = (total > 1)
+                    ? $"가챠볼을 터치하여 열어보세요! ({index + 1}/{total})"
+                    : "가챠볼을 터치하여 열어보세요!";
+            }
+
+            // Pop in ball
+            _singleBallRect.localScale = Vector3.zero;
+            float el = 0f;
+            float popDur = 0.28f;
+            while (el < popDur)
+            {
+                el += Time.deltaTime;
+                float t = el / popDur;
+                float s = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.18f;
+                if (t > 0.8f) s = Mathf.Lerp(1.18f, 1f, (t - 0.8f) / 0.2f);
+                _singleBallRect.localScale = Vector3.one * s;
+                yield return null;
+            }
+            _singleBallRect.localScale = Vector3.one;
+
+            // Wait for click to crack open
+            while (!_stepAdvanceRequested && !_isOpeningAll)
+            {
+                yield return null;
+            }
+            _stepAdvanceRequested = false;
+
+            if (_isOpeningAll) yield break;
+
+            // Crack open animation
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+
+            _singleBallImg.gameObject.SetActive(false);
+            _singleAuraImg.gameObject.SetActive(false);
+            _singleRewardRoot.SetActive(true);
+
+            // Populate reward data
+            int mIdx = drop.mascotIndex;
+            Sprite avSp = (mascotAvatars != null && mIdx < mascotAvatars.Length) ? mascotAvatars[mIdx] : null;
+            _singleAvatarImg.sprite = avSp;
+
+            string mName = (mIdx < LobbyManager.MascotNames.Length) ? LobbyManager.MascotNames[mIdx] : "말랑이";
+            _singleNameText.text = mName;
+
+            string rarName = (mIdx < RarityNames.Length) ? RarityNames[mIdx] : "일반";
+            Color rarCol = (mIdx < RarityColors.Length) ? RarityColors[mIdx] : Color.white;
+            _singleRarityText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(rarCol)}>【 {rarName} 】</color>";
+
+            _singleShardsText.text = drop.isSpecial ? "<color=#FFDF00>★ 스페셜 강림! ★</color>" : $"<color=#00E5FF>+{drop.shardCount} 조각 획득!</color>";
+
+            // Reward spring pop
+            RectTransform rwrt = _singleRewardRoot.GetComponent<RectTransform>();
+            rwrt.localScale = Vector3.zero;
+            el = 0f;
+            float rwDur = 0.26f;
+            while (el < rwDur)
+            {
+                el += Time.deltaTime;
+                float t = el / rwDur;
+                float s = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.22f;
+                if (t > 0.8f) s = Mathf.Lerp(1.22f, 1f, (t - 0.8f) / 0.2f);
+                rwrt.localScale = Vector3.one * s;
+                yield return null;
+            }
+            rwrt.localScale = Vector3.one;
+
+            // Climax presentation if Special Mascot!
+            if (drop.isSpecial)
+            {
+                yield return StartCoroutine(PlaySpecialMascotClimaxRoutine(drop));
+            }
+
+            if (instructionText != null)
+            {
+                instructionText.text = (total > 1 && index < total - 1)
+                    ? $"화면을 터치하여 다음으로 ({index + 1}/{total})"
+                    : "화면을 터치하여 계속하기";
+            }
+
+            // Wait for user click to advance to next ball
+            while (!_stepAdvanceRequested && !_isOpeningAll)
+            {
+                yield return null;
+            }
+            _stepAdvanceRequested = false;
+        }
+
+        private void OnScreenTappedToAdvance()
+        {
+            _stepAdvanceRequested = true;
+        }
+
+        private void BuildSummaryGrid()
+        {
+            foreach (var s in _slots)
+            {
+                if (s.rootObj != null) Destroy(s.rootObj);
             }
             _slots.Clear();
 
             int count = _currentDrops.Count;
             if (count == 1)
             {
-                // Single Ball Centered
-                CreateBallSlot(0, _currentDrops[0], Vector2.zero, new Vector2(180, 180));
+                CreateSummarySlot(0, _currentDrops[0], Vector2.zero, new Vector2(200, 200));
             }
             else
             {
@@ -200,63 +720,26 @@ namespace BlockBlast
                     int col = i % 5;
                     int row = i / 5;
                     Vector2 pos = new Vector2(colX[col], rowY[row]);
-                    CreateBallSlot(i, _currentDrops[i], pos, new Vector2(135, 135));
+                    CreateSummarySlot(i, _currentDrops[i], pos, new Vector2(135, 135));
                 }
             }
         }
 
-        private void CreateBallSlot(int index, GachaDropItem drop, Vector2 anchoredPos, Vector2 size)
+        private void CreateSummarySlot(int index, GachaDropItem drop, Vector2 anchoredPos, Vector2 size)
         {
-            GameObject slotObj = new GameObject($"BallSlot_{index}", typeof(RectTransform));
+            GameObject slotObj = new GameObject($"SummarySlot_{index}", typeof(RectTransform));
             slotObj.transform.SetParent(ballsContainer, false);
             RectTransform rt = slotObj.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = anchoredPos;
             rt.sizeDelta = size;
-
-            // Aura glow for rainbow balls
-            Image auraImg = null;
-            if (drop.isSpecial && rainbowAuraSprite != null)
-            {
-                GameObject auraObj = new GameObject("AuraGlow", typeof(RectTransform), typeof(Image));
-                auraObj.transform.SetParent(slotObj.transform, false);
-                RectTransform art = auraObj.GetComponent<RectTransform>();
-                art.anchorMin = Vector2.zero;
-                art.anchorMax = Vector2.one;
-                art.sizeDelta = new Vector2(size.x * 0.4f, size.y * 0.4f);
-                auraImg = auraObj.GetComponent<Image>();
-                auraImg.sprite = rainbowAuraSprite;
-                auraImg.raycastTarget = false;
-            }
-
-            // Ball button & image
-            GameObject ballImgObj = new GameObject("BallImage", typeof(RectTransform), typeof(Image), typeof(Button));
-            ballImgObj.transform.SetParent(slotObj.transform, false);
-            RectTransform brt = ballImgObj.GetComponent<RectTransform>();
-            brt.anchorMin = Vector2.zero;
-            brt.anchorMax = Vector2.one;
-            brt.sizeDelta = Vector2.zero;
-            Image ballImg = ballImgObj.GetComponent<Image>();
-            ballImg.sprite = drop.isSpecial ? rainbowBallSprite : greyBallSprite;
-            ballImg.preserveAspect = true;
-            Button ballBtn = ballImgObj.GetComponent<Button>();
-
-            // Reward container (revealed on open)
-            GameObject rewardObj = new GameObject("RewardContainer", typeof(RectTransform));
-            rewardObj.transform.SetParent(slotObj.transform, false);
-            RectTransform rrt = rewardObj.GetComponent<RectTransform>();
-            rrt.anchorMin = Vector2.zero;
-            rrt.anchorMax = Vector2.one;
-            rrt.sizeDelta = Vector2.zero;
-            rewardObj.SetActive(false);
 
             // Reward avatar icon
             Sprite avSprite = (mascotAvatars != null && drop.mascotIndex < mascotAvatars.Length)
                 ? mascotAvatars[drop.mascotIndex] : null;
             GameObject avObj = new GameObject("RewardAvatar", typeof(RectTransform), typeof(Image));
-            avObj.transform.SetParent(rewardObj.transform, false);
+            avObj.transform.SetParent(slotObj.transform, false);
             RectTransform avrt = avObj.GetComponent<RectTransform>();
             avrt.anchorMin = new Vector2(0.5f, 0.5f);
             avrt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -267,16 +750,17 @@ namespace BlockBlast
             avImg.preserveAspect = true;
             avImg.raycastTarget = false;
 
-            // Reward badge text
+            // Rarity / Shard badge text
             GameObject txtObj = new GameObject("RewardText", typeof(RectTransform), typeof(TextMeshProUGUI));
-            txtObj.transform.SetParent(rewardObj.transform, false);
+            txtObj.transform.SetParent(slotObj.transform, false);
             RectTransform trt = txtObj.GetComponent<RectTransform>();
             trt.anchorMin = new Vector2(0.5f, 0f);
             trt.anchorMax = new Vector2(0.5f, 0f);
             trt.anchoredPosition = new Vector2(0, -14);
-            trt.sizeDelta = new Vector2(size.x * 1.2f, 30);
+            trt.sizeDelta = new Vector2(size.x * 1.3f, 30);
             TMP_Text rText = txtObj.GetComponent<TMP_Text>();
-            rText.fontSize = (_currentDrops != null && _currentDrops.Count == 1) ? 24 : 18;
+            if (instructionText != null && instructionText.font != null) rText.font = instructionText.font;
+            rText.fontSize = (_currentDrops.Count == 1) ? 24 : 18;
             rText.alignment = TextAlignmentOptions.Center;
             rText.text = drop.isSpecial ? "<color=#FFDF00>★스페셜!★</color>" : $"<color=#00E5FF>+{drop.shardCount}조각</color>";
 
@@ -284,137 +768,13 @@ namespace BlockBlast
             {
                 rootObj = slotObj,
                 rootRect = rt,
-                button = ballBtn,
-                ballImage = ballImg,
-                auraImage = auraImg,
-                rewardRoot = rewardObj,
+                rewardRoot = slotObj,
                 rewardAvatar = avImg,
                 rewardText = rText,
-                isOpened = false,
+                isOpened = true,
                 dropData = drop
             };
-
-            int slotIdx = index;
-            ballBtn.onClick.AddListener(() => OpenSlot(slotIdx));
-
             _slots.Add(slot);
-
-            // Pop in slot with scale animation
-            if (gameObject.activeInHierarchy)
-            {
-                StartCoroutine(PopInSlotRoutine(rt, index * 0.04f));
-            }
-            else
-            {
-                rt.localScale = Vector3.one;
-            }
-        }
-
-        private IEnumerator PopInSlotRoutine(RectTransform rt, float delay)
-        {
-            rt.localScale = Vector3.zero;
-            yield return new WaitForSeconds(delay);
-
-            float el = 0f;
-            float dur = 0.25f;
-            while (el < dur)
-            {
-                el += Time.deltaTime;
-                float t = el / dur;
-                // Elastic bounce in
-                float scale = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.15f;
-                if (t > 0.8f) scale = Mathf.Lerp(1.15f, 1f, (t - 0.8f) / 0.2f);
-                rt.localScale = Vector3.one * scale;
-                yield return null;
-            }
-            rt.localScale = Vector3.one;
-        }
-
-        private void Update()
-        {
-            // Subtle floating / pulsing for unopened rainbow aura
-            if (_slots != null)
-            {
-                float pulse = 1f + Mathf.Sin(Time.time * 4f) * 0.12f;
-                for (int i = 0; i < _slots.Count; i++)
-                {
-                    var s = _slots[i];
-                    if (s != null && !s.isOpened && s.auraImage != null)
-                    {
-                        s.auraImage.transform.localScale = Vector3.one * pulse;
-                        s.auraImage.transform.Rotate(0, 0, 45f * Time.deltaTime);
-                    }
-                }
-            }
-        }
-
-        public void OpenSlot(int index)
-        {
-            if (index < 0 || index >= _slots.Count) return;
-            var slot = _slots[index];
-            if (slot.isOpened) return;
-
-            slot.isOpened = true;
-            slot.button.interactable = false;
-
-            StartCoroutine(AnimateCrackBallRoutine(slot));
-        }
-
-        private IEnumerator AnimateCrackBallRoutine(GachaBallSlot slot)
-        {
-            // Shake ball
-            Vector2 origPos = slot.rootRect.anchoredPosition;
-            float shakeTime = 0.18f;
-            float el = 0f;
-            while (el < shakeTime)
-            {
-                el += Time.deltaTime;
-                float ox = UnityEngine.Random.Range(-5f, 5f);
-                float oy = UnityEngine.Random.Range(-5f, 5f);
-                slot.rootRect.anchoredPosition = origPos + new Vector2(ox, oy);
-                yield return null;
-            }
-            slot.rootRect.anchoredPosition = origPos;
-
-            // Audio: crack / pop
-            if (BlockAudioManager.Instance != null)
-            {
-                BlockAudioManager.Instance.PlayBuy();
-            }
-
-            // Ball vanishes, reward reveals with spring bounce
-            if (slot.auraImage != null) slot.auraImage.gameObject.SetActive(false);
-            slot.ballImage.gameObject.SetActive(false);
-            slot.rewardRoot.SetActive(true);
-
-            RectTransform rrt = slot.rewardRoot.GetComponent<RectTransform>();
-            rrt.localScale = Vector3.zero;
-            el = 0f;
-            float popDur = 0.22f;
-            while (el < popDur)
-            {
-                el += Time.deltaTime;
-                float t = el / popDur;
-                float scale = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.25f;
-                if (t > 0.8f) scale = Mathf.Lerp(1.25f, 1.0f, (t - 0.8f) / 0.2f);
-                rrt.localScale = Vector3.one * scale;
-                yield return null;
-            }
-            rrt.localScale = Vector3.one;
-
-            // Check if this was a SPECIAL MASCOT!
-            if (slot.dropData.isSpecial)
-            {
-                yield return StartCoroutine(PlaySpecialMascotClimaxRoutine(slot.dropData));
-            }
-
-            CheckAllOpened();
-        }
-
-        public void ShowClimaxDirect(GachaDropItem drop)
-        {
-            if (modalRoot != null) modalRoot.SetActive(true);
-            StartCoroutine(PlaySpecialMascotClimaxRoutine(drop));
         }
 
         private IEnumerator PlaySpecialMascotClimaxRoutine(GachaDropItem drop)
@@ -423,11 +783,7 @@ namespace BlockBlast
 
             climaxOverlay.SetActive(true);
 
-            // Audio: celebration
-            if (BlockAudioManager.Instance != null)
-            {
-                BlockAudioManager.Instance.PlayBuy();
-            }
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
 
             if (climaxMascotImage != null && specialMascotCutout != null)
             {
@@ -452,7 +808,6 @@ namespace BlockBlast
                 }
             }
 
-            // Animate Giant Mascot Scaling In
             RectTransform mrt = (climaxMascotImage != null) ? climaxMascotImage.GetComponent<RectTransform>() : null;
             if (mrt != null)
             {
@@ -471,11 +826,9 @@ namespace BlockBlast
                 mrt.localScale = Vector3.one;
             }
 
-            // Spin sunburst rays
             if (_climaxSunburstCoroutine != null) StopCoroutine(_climaxSunburstCoroutine);
             _climaxSunburstCoroutine = StartCoroutine(SpinSunburstRoutine());
 
-            // Wait for user to dismiss or auto wait
             bool dismissed = false;
             if (btnClimaxDismiss != null)
             {
@@ -487,7 +840,6 @@ namespace BlockBlast
             while (!dismissed && timer < 30f)
             {
                 timer += Time.deltaTime;
-                // Mascot cute gentle breathing/floating
                 if (mrt != null)
                 {
                     float bob = Mathf.Sin(Time.time * 5f) * 0.05f;
@@ -518,48 +870,20 @@ namespace BlockBlast
         {
             if (_isOpeningAll) return;
             _isOpeningAll = true;
-            if (btnOpenAll != null) btnOpenAll.interactable = false;
-
-            StartCoroutine(OpenAllRoutine());
+            _stepAdvanceRequested = true;
+            if (btnOpenAll != null) btnOpenAll.gameObject.SetActive(false);
         }
 
-        private IEnumerator OpenAllRoutine()
+        public void OpenSlot(int slotIndex)
         {
-            for (int i = 0; i < _slots.Count; i++)
-            {
-                if (!_slots[i].isOpened)
-                {
-                    OpenSlot(i);
-                    yield return new WaitForSeconds(0.08f);
-                }
-            }
-            CheckAllOpened();
+            _stepAdvanceRequested = true;
         }
 
-        private void CheckAllOpened()
+        public void ShowClimaxDirect(GachaDropItem drop)
         {
-            bool allDone = true;
-            foreach (var slot in _slots)
+            if (climaxOverlay != null)
             {
-                if (!slot.isOpened)
-                {
-                    allDone = false;
-                    break;
-                }
-            }
-
-            if (allDone)
-            {
-                if (btnOpenAll != null) btnOpenAll.gameObject.SetActive(false);
-                if (btnConfirm != null)
-                {
-                    btnConfirm.gameObject.SetActive(true);
-                    btnConfirm.transform.localScale = Vector3.one;
-                }
-                if (instructionText != null)
-                {
-                    instructionText.text = "소환이 완료되었습니다!";
-                }
+                StartCoroutine(PlaySpecialMascotClimaxRoutine(drop));
             }
         }
 

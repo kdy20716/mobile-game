@@ -57,6 +57,7 @@ namespace BlockBlast.Editor
             Sprite btnLavenderSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonPurpleSprite(true);
             Sprite btnGoldSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonGoldSprite(true);
             Sprite btnCreamSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonCreamSprite(true);
+            Sprite btnInactiveSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonInactiveSprite();
             Sprite btnPauseCircleSprite = CuteBlockTextureGenerator.GetOrCreate3DRoundJellyButtonSprite("Jelly_Button_Circle_Pink", CuteBlockTextureGenerator.PastelPink);
 
             Sprite circleFrameSprite = CuteBlockTextureGenerator.GetOrCreateCircleFrameSprite();
@@ -947,6 +948,7 @@ namespace BlockBlast.Editor
 
             circleFrameSprite = CuteBlockTextureGenerator.GetOrCreateCircleFrameSprite();
             tabPillSprite = CuteBlockTextureGenerator.GetOrCreateTabPillSprite();
+            btnInactiveSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonInactiveSprite();
             cuteCardSprite = CuteBlockTextureGenerator.GetOrCreateCuteCardSprite();
 
             Sprite pinkMascotSprite = CuteBlockTextureGenerator.GetOrCreatePinkMascotSprite();
@@ -1107,10 +1109,12 @@ namespace BlockBlast.Editor
                 partyLabelBgImgs[i] = pillBg;
 
                 GameObject pillTxtObj = CreateText(pillObj.transform, "LabelText", floatingLabels[i], 24, TextAlignmentOptions.Center, cuteFont, Color.white);
-                SetRect(pillTxtObj, Vector2.zero, Vector2.one, new Vector2(10, 0), new Vector2(-10, 0));
+                SetRect(pillTxtObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 TextMeshProUGUI tmpPill = pillTxtObj.GetComponent<TextMeshProUGUI>();
                 if (tmpPill != null)
                 {
+                    tmpPill.alignment = TextAlignmentOptions.Center;
+                    tmpPill.margin = Vector4.zero;
                     tmpPill.enableAutoSizing = true;
                     tmpPill.fontSizeMin = 14f;
                     tmpPill.fontSizeMax = 24f;
@@ -1167,11 +1171,14 @@ namespace BlockBlast.Editor
             GameObject pDarkBg = CreateImage(pModal.transform, "DarkBg", null, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             pDarkBg.GetComponent<Image>().color = new Color(0.06f, 0.04f, 0.14f, 0.88f);
             pDarkBg.GetComponent<Image>().raycastTarget = true;
+            Button pDarkBgBtn = pDarkBg.AddComponent<Button>();
+            pDarkBgBtn.transition = Selectable.Transition.None;
 
             GameObject pCard = CreateImage(pModal.transform, "DialogCard", profileModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820, 1060));
             pCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject pCloseBtn = CreateButton(pCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), closeXBtnSprite, 32);
+            pCloseBtn.transform.SetAsLastSibling();
 
             GameObject pTitle = CreateText(pCard.transform, "Title", "내 프로필", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
             SetRect(pTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -65), new Vector2(400, 50));
@@ -1309,11 +1316,14 @@ namespace BlockBlast.Editor
             GameObject lDarkBg = CreateImage(lModal.transform, "DarkBg", null, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             lDarkBg.GetComponent<Image>().color = new Color(0.06f, 0.04f, 0.14f, 0.88f);
             lDarkBg.GetComponent<Image>().raycastTarget = true;
+            Button lDarkBgBtn = lDarkBg.AddComponent<Button>();
+            lDarkBgBtn.transition = Selectable.Transition.None;
 
             GameObject loginCard = CreateImage(lModal.transform, "DialogCard", profileModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(740, 880));
             loginCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject lCloseBtn = CreateButton(loginCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), closeXBtnSprite, 32);
+            lCloseBtn.transform.SetAsLastSibling();
 
             GameObject loginTitle = CreateText(loginCard.transform, "Title", "로그인", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
             SetRect(loginTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -65), new Vector2(400, 50));
@@ -1388,6 +1398,8 @@ namespace BlockBlast.Editor
             GameObject sDarkBg = CreateImage(sModal.transform, "DarkBg", null, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             sDarkBg.GetComponent<Image>().color = new Color(0.30f, 0.20f, 0.40f, 0.50f);
             sDarkBg.GetComponent<Image>().raycastTarget = true;
+            Button sDarkBgBtn = sDarkBg.AddComponent<Button>();
+            sDarkBgBtn.transition = Selectable.Transition.None;
 
             // Shop Card (Dimensions for mobile commercial shop: 1000 x 1560)
             GameObject sCard = CreateImage(sModal.transform, "DialogCard", luxuryShopCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 1560));
@@ -1419,8 +1431,8 @@ namespace BlockBlast.Editor
             SetRect(sCoinTxt, new Vector2(0, 0), new Vector2(1, 1), new Vector2(50, 0), new Vector2(-8, 0));
 
             // Close Button
-            GameObject sCloseBtn = CreateButton(sCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-48, -50), new Vector2(62, 62), luxuryCloseBtnSprite, 30);
-            ShopUIAnimationController.AttachTactileBounce(sCloseBtn.GetComponent<Button>());
+            GameObject sCloseBtn = CreateButton(sCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-48, -50), new Vector2(64, 64), luxuryCloseBtnSprite, 30);
+            sCloseBtn.transform.SetAsLastSibling();
 
             // --- Top Horizontal Tab Bar: 5 Tabs ---
             GameObject tabHeaderBar = new GameObject("TabHeaderBar", typeof(RectTransform));
@@ -1566,7 +1578,7 @@ namespace BlockBlast.Editor
             VideoClip pickVideoClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/movies/mallang_pick1.mp4");
 
             // Cute skip pill button on top right
-            GameObject btnSkipVideo = CreateButton(bVideoOverlay.transform, "BtnSkipVideo", "스킵 >>", cuteFont, new Vector2(1, 1), new Vector2(-75, -40), new Vector2(115, 46), tabPillSprite, 20, Color.white, new Color(0.2f, 0.1f, 0.3f, 0.8f));
+            GameObject btnSkipVideo = CreateButton(bVideoOverlay.transform, "BtnSkipVideo", "스킵 >>", cuteFont, new Vector2(1, 1), new Vector2(-75, -40), new Vector2(115, 46), btnInactiveSprite, 20, Color.white, new Color(0.2f, 0.1f, 0.3f, 0.8f));
 
             // Attach & Wire AnimatedPickupBannerController
             var bannerCtrl = pickupBanner.AddComponent<AnimatedPickupBannerController>();
@@ -1600,7 +1612,7 @@ namespace BlockBlast.Editor
             ShopUIAnimationController.AttachTactileBounce(btnProbCheck.GetComponent<Button>());
 
             // [ⓘ 스킬 & 픽업 상세] Button
-            GameObject btnSkillDetail = CreateButton(pickControlRow.transform, "BtnSkillDetail", LocalizationManager.Get("pickup_btn_skill_detail"), cuteFont, new Vector2(0.5f, 0.5f), new Vector2(155, 0), new Vector2(300, 52), tabPillSprite, 22, new Color(0.35f, 0.22f, 0.55f));
+            GameObject btnSkillDetail = CreateButton(pickControlRow.transform, "BtnSkillDetail", LocalizationManager.Get("pickup_btn_skill_detail"), cuteFont, new Vector2(0.5f, 0.5f), new Vector2(155, 0), new Vector2(300, 52), btnInactiveSprite, 22, new Color(0.35f, 0.22f, 0.55f));
             btnSkillDetail.GetComponent<Button>().onClick.AddListener(lobbyMgr.OpenPickupSkillDetail);
             ShopUIAnimationController.AttachTactileBounce(btnSkillDetail.GetComponent<Button>());
 
@@ -1837,7 +1849,6 @@ namespace BlockBlast.Editor
             }
 
             sCloseBtn.transform.SetAsLastSibling();
-            sCloseBtn.transform.SetAsLastSibling();
 
             // --- Settings Modal ---
             GameObject setModal = new GameObject("SettingsModal", typeof(RectTransform));
@@ -1847,11 +1858,14 @@ namespace BlockBlast.Editor
             GameObject setDarkBg = CreateImage(setModal.transform, "DarkBg", null, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             setDarkBg.GetComponent<Image>().color = new Color(0.06f, 0.04f, 0.14f, 0.88f);
             setDarkBg.GetComponent<Image>().raycastTarget = true;
+            Button setDarkBgBtn = setDarkBg.AddComponent<Button>();
+            setDarkBgBtn.transition = Selectable.Transition.None;
 
             GameObject setCard = CreateImage(setModal.transform, "DialogCard", settingsModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(800, 940));
             setCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject setCloseBtn = CreateButton(setCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), closeXBtnSprite, 32);
+            setCloseBtn.transform.SetAsLastSibling();
 
             GameObject setTitle = CreateText(setCard.transform, "Title", "게임 설정", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
             SetRect(setTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -55), new Vector2(400, 48));
@@ -1878,10 +1892,16 @@ namespace BlockBlast.Editor
 
             for (int i = 0; i < 4; i++)
             {
-                GameObject lBtnObj = CreateButton(setCard.transform, $"BtnLang_{i}", langNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(langXOffsets[i], -375), new Vector2(136, 48), tabPillSprite, 22);
+                Sprite lSp = (i == 0) ? btnPinkSprite : btnInactiveSprite;
+                GameObject lBtnObj = CreateButton(setCard.transform, $"BtnLang_{i}", langNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(langXOffsets[i], -375), new Vector2(136, 48), lSp, 22);
                 langBtns[i] = lBtnObj.GetComponent<Button>();
                 langBgs[i] = lBtnObj.GetComponent<Image>();
                 langTexts[i] = lBtnObj.GetComponentInChildren<TMP_Text>();
+                if (langTexts[i] != null)
+                {
+                    langTexts[i].color = (i == 0) ? Color.white : new Color(0.35f, 0.22f, 0.55f);
+                    langTexts[i].fontStyle = (i == 0) ? FontStyles.Bold : FontStyles.Normal;
+                }
             }
 
             // Mobile Support Row (Haptics, Privacy Policy, Probability Info)
@@ -1892,7 +1912,7 @@ namespace BlockBlast.Editor
             Button btnHaptic = btnHapticObj.GetComponent<Button>();
             TMP_Text hapticTxt = btnHapticObj.GetComponentInChildren<TMP_Text>();
 
-            GameObject btnPrivacyObj = CreateButton(setCard.transform, "BtnPrivacy", "개인정보방침", cuteFont, new Vector2(0.5f, 1), new Vector2(0, -488), new Vector2(195, 48), tabPillSprite, 21, new Color(0.35f, 0.22f, 0.55f));
+            GameObject btnPrivacyObj = CreateButton(setCard.transform, "BtnPrivacy", "개인정보방침", cuteFont, new Vector2(0.5f, 1), new Vector2(0, -488), new Vector2(195, 48), btnInactiveSprite, 21, new Color(0.35f, 0.22f, 0.55f));
             Button btnPrivacy = btnPrivacyObj.GetComponent<Button>();
 
             GameObject btnProbSetObj = CreateButton(setCard.transform, "BtnProbSet", "확률 정보", cuteFont, new Vector2(0.5f, 1), new Vector2(200, -488), new Vector2(185, 48), btnPinkSprite, 21, Color.white, new Color(0.78f, 0.28f, 0.44f, 0.85f));
@@ -1910,7 +1930,7 @@ namespace BlockBlast.Editor
 
             for (int i = 0; i < 4; i++)
             {
-                Sprite initSprite = (i == 3) ? btnPinkSprite : tabPillSprite;
+                Sprite initSprite = (i == 3) ? btnPinkSprite : btnInactiveSprite;
                 GameObject aBtnObj = CreateButton(setCard.transform, $"BtnAspect_{i}", aspectNames[i], cuteFont, new Vector2(0.5f, 1), new Vector2(aspectXOffsets[i], -602), new Vector2(136, 46), initSprite, 22);
                 aspectBtns[i] = aBtnObj.GetComponent<Button>();
                 aspectBgs[i] = aBtnObj.GetComponent<Image>();
@@ -1934,7 +1954,7 @@ namespace BlockBlast.Editor
 
             for (int j = 0; j < 3; j++)
             {
-                Sprite initSprite = (j == 0) ? btnPinkSprite : tabPillSprite;
+                Sprite initSprite = (j == 0) ? btnPinkSprite : btnInactiveSprite;
                 GameObject wBtnObj = CreateButton(setCard.transform, $"BtnWindowMode_{j}", winModeNames[j], cuteFont, new Vector2(0.5f, 1), new Vector2(winModeXOffsets[j], -715), new Vector2(196, 48), initSprite, 18);
                 winModeBtns[j] = wBtnObj.GetComponent<Button>();
                 winModeBgs[j] = wBtnObj.GetComponent<Image>();
@@ -1991,6 +2011,7 @@ namespace BlockBlast.Editor
             codexCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject codexCloseBtn = CreateButton(codexCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-48, -48), new Vector2(62, 62), luxuryCloseBtnSprite, 30);
+            codexCloseBtn.transform.SetAsLastSibling();
             codexDarkBgBtn.onClick.AddListener(lobbyMgr.CloseMascotModal);
 
             // Title
@@ -2119,6 +2140,7 @@ namespace BlockBlast.Editor
             dCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject dCloseBtn = CreateButton(dCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-46, -46), new Vector2(62, 62), luxuryCloseBtnSprite, 30);
+            dCloseBtn.transform.SetAsLastSibling();
             dDarkBgBtn.onClick.AddListener(lobbyMgr.CloseMascotDetail);
 
             // Modal Title
@@ -2248,6 +2270,8 @@ namespace BlockBlast.Editor
             GameObject srDarkBg = CreateImage(summonResultModalObj.transform, "DarkBg", null, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             srDarkBg.GetComponent<Image>().color = new Color(0.30f, 0.20f, 0.40f, 0.50f);
             srDarkBg.GetComponent<Image>().raycastTarget = true;
+            Button srDarkBgBtn = srDarkBg.AddComponent<Button>();
+            srDarkBgBtn.transition = Selectable.Transition.None;
 
             GameObject srCard = CreateImage(summonResultModalObj.transform, "DialogCard", luxuryShopCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(800, 800));
             srCard.GetComponent<Image>().type = Image.Type.Sliced;
@@ -2275,6 +2299,7 @@ namespace BlockBlast.Editor
 
             // Confirm Button
             GameObject srConfirmBtn = CreateButton(srCard.transform, "BtnConfirm", "확인", cuteFont, new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(260, 72), luxuryBtnPinkSprite, 28, Color.white, new Color(0.60f, 0.12f, 0.30f, 0.90f));
+            srConfirmBtn.transform.SetAsLastSibling();
             ShopUIAnimationController.AttachTactileBounce(srConfirmBtn.GetComponent<Button>());
 
             lobbyMgr.SetupSummonResultModal(
@@ -2302,6 +2327,7 @@ namespace BlockBlast.Editor
             probCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject probCloseBtn = CreateButton(probCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), luxuryCloseBtnSprite, 32);
+            probCloseBtn.transform.SetAsLastSibling();
 
             GameObject probTitle = CreateText(probCard.transform, "Title", "소환 확률 정보", 38, TextAlignmentOptions.Center, cuteFont, new Color(0.24f, 0.11f, 0.25f));
             probTitle.GetComponent<TMP_Text>().fontStyle = FontStyles.Bold;
@@ -2413,6 +2439,7 @@ namespace BlockBlast.Editor
             pdCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject pdCloseBtn = CreateButton(pdCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), luxuryCloseBtnSprite, 32);
+            pdCloseBtn.transform.SetAsLastSibling();
             pdDarkBgBtn.onClick.AddListener(lobbyMgr.ClosePickupSkillDetail);
 
             GameObject pdTitle = CreateText(pdCard.transform, "Title", LocalizationManager.Get("pickup_modal_skill_title"), 38, TextAlignmentOptions.Center, cuteFont, new Color(0.24f, 0.11f, 0.25f));
@@ -2533,11 +2560,15 @@ namespace BlockBlast.Editor
             gachaContentRoot.SetActive(false);
 
             Sprite greyBallSp = CuteBlockTextureGenerator.GetOrCreateGachaBallGreySprite();
+            Sprite goldBallSp = CuteBlockTextureGenerator.GetOrCreateGoldGachaBallSprite();
             Sprite rainbowBallSp = CuteBlockTextureGenerator.GetOrCreateGachaBallRainbowSprite();
             Sprite sparkleStarSp = CuteBlockTextureGenerator.GetOrCreateFairySparkleSprite();
+            Sprite gachaMachineSp = CuteBlockTextureGenerator.GetOrCreateGachaMachineSprite();
+            Sprite silverCoinSp = CuteBlockTextureGenerator.GetOrCreateSilverCoinSprite();
+            Sprite goldCoinSp = CuteBlockTextureGenerator.GetOrCreateGoldCoinSprite();
 
             var gachaCtrl = gachaModalObj.GetComponent<GachaPresentationController>();
-            gachaCtrl.SetupSprites(greyBallSp, rainbowBallSp, gachaAuraSp, sunburstSp, sparkleStarSp, mascotAvatars, gachaSpecialCutout);
+            gachaCtrl.SetupSprites(greyBallSp, rainbowBallSp, gachaAuraSp, sunburstSp, sparkleStarSp, mascotAvatars, gachaSpecialCutout, goldBallSp, gachaMachineSp, silverCoinSp, goldCoinSp);
             gachaCtrl.SetupReferences(
                 gachaContentRoot, ballsContObj.GetComponent<RectTransform>(), gachaInstr.GetComponent<TMP_Text>(),
                 btnOpenAllObj.GetComponent<Button>(), btnGachaConfirmObj.GetComponent<Button>(),
@@ -2607,7 +2638,9 @@ namespace BlockBlast.Editor
                 null,
                 null,
                 pTitle.GetComponent<TMP_Text>(),
-                verTxt.GetComponent<TMP_Text>()
+                verTxt.GetComponent<TMP_Text>(),
+                btnPinkSprite,
+                btnInactiveSprite
             );
             lobbyMgr.SetupLanguageLogos(lobbyLogoObj.GetComponent<Image>(), langLogoSprites);
             lobbyMgr.SetupScreenSettingsAndQuitReferences(
@@ -2628,7 +2661,7 @@ namespace BlockBlast.Editor
                 winModeBgs,
                 winModeTexts,
                 btnPinkSprite,
-                tabPillSprite
+                btnInactiveSprite
             );
             lobbyMgr.SetupProbabilityModal(
                 probModalObj,
@@ -2738,11 +2771,13 @@ namespace BlockBlast.Editor
                 Color fontColor = textCol ?? Color.white;
                 bool hasShadow = textShadowCol.HasValue;
                 GameObject textObj = CreateText(btnObj.transform, "Text", label, fontSize, TextAlignmentOptions.Center, fontAsset, fontColor, hasShadow, textShadowCol);
-                SetRect(textObj, Vector2.zero, Vector2.one, new Vector2(14f, 0f), new Vector2(-14f, 0f));
+                SetRect(textObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
                 TextMeshProUGUI tmp = textObj.GetComponent<TextMeshProUGUI>();
                 if (tmp != null)
                 {
+                    tmp.alignment = TextAlignmentOptions.Center;
+                    tmp.margin = Vector4.zero;
                     tmp.enableAutoSizing = true;
                     tmp.fontSizeMin = 13f;
                     tmp.fontSizeMax = fontSize;
@@ -2784,6 +2819,7 @@ namespace BlockBlast.Editor
             t.enableWordWrapping = false;
             t.overflowMode = TextOverflowModes.Overflow;
             t.raycastTarget = false;
+            t.margin = Vector4.zero;
 
             if (addShadow)
             {
