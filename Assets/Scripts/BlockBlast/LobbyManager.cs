@@ -71,8 +71,8 @@ namespace BlockBlast
         };
         public static readonly int[] BreakthroughCostsNormal = new int[] { 30, 40, 50, 60, 77 }; // 5 breakthroughs
         public static readonly int[] BreakthroughCostsSpecial = new int[] { 60, 60, 60, 60, 60 }; // 60 shards each
-        public static readonly int[] MascotPricesCoins = new int[] { 0, 1000, 2000, 3000, 0, 0, 0, 0, 0 };
-        public static readonly int[] MascotPricesDiamonds = new int[] { 0, 50, 100, 150, 0, 0, 0, 0, 0 };
+        public static readonly int[] MascotPricesCoins = new int[] { 0, 1000, 2000, 3000, 5000, 5000, 5000, 5000, 10000 };
+        public static readonly int[] MascotPricesDiamonds = new int[] { 0, 50, 100, 150, 300, 300, 300, 300, 800 };
 
         public static int GetMascotShards(int idx)
         {
@@ -1684,12 +1684,12 @@ namespace BlockBlast
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                shopModal.transform.SetAsLastSibling();
+                shopModal.SetActive(true);
                 SelectShopTab(_currentShopTab);
                 RefreshThemeShopUI();
                 RefreshLobbyThemeShopUI();
                 WireModalAutoClose(shopModal, CloseShopModal);
-                shopModal.transform.SetAsLastSibling();
-                shopModal.SetActive(true);
                 if (shopAnimController != null && shopAnimController.gameObject.activeInHierarchy) shopAnimController.AnimateOpen();
             }
         }
@@ -1697,7 +1697,7 @@ namespace BlockBlast
         public void CloseShopModal()
         {
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
-            if (pickupBannerController != null) pickupBannerController.StopVideo();
+            if (pickupBannerController != null && pickupBannerController.gameObject.activeInHierarchy) pickupBannerController.StopVideo();
             if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
             if (shopAnimController != null && shopAnimController.gameObject.activeInHierarchy)
             {
@@ -1951,21 +1951,21 @@ namespace BlockBlast
             else if (_currentShopTab == 3) activePanel = shopInGameThemesPanel;
             else if (_currentShopTab == 4) activePanel = shopLobbyThemesPanel;
 
-            if (shopAnimController != null && activePanel != null)
+            if (shopAnimController != null && shopAnimController.gameObject.activeInHierarchy && activePanel != null)
             {
                 shopAnimController.AnimateTabGlide(_currentShopTab, activePanel.GetComponent<RectTransform>());
             }
 
             if (_currentShopTab == 1)
             {
-                if (pickupBannerController != null)
+                if (pickupBannerController != null && pickupBannerController.gameObject.activeInHierarchy)
                 {
                     pickupBannerController.PlayIntroVideo();
                 }
             }
             else
             {
-                if (pickupBannerController != null)
+                if (pickupBannerController != null && pickupBannerController.gameObject.activeInHierarchy)
                 {
                     pickupBannerController.StopVideo();
                 }
@@ -2153,24 +2153,12 @@ namespace BlockBlast
 
             if (!isOwned)
             {
-                int shards = GetMascotShards(idx);
-                if (shards >= 60)
-                {
-                    SetMascotShards(idx, shards - 60);
-                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + idx, 1);
-                    PlayerPrefs.SetInt(KEY_SELECTED_MASCOT, idx);
-                    PlayerPrefs.Save();
-
-                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayFairyMagic();
-                    if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
-                    RefreshMascotDetailUI();
-                    RefreshMascotCodexUI();
-                    RefreshMascotShopUI();
-                }
-                else
-                {
-                    PlayClickSound();
-                }
+                // Unowned mascots: Navigate directly to Shop Mascot tab!
+                PlayClickSound();
+                CloseMascotDetail();
+                CloseMascotModal();
+                OpenShopModal();
+                SelectShopTab(2);
             }
             else
             {
@@ -2272,11 +2260,11 @@ namespace BlockBlast
                     }
                     else if (isOwned)
                     {
-                        codexCardStatusBadges[i].text = $"<color=#6C5CE7>조각 {shards}개</color>";
+                        codexCardStatusBadges[i].text = $"<color=#E84393><b>[ {LocalizationManager.Get("mascot_btn_equip")} ]</b></color>";
                     }
                     else
                     {
-                        codexCardStatusBadges[i].text = $"<color=#E17055>미보유 {shards}/60</color>";
+                        codexCardStatusBadges[i].text = $"<color=#74B9FF>보유 조각: {shards}개</color>";
                     }
                 }
 
@@ -2358,7 +2346,7 @@ namespace BlockBlast
             {
                 if (breakthroughCost > 0)
                 {
-                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: <color=#2E86DE><b>{shards}</b></color> / {breakthroughCost}개";
+                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: <color=#2E86DE><b>{shards}</b></color> / {breakthroughCost}개 (돌파 재료)";
                 }
                 else
                 {
@@ -2373,7 +2361,9 @@ namespace BlockBlast
                 btnDetailLevelUp.interactable = canLevelUp;
                 if (txtDetailLevelUp != null)
                 {
-                    if (curLvl >= maxCap)
+                    if (!isOwned)
+                        txtDetailLevelUp.text = "미보유 (구매 필요)";
+                    else if (curLvl >= maxCap)
                         txtDetailLevelUp.text = LocalizationManager.Get("mascot_max_level");
                     else
                         txtDetailLevelUp.text = $"{LocalizationManager.Get("mascot_btn_levelup")}\n{levelUpCost:N0} G";
@@ -2387,7 +2377,9 @@ namespace BlockBlast
                 btnDetailBreakthrough.interactable = canBreakthrough;
                 if (txtDetailBreakthrough != null)
                 {
-                    if (stars >= 5)
+                    if (!isOwned)
+                        txtDetailBreakthrough.text = "미보유 (구매 필요)";
+                    else if (stars >= 5)
                         txtDetailBreakthrough.text = LocalizationManager.Get("mascot_max_breakthrough");
                     else
                         txtDetailBreakthrough.text = $"{LocalizationManager.Get("mascot_btn_breakthrough")}\n조각 {shards}/{breakthroughCost}";
@@ -2399,11 +2391,10 @@ namespace BlockBlast
             {
                 if (!isOwned)
                 {
-                    bool canUnlock = (shards >= 60);
-                    btnDetailEquip.interactable = canUnlock;
+                    btnDetailEquip.interactable = true;
                     if (txtDetailEquip != null)
                     {
-                        txtDetailEquip.text = canUnlock ? LocalizationManager.Get("mascot_btn_unlock") : LocalizationManager.Get("mascot_obtain_pickup");
+                        txtDetailEquip.text = LocalizationManager.Get("mascot_btn_buy_in_shop");
                     }
                 }
                 else
@@ -2656,64 +2647,37 @@ namespace BlockBlast
 
             if (isOwned)
             {
-                EquipMascot(mascotIdx);
+                // Shop is strictly purchase-only. Owned mascots cannot be bought again or equipped here.
+                PlayClickSound();
+                return;
             }
-            else if (mascotIdx >= 4)
+
+            int price = MascotPricesCoins[mascotIdx];
+            if (_currentCoins >= price)
             {
-                int shards = GetMascotShards(mascotIdx);
-                if (shards >= 60)
-                {
-                    SetMascotShards(mascotIdx, shards - 60);
-                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + mascotIdx, 1);
-                    PlayerPrefs.SetInt(KEY_SELECTED_MASCOT, mascotIdx);
-                    PlayerPrefs.Save();
+                _currentCoins -= price;
+                PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
+                PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + mascotIdx, 1);
+                PlayerPrefs.Save();
 
-                    RefreshCurrenciesUI();
-                    RefreshMascotShopUI();
-                    RefreshMascotModalUI();
-                    RefreshMascotCodexUI();
+                RefreshCurrenciesUI();
+                RefreshMascotShopUI();
+                RefreshMascotModalUI();
+                RefreshMascotCodexUI();
 
-                    if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
-                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
-                }
-                else
-                {
-                    // Rare & Special mascots: Navigate directly to Pickup tab!
-                    PlayClickSound();
-                    SelectShopTab(1);
-                }
+                if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
             }
             else
             {
-                int price = MascotPricesCoins[mascotIdx];
-                if (_currentCoins >= price)
-                {
-                    _currentCoins -= price;
-                    PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
-                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + mascotIdx, 1);
-                    PlayerPrefs.SetInt(KEY_SELECTED_MASCOT, mascotIdx);
-                    PlayerPrefs.Save();
-
-                    RefreshCurrenciesUI();
-                    RefreshMascotShopUI();
-                    RefreshMascotModalUI();
-                    RefreshMascotCodexUI();
-
-                    if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
-                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
-                }
-                else
-                {
-                    PlayClickSound();
-                    if (shopCoinsText != null) StartCoroutine(FlashCoinsTextRed());
-                }
+                PlayClickSound();
+                if (shopCoinsText != null) StartCoroutine(FlashCoinsTextRed());
             }
         }
 
         public void RefreshMascotShopUI()
         {
             RefreshCurrenciesUI();
-            int selectedMascot = PlayerPrefs.GetInt(KEY_SELECTED_MASCOT, 0);
 
             if (mascotShopActionButtons != null)
             {
@@ -2721,7 +2685,6 @@ namespace BlockBlast
                 {
                     if (mascotShopActionButtons[i] == null) continue;
                     bool isOwned = (i == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + i, 0) == 1);
-                    bool isSelected = (selectedMascot == i);
 
                     TMP_Text txt = (mascotShopActionTexts != null && i < mascotShopActionTexts.Length && mascotShopActionTexts[i] != null)
                         ? mascotShopActionTexts[i]
@@ -2736,65 +2699,19 @@ namespace BlockBlast
                         txt.margin = new Vector4(10f, 0f, 10f, 0f);
                     }
 
-                    if (isSelected)
+                    if (isOwned)
                     {
                         if (txt != null)
                         {
-                            txt.text = LocalizationManager.Get("shop_btn_equipped");
-                            txt.color = Color.white;
+                            txt.text = LocalizationManager.Get("shop_btn_owned");
+                            txt.color = new Color(0.65f, 0.60f, 0.75f, 1f);
                         }
-                        if (btnImg != null && shopEquippedBtnSprite != null)
+                        if (btnImg != null && shopCreamBtnSprite != null)
                         {
-                            btnImg.sprite = shopEquippedBtnSprite;
-                            btnImg.color = Color.white;
+                            btnImg.sprite = shopCreamBtnSprite;
+                            btnImg.color = new Color(0.92f, 0.90f, 0.95f, 0.85f);
                         }
                         mascotShopActionButtons[i].interactable = false;
-                    }
-                    else if (isOwned)
-                    {
-                        if (txt != null)
-                        {
-                            txt.text = LocalizationManager.Get("shop_btn_equip");
-                            txt.color = Color.white;
-                        }
-                        if (btnImg != null && shopEquipBtnSprite != null)
-                        {
-                            btnImg.sprite = shopEquipBtnSprite;
-                            btnImg.color = Color.white;
-                        }
-                        mascotShopActionButtons[i].interactable = true;
-                    }
-                    else if (i >= 4)
-                    {
-                        int shards = GetMascotShards(i);
-                        if (shards >= 60)
-                        {
-                            if (txt != null)
-                            {
-                                txt.text = $"{LocalizationManager.Get("mascot_btn_unlock")}";
-                                txt.color = Color.white;
-                            }
-                            if (btnImg != null && shopEquipBtnSprite != null)
-                            {
-                                btnImg.sprite = shopEquipBtnSprite;
-                                btnImg.color = Color.white;
-                            }
-                            mascotShopActionButtons[i].interactable = true;
-                        }
-                        else
-                        {
-                            if (txt != null)
-                            {
-                                txt.text = (i == 8) ? "★ 특별 소환" : "픽업 소환 전용";
-                                txt.color = Color.white;
-                            }
-                            if (btnImg != null)
-                            {
-                                btnImg.sprite = (shopPurpleBtnSprite != null) ? shopPurpleBtnSprite : shopEquipBtnSprite;
-                                btnImg.color = Color.white;
-                            }
-                            mascotShopActionButtons[i].interactable = true;
-                        }
                     }
                     else
                     {
@@ -2915,14 +2832,6 @@ namespace BlockBlast
                         int chosenIdx = Random.Range(0, 8); // 0..7
                         AddMascotShards(chosenIdx, shardAmount);
                         shardGains[chosenIdx] += shardAmount;
-
-                        // Auto-unlock if 60 shards collected and not owned yet
-                        bool alreadyOwned = (chosenIdx == 0) || (PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + chosenIdx, 0) == 1);
-                        if (!alreadyOwned && GetMascotShards(chosenIdx) >= 60)
-                        {
-                            SetMascotShards(chosenIdx, GetMascotShards(chosenIdx) - 60);
-                            PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + chosenIdx, 1);
-                        }
 
                         dropsList.Add(new GachaDropItem { isSpecial = false, mascotIndex = chosenIdx, shardCount = shardAmount, isDuplicateSpecial = false });
                     }

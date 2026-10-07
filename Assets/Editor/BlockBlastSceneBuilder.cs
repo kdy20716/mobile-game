@@ -1644,7 +1644,7 @@ namespace BlockBlast.Editor
             SetRect(mascPanel, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             mascPanel.SetActive(false);
 
-            // Add ScrollRect for all 9 mascots
+            // Add ScrollRect for all 9 mascots (Smooth wheel & drag scrolling)
             ScrollRect mascScroll = mascPanel.AddComponent<ScrollRect>();
             mascScroll.horizontal = false;
             mascScroll.vertical = true;
@@ -1652,11 +1652,14 @@ namespace BlockBlast.Editor
             mascScroll.elasticity = 0.1f;
             mascScroll.inertia = true;
             mascScroll.decelerationRate = 0.135f;
-            mascScroll.scrollSensitivity = 28f;
+            mascScroll.scrollSensitivity = 50f;
 
-            GameObject mascViewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            GameObject mascViewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D), typeof(Image));
             mascViewport.transform.SetParent(mascPanel.transform, false);
             SetRect(mascViewport, Vector2.zero, Vector2.one, new Vector2(0f, 10f), new Vector2(0f, -10f));
+            Image mascVpImg = mascViewport.GetComponent<Image>();
+            mascVpImg.color = Color.clear;
+            mascVpImg.raycastTarget = true;
             mascScroll.viewport = mascViewport.GetComponent<RectTransform>();
 
             GameObject mascContent = new GameObject("Content", typeof(RectTransform));
@@ -1677,8 +1680,10 @@ namespace BlockBlast.Editor
             {
                 float yPos = -115f - m * 235f;
                 GameObject mCard = CreateImage(mascContent.transform, $"MascotShopCard_{m}", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, yPos), new Vector2(880, 215));
-                mCard.GetComponent<Image>().type = Image.Type.Sliced;
-                mCard.GetComponent<Image>().color = Color.white;
+                Image mCardImg = mCard.GetComponent<Image>();
+                mCardImg.type = Image.Type.Sliced;
+                mCardImg.color = Color.white;
+                mCardImg.raycastTarget = true;
 
                 // Avatar Frame & Icon
                 GameObject avFrame = CreateImage(mCard.transform, "AvFrame", circleFrameSprite, new Vector2(0, 0.5f), new Vector2(90, 0), new Vector2(120, 120));
@@ -1864,7 +1869,7 @@ namespace BlockBlast.Editor
             GameObject setCard = CreateImage(setModal.transform, "DialogCard", settingsModalCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(800, 940));
             setCard.GetComponent<Image>().type = Image.Type.Sliced;
 
-            GameObject setCloseBtn = CreateButton(setCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), closeXBtnSprite, 32);
+            GameObject setCloseBtn = CreateButton(setCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-45, -45), new Vector2(65, 65), luxuryCloseBtnSprite, 32);
             setCloseBtn.transform.SetAsLastSibling();
 
             GameObject setTitle = CreateText(setCard.transform, "Title", "게임 설정", 40, TextAlignmentOptions.Center, cuteFont, new Color(0.35f, 0.22f, 0.55f));
@@ -2039,10 +2044,39 @@ namespace BlockBlast.Editor
                 tmpCount.overflowMode = TextOverflowModes.Ellipsis;
             }
 
-            // 3x3 Grid Cards Container (Centered in 980x1540 Modal Card)
+            // Scrollable Mascot Cards Container (Supports mouse wheel & touch drag for scalable mascot list)
+            GameObject codexScrollObj = new GameObject("CodexScroll", typeof(RectTransform), typeof(ScrollRect));
+            codexScrollObj.transform.SetParent(codexCard.transform, false);
+            SetRect(codexScrollObj, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -115f), new Vector2(920f, 1380f), new Vector2(0.5f, 1f));
+
+            ScrollRect codexScroll = codexScrollObj.GetComponent<ScrollRect>();
+            codexScroll.horizontal = false;
+            codexScroll.vertical = true;
+            codexScroll.movementType = ScrollRect.MovementType.Elastic;
+            codexScroll.elasticity = 0.1f;
+            codexScroll.inertia = true;
+            codexScroll.decelerationRate = 0.135f;
+            codexScroll.scrollSensitivity = 50f;
+
+            GameObject codexViewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D), typeof(Image));
+            codexViewport.transform.SetParent(codexScrollObj.transform, false);
+            SetRect(codexViewport, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Image codexVpImg = codexViewport.GetComponent<Image>();
+            codexVpImg.color = Color.clear;
+            codexVpImg.raycastTarget = true;
+            codexScroll.viewport = codexViewport.GetComponent<RectTransform>();
+
             GameObject codexGridObj = new GameObject("CardGrid", typeof(RectTransform));
-            codexGridObj.transform.SetParent(codexCard.transform, false);
-            SetRect(codexGridObj, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -115f), new Vector2(920f, 1380f), new Vector2(0.5f, 1f));
+            codexGridObj.transform.SetParent(codexViewport.transform, false);
+            int numRows = (9 + 2) / 3;
+            float totalCodexHeight = Mathf.Max(1380f, numRows * 435f + 40f);
+            RectTransform codexGridRT = codexGridObj.GetComponent<RectTransform>();
+            codexGridRT.anchorMin = new Vector2(0.5f, 1f);
+            codexGridRT.anchorMax = new Vector2(0.5f, 1f);
+            codexGridRT.pivot = new Vector2(0.5f, 1f);
+            codexGridRT.sizeDelta = new Vector2(920f, totalCodexHeight);
+            codexGridRT.anchoredPosition = Vector2.zero;
+            codexScroll.content = codexGridRT;
 
             Button[] cCardBtns = new Button[9];
             Image[] cCardAvatars = new Image[9];
@@ -2054,18 +2088,20 @@ namespace BlockBlast.Editor
             TMP_Text[] cCardRarities = new TMP_Text[9];
 
             float[] colX = new float[] { -295f, 0f, 295f };
-            float[] rowY = new float[] { -15f, -440f, -865f };
 
             for (int i = 0; i < 9; i++)
             {
                 int c = i % 3;
                 int r = i / 3;
-                Vector2 cardPos = new Vector2(colX[c], rowY[r]);
+                float cardY = -15f - r * 430f;
+                Vector2 cardPos = new Vector2(colX[c], cardY);
 
                 GameObject cardObj = CreateImage(codexGridObj.transform, $"CodexCard_{i}", codexCardFrameSprite, new Vector2(0.5f, 1f), cardPos, new Vector2(280f, 400f));
                 cardObj.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
-                cardObj.GetComponent<Image>().type = Image.Type.Sliced;
-                cardObj.GetComponent<Image>().color = Color.white;
+                Image cardImg = cardObj.GetComponent<Image>();
+                cardImg.type = Image.Type.Sliced;
+                cardImg.color = Color.white;
+                cardImg.raycastTarget = true;
 
                 Button cBtn = cardObj.AddComponent<Button>();
                 cCardBtns[i] = cBtn;
@@ -2109,9 +2145,31 @@ namespace BlockBlast.Editor
                 SetRect(lvlTxt, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 cCardLevels[i] = lvlTxt.GetComponent<TMP_Text>();
 
-                // Status Badge ("● 장착 중" or "조각 0개" or "미보유 0/60")
-                GameObject statusObj = CreateText(cardObj.transform, "Status", "미보유 0/60", 19, TextAlignmentOptions.Center, cuteFont, new Color(0.50f, 0.40f, 0.65f));
-                SetRect(statusObj, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -360), new Vector2(260, 28));
+                // Status Badge & Quick Equip Pill ("● 장착 중" or "[ 장착하기 ]" or "보유 조각: 0개")
+                GameObject statusPill = CreateImage(cardObj.transform, "StatusPill", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -358), new Vector2(230, 42));
+                Image spImg = statusPill.GetComponent<Image>();
+                spImg.type = Image.Type.Sliced;
+                spImg.color = new Color(0.96f, 0.94f, 1f, 0.95f);
+                spImg.raycastTarget = true;
+
+                Button pillBtn = statusPill.AddComponent<Button>();
+                int mascotIdx = i;
+                pillBtn.onClick.AddListener(() =>
+                {
+                    bool isOwned = (mascotIdx == 0) || (PlayerPrefs.GetInt(LobbyManager.KEY_MASCOT_OWNED_PREFIX + mascotIdx, 0) == 1);
+                    if (isOwned)
+                    {
+                        lobbyMgr.EquipMascot(mascotIdx);
+                    }
+                    else
+                    {
+                        lobbyMgr.OpenMascotDetail(mascotIdx);
+                    }
+                });
+                ShopUIAnimationController.AttachTactileBounce(pillBtn);
+
+                GameObject statusObj = CreateText(statusPill.transform, "Status", "보유 조각: 0개", 19, TextAlignmentOptions.Center, cuteFont, new Color(0.50f, 0.40f, 0.65f));
+                SetRect(statusObj, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 cCardStatusBadges[i] = statusObj.GetComponent<TMP_Text>();
 
                 // Soft Frosted Pastel Locked Overlay (Non-gloomy, dreamy translucent milky lavender)

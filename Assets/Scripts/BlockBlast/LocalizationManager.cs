@@ -229,6 +229,7 @@ namespace BlockBlast
             { "shop_title", new[] { "말랑 상점", "Mallang Shop", "マランショップ", "软萌商店" } },
             { "shop_btn_equip", new[] { "장착하기", "Equip", "装備", "装备" } },
             { "shop_btn_equipped", new[] { "적용 중", "Equipped", "適用中", "使用中" } },
+            { "shop_btn_owned", new[] { "보유 중", "Owned", "所持中", "已拥有" } },
             { "shop_btn_buy", new[] { "구매", "Buy", "購入", "购买" } },
             { "pickup_event_title", new[] { "스페셜 픽업 소환", "Special Pickup", "スペシャルピックアップ", "特选限时精选" } },
             { "pickup_banner_badge", new[] { "1.0% 확률 UP!", "1.0% Rate UP!", "1.0% 確率UP!", "1.0% 概率提升!" } },
@@ -244,7 +245,7 @@ namespace BlockBlast
             { "pickup_modal_feature_1", new[] { "• 30줄 클리어 시 스킬 게이지 100% 충전 (버튼 점등!)", "• Clears 30 lines to fully charge skill gauge!", "• 30ライン消去でスキルゲージ100%充電！", "• 累计消除30行即可蓄满100%大招能量！" } },
             { "pickup_modal_feature_2", new[] { "• 버튼 터치 시 화면의 모든 블록 폭파 + 뾰로롱 마법 연출!", "• Tap the skill button to clear all blocks on the board!", "• スキル発動で盤面の全ブロックが一掃爆破！", "• 点击技能按钮即可瞬间引爆消除棋盘所有方块！" } },
             { "pickup_modal_feature_3", new[] { "• 픽업 확률 1.0%! 중복 획득 시 60조각 즉시 지급 (바로 1회 돌파!)", "• 1.0% Rate! Duplicates grant 60 shards for instant breakthrough!", "• 確率1.0%！重複時は欠片60個即時支給で即座突破！", "• 概率提升至1.0%！重复获得直接转化60碎片立即突破！" } },
-            { "pickup_modal_feature_4", new[] { "• 일반/희귀 말랑이 조각 1개 또는 5개 획득! 60개 수집 시 즉시 획득!", "• Common/Rare shards (1 or 5) drop! Collect 60 shards to unlock!", "• ノーマル/レアの欠片1個または5個獲得！60個で解放！", "• 掉落1个或5个普通/稀有碎片！集齐60个即可解锁！" } },
+            { "pickup_modal_feature_4", new[] { "• 일반/희귀 말랑이 조각 획득! 모은 조각으로 성급 돌파 가능!", "• Common/Rare shards drop! Shards are strictly used for Breakthrough!", "• ノーマル/レアの欠片獲得！集めた欠片で星を限界突破！", "• 掉落普通/稀有伙伴碎片！碎片专用于星级突破！" } },
 
             // Summon Result Modal
             { "summon_result_count_suffix", new[] { "회 소환 결과", "x Summon Results", "回召喚結果", "连召唤结果" } },
@@ -253,12 +254,12 @@ namespace BlockBlast
             { "summon_result_duplicate", new[] { "중복 획득!", "Duplicate Acquired!", "重複獲得！", "重复获得！" } },
             { "summon_result_duplicate_desc", new[] { "스페셜 조각 60개로 즉시 변환되어 바로 돌파 가능!", "Instantly converted to 60 Special Shards for breakthrough!", "スペシャル欠片60個に即座変換！すぐに突破可能！", "直接转化为60个特选碎片，可立即进行突破！" } },
             { "summon_result_shards_title", new[] { "말랑이 조각 획득!", "Mallang Shards Acquired!", "マランの欠片獲得！", "获得伙伴碎片！" } },
-            { "summon_result_shards_desc", new[] { "조각 60개를 모으면 해당 말랑이를 획득할 수 있어요!", "Collect 60 shards to acquire the mascot!", "欠片60個を集めるとマランを獲得できます！", "集齐60个碎片即可解锁该吉祥物！" } },
+            { "summon_result_shards_desc", new[] { "조각을 모아 말랑이의 별을 돌파하세요!", "Collect shards to breakthrough your Mallangs' stars!", "欠片を集めてマランの星を限界突破しよう！", "收集碎片为你的软萌伙伴进行星级突破！" } },
             { "mascot_owned_shards", new[] { "보유", "Owned", "所持", "持有" } },
 
-            // Mascot Codex (냥냥시노비 도감 스타일)
-            { "codex_title", new[] { "말랑이 도감", "Mascot Codex", "マラン図鑑", "软萌图鉴" } },
-            { "codex_subtitle", new[] { "말랑이들을 모아 강화하고 강력한 능력을 돌파하세요!", "Collect Mallangs, level them up, and breakthrough!", "マランたちを集めて強化・限界突破しよう！", "收集软萌小伙伴，升级并突破更强上限！" } },
+            // Mascot Screen (말랑이 육성/관리 허브)
+            { "codex_title", new[] { "말랑이", "Mallangs", "マラン", "软萌伙伴" } },
+            { "codex_subtitle", new[] { "말랑이를 선택하고 육성하여 모험을 함께하세요!", "Select and grow your Mallangs for your adventure!", "マランを選択・育成して冒険に出かけよう！", "选择并养成你的软萌伙伴，一起开启冒险！" } },
             { "codex_collected", new[] { "수집 완료", "Collection", "収集完了", "收集进度" } },
             { "codex_equipped", new[] { "장착 중", "Equipped", "装着中", "出战中" } },
             { "codex_locked", new[] { "미보유 (잠김)", "Locked", "未所持 (ロック)", "未获得 (已锁定)" } },
@@ -276,11 +277,12 @@ namespace BlockBlast
             { "mascot_btn_breakthrough", new[] { "돌파", "Breakthrough", "限界突破", "突破" } },
             { "mascot_btn_equip", new[] { "장착하기", "Equip", "装着する", "出战" } },
             { "mascot_btn_equipped", new[] { "장착 중", "Equipped", "装着中", "出战中" } },
-            { "mascot_btn_unlock", new[] { "해금하기 (조각 60개)", "Unlock (60 Shards)", "解放する (欠片60個)", "解锁 (60碎片)" } },
+            { "mascot_btn_unlock", new[] { "상점에서 구매", "Buy in Shop", "ショップで購入", "前往商店购买" } },
+            { "mascot_btn_buy_in_shop", new[] { "상점에서 구매", "Buy in Shop", "ショップで購入", "前往商店购买" } },
             { "mascot_max_level", new[] { "최고 레벨 달성", "MAX Level", "最大レベル達成", "已达最高等级" } },
             { "mascot_max_breakthrough", new[] { "최대 돌파 완료 (5★)", "MAX Breakthrough (5★)", "最大突破完了 (5★)", "已满星突破 (5★)" } },
-            { "mascot_need_shards", new[] { "조각 60개로 해금", "Need 60 Shards", "欠片60個で解放", "需集齐60碎片解锁" } },
-            { "mascot_obtain_pickup", new[] { "획득처: 픽업 소환", "Obtained via: Pickup Gacha", "獲得先: ピックアップ召喚", "获取途径：精选召唤" } },
+            { "mascot_need_shards", new[] { "돌파 전용 재료", "Breakthrough Material", "限界突破専用素材", "突破专用材料" } },
+            { "mascot_obtain_pickup", new[] { "상점에서 구매", "Buy in Shop", "ショップで購入", "前往商店购买" } },
 
             // 9 Mascots: Names, Titles, Abilities
             { "mascot_0_name", new[] { "핑크 말랑이", "Pink Mallang", "ピンクマラン", "粉萌团子" } },

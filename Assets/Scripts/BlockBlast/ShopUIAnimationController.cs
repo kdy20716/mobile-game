@@ -72,6 +72,7 @@ namespace BlockBlast
 
         public void AnimateOpen()
         {
+            if (!gameObject.activeInHierarchy) return;
             if (_modalAnimCoroutine != null) StopCoroutine(_modalAnimCoroutine);
             _modalAnimCoroutine = StartCoroutine(CoAnimateOpen());
         }
@@ -134,6 +135,11 @@ namespace BlockBlast
 
         public void AnimateClose(Action onComplete)
         {
+            if (!gameObject.activeInHierarchy)
+            {
+                onComplete?.Invoke();
+                return;
+            }
             if (_modalAnimCoroutine != null) StopCoroutine(_modalAnimCoroutine);
             _modalAnimCoroutine = StartCoroutine(CoAnimateClose(onComplete));
         }
@@ -220,6 +226,11 @@ namespace BlockBlast
 
         public void AnimateTabGlide(int targetIdx, RectTransform activePanelRect)
         {
+            if (!gameObject.activeInHierarchy)
+            {
+                SnapTabIndicator(targetIdx);
+                return;
+            }
             if (tabIndicatorRect == null || tabButtonRects == null) return;
             if (targetIdx < 0 || targetIdx >= tabButtonRects.Length) return;
             if (tabButtonRects[targetIdx] == null) return;
@@ -230,7 +241,7 @@ namespace BlockBlast
             if (_indicatorGlideCoroutine != null) StopCoroutine(_indicatorGlideCoroutine);
             _indicatorGlideCoroutine = StartCoroutine(CoGlideIndicator(targetX));
 
-            if (activePanelRect != null)
+            if (activePanelRect != null && activePanelRect.gameObject.activeInHierarchy)
             {
                 if (_panelTransitionCoroutine != null) StopCoroutine(_panelTransitionCoroutine);
                 _panelTransitionCoroutine = StartCoroutine(CoAnimatePanel(activePanelRect));

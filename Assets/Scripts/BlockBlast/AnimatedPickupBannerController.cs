@@ -354,7 +354,7 @@ namespace BlockBlast
                     }
                 }
 
-                if (idleStar != null)
+                if (idleStar != null && gameObject.activeInHierarchy)
                 {
                     StartCoroutine(LaunchShootingStar(idleStar));
                 }
@@ -438,6 +438,8 @@ namespace BlockBlast
         /// </summary>
         public void PlayIntroVideo()
         {
+            if (!gameObject.activeInHierarchy) return;
+
             if (videoPlayer == null)
             {
                 ShowLiveElements(true);
@@ -539,14 +541,30 @@ namespace BlockBlast
                 StopCoroutine(_fadeCoroutine);
                 _fadeCoroutine = null;
             }
-            ShowLiveElements(true);
+            if (_starSpawnerCoroutine != null)
+            {
+                StopCoroutine(_starSpawnerCoroutine);
+                _starSpawnerCoroutine = null;
+            }
+            _isPlayingVideo = false;
+            if (gameObject.activeInHierarchy)
+            {
+                ShowLiveElements(true);
+            }
         }
 
         private void TransitionToLiveElements()
         {
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.UnduckBGM(0.8f);
             if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
-            _fadeCoroutine = StartCoroutine(CrossFadeToLiveRoutine());
+            if (gameObject.activeInHierarchy)
+            {
+                _fadeCoroutine = StartCoroutine(CrossFadeToLiveRoutine());
+            }
+            else
+            {
+                ShowLiveElements(true);
+            }
         }
 
         private IEnumerator CrossFadeToLiveRoutine()
@@ -587,7 +605,7 @@ namespace BlockBlast
             _isPlayingVideo = false;
             _fadeCoroutine = null;
 
-            if (Application.isPlaying && _starSpawnerCoroutine == null)
+            if (Application.isPlaying && gameObject.activeInHierarchy && _starSpawnerCoroutine == null)
             {
                 _starSpawnerCoroutine = StartCoroutine(ShootingStarLoop());
             }
@@ -620,7 +638,7 @@ namespace BlockBlast
 
             SetLiveLayersActive(true);
 
-            if (Application.isPlaying && _starSpawnerCoroutine == null)
+            if (Application.isPlaying && gameObject.activeInHierarchy && _starSpawnerCoroutine == null)
             {
                 _starSpawnerCoroutine = StartCoroutine(ShootingStarLoop());
             }
