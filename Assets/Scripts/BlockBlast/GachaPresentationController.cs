@@ -605,8 +605,8 @@ namespace BlockBlast
             if (instructionText != null)
             {
                 instructionText.text = (total > 1)
-                    ? $"가챠볼을 터치하여 열어보세요! ({index + 1}/{total})"
-                    : "가챠볼을 터치하여 열어보세요!";
+                    ? string.Format(LocalizationManager.Get("gacha_touch_to_open_fmt", "가챠볼을 터치하여 열어보세요! ({0}/{1})"), index + 1, total)
+                    : LocalizationManager.Get("gacha_touch_to_open", "가챠볼을 터치하여 열어보세요!");
             }
 
             // Pop in ball
@@ -645,14 +645,17 @@ namespace BlockBlast
             Sprite avSp = (mascotAvatars != null && mIdx < mascotAvatars.Length) ? mascotAvatars[mIdx] : null;
             _singleAvatarImg.sprite = avSp;
 
-            string mName = (mIdx < LobbyManager.MascotNames.Length) ? LobbyManager.MascotNames[mIdx] : "말랑이";
+            string mName = LocalizationManager.Get($"mascot_{mIdx}_name", (mIdx < LobbyManager.MascotNames.Length) ? LobbyManager.MascotNames[mIdx] : "말랑이");
             _singleNameText.text = mName;
 
-            string rarName = (mIdx < RarityNames.Length) ? RarityNames[mIdx] : "일반";
+            string badgeKey = drop.isSpecial ? "codex_badge_special" : (mIdx >= 4 ? "codex_badge_rare" : "codex_badge_common");
+            string rarName = LocalizationManager.Get(badgeKey, (mIdx < RarityNames.Length) ? RarityNames[mIdx] : "일반");
             Color rarCol = (mIdx < RarityColors.Length) ? RarityColors[mIdx] : Color.white;
             _singleRarityText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(rarCol)}>【 {rarName} 】</color>";
 
-            _singleShardsText.text = drop.isSpecial ? "<color=#FFDF00>★ 스페셜 강림! ★</color>" : $"<color=#00E5FF>+{drop.shardCount} 조각 획득!</color>";
+            _singleShardsText.text = drop.isSpecial
+                ? $"<color=#FFDF00>{LocalizationManager.Get("gacha_special_descended", "★ 스페셜 강림! ★")}</color>"
+                : $"<color=#00E5FF>{string.Format(LocalizationManager.Get("gacha_shards_gained_fmt", "+{0} 조각 획득!"), drop.shardCount)}</color>";
 
             // Reward spring pop
             RectTransform rwrt = _singleRewardRoot.GetComponent<RectTransform>();
@@ -679,8 +682,8 @@ namespace BlockBlast
             if (instructionText != null)
             {
                 instructionText.text = (total > 1 && index < total - 1)
-                    ? $"화면을 터치하여 다음으로 ({index + 1}/{total})"
-                    : "화면을 터치하여 계속하기";
+                    ? string.Format(LocalizationManager.Get("gacha_touch_for_next_fmt", "화면을 터치하여 다음으로 ({0}/{1})"), index + 1, total)
+                    : LocalizationManager.Get("gacha_touch_to_continue", "화면을 터치하여 계속하기");
             }
 
             // Wait for user click to advance to next ball
@@ -762,7 +765,10 @@ namespace BlockBlast
             if (instructionText != null && instructionText.font != null) rText.font = instructionText.font;
             rText.fontSize = (_currentDrops.Count == 1) ? 24 : 18;
             rText.alignment = TextAlignmentOptions.Center;
-            rText.text = drop.isSpecial ? "<color=#FFDF00>★스페셜!★</color>" : $"<color=#00E5FF>+{drop.shardCount}조각</color>";
+            string badgeKey = drop.isSpecial ? "codex_badge_special" : (drop.mascotIndex >= 4 ? "codex_badge_rare" : "codex_badge_common");
+            string badgeText = LocalizationManager.Get(badgeKey, "스페셜");
+            string shardSuffix = LocalizationManager.Get("mascot_detail_shards", "조각");
+            rText.text = drop.isSpecial ? $"<color=#FFDF00>★{badgeText}!★</color>" : $"<color=#00E5FF>+{drop.shardCount} {shardSuffix}</color>";
 
             var slot = new GachaBallSlot
             {
@@ -793,18 +799,19 @@ namespace BlockBlast
 
             if (climaxTitleText != null)
             {
-                climaxTitleText.text = "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>스페셜 말랑이 강림!</color></size>";
+                climaxTitleText.text = LocalizationManager.Get("gacha_climax_title", "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>스페셜 말랑이 강림!</color></size>");
             }
 
             if (climaxSubText != null)
             {
+                string touchCont = LocalizationManager.Get("gacha_touch_to_continue", "화면을 터치하여 계속하기");
                 if (drop.isDuplicateSpecial)
                 {
-                    climaxSubText.text = "<color=#00FFAA><b>[중복 획득] 60조각 즉시 변환!</b></color>\n<size=20><color=#E0D0FF>화면을 터치하여 계속하기</color></size>";
+                    climaxSubText.text = $"<color=#00FFAA><b>{LocalizationManager.Get("summon_result_duplicate", "중복 획득!")} (+60)</b></color>\n<size=20><color=#E0D0FF>{touchCont}</color></size>";
                 }
                 else
                 {
-                    climaxSubText.text = "<color=#FFF070><b>신규 스페셜 말랑이 획득!</b></color>\n<size=20><color=#E0D0FF>화면을 터치하여 계속하기</color></size>";
+                    climaxSubText.text = $"<color=#FFF070><b>{LocalizationManager.Get("summon_result_unlocked", "획득 완료!")}</b></color>\n<size=20><color=#E0D0FF>{touchCont}</color></size>";
                 }
             }
 

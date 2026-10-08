@@ -297,6 +297,11 @@ namespace BlockBlast
             PlayFairyChime();
         }
 
+        public void PlayLevelUp()
+        {
+            PlayFairyMagic();
+        }
+
         private AudioClip CreateFairyChimeClip()
         {
             int sampleRate = 44100;

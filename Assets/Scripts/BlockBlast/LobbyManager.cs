@@ -1,9 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using Random = UnityEngine.Random;
 
 namespace BlockBlast
 {
@@ -35,6 +37,8 @@ namespace BlockBlast
         private const string KEY_MOBILE_INIT_ECONOMY = "Mallang_Mobile_Init_v2";
         public const string KEY_MASCOT_SHARDS_PREFIX = "Mallang_Mascot_Shards_";
         public const string KEY_MASCOT_LEVEL_PREFIX = "Mallang_Mascot_Level_";
+        public const string KEY_PICKUP_PITY = "Mallang_Pickup_PityCount";
+        public const int PICKUP_PITY_TARGET = 60;
 
         public static readonly int[] ThemePrices = new int[] { 0, 1000, 2000, 3000 };
         public static readonly string[] ThemeNames = new string[] { "몽환의 밤", "캔디 랜드", "크리스탈 바다", "별빛 우주" };
@@ -1608,7 +1612,7 @@ namespace BlockBlast
 
             if (lobbyCoinsText != null)
             {
-                lobbyCoinsText.text = $"{FormatCoins(_currentCoins)} C";
+                lobbyCoinsText.text = $"{FormatCoins(_currentCoins)} G";
             }
 
             if (profileModalAvatar != null && avatarSprite != null)
@@ -1697,6 +1701,7 @@ namespace BlockBlast
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 shopModal.transform.SetAsLastSibling();
                 shopModal.SetActive(true);
+                PolishShopUIElements();
                 SelectShopTab(_currentShopTab);
                 RefreshThemeShopUI();
                 RefreshLobbyThemeShopUI();
@@ -2010,8 +2015,8 @@ namespace BlockBlast
                 {
                     if (shopTabTexts[i] == null) continue;
                     bool isActive = (i == _currentShopTab);
-                    shopTabTexts[i].color = isActive ? Color.white : new Color(0.70f, 0.68f, 0.85f, 1f);
-                    shopTabTexts[i].fontStyle = isActive ? FontStyles.Bold : FontStyles.Normal;
+                    shopTabTexts[i].color = isActive ? Color.white : new Color(0.42f, 0.30f, 0.58f, 1f);
+                    shopTabTexts[i].fontStyle = FontStyles.Bold;
                 }
             }
 
@@ -2275,7 +2280,7 @@ namespace BlockBlast
                     }
                     else
                     {
-                        codexCardStatusBadges[i].text = $"<color=#74B9FF>보유 조각: {shards}개</color>";
+                        codexCardStatusBadges[i].text = $"<color=#74B9FF>{string.Format(LocalizationManager.Get("mascot_shards_owned"), shards)}</color>";
                     }
                 }
 
@@ -2324,13 +2329,13 @@ namespace BlockBlast
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 if (!string.IsNullOrEmpty(concept))
                 {
-                    sb.AppendLine($"<color=#E84393><b>[캐릭터 컨셉]</b></color>\n{concept}\n");
+                    sb.AppendLine($"<color=#E84393><b>{LocalizationManager.Get("mascot_section_concept")}</b></color>\n{concept}\n");
                 }
                 if (!string.IsNullOrEmpty(story))
                 {
-                    sb.AppendLine($"<color=#6C5CE7><b>[말랑이 스토리]</b></color>\n{story}\n");
+                    sb.AppendLine($"<color=#6C5CE7><b>{LocalizationManager.Get("mascot_section_story")}</b></color>\n{story}\n");
                 }
-                sb.AppendLine($"<color=#0984E3><b>[고유 스킬]</b></color>\n{ability}");
+                sb.AppendLine($"<color=#0984E3><b>{LocalizationManager.Get("mascot_section_skill")}</b></color>\n{ability}");
 
                 detailAbilityDesc.text = sb.ToString();
             }
@@ -2343,7 +2348,7 @@ namespace BlockBlast
                     var t = card.Find("Title")?.GetComponent<TMP_Text>();
                     if (t != null) t.text = LocalizationManager.Get("mascot_detail_title");
                     var hdr = card.Find("AbilityBox/AbilHeader")?.GetComponent<TMP_Text>();
-                    if (hdr != null) hdr.text = "★ 말랑이 정보 & 스토리 (Concept & Lore)";
+                    if (hdr != null) hdr.text = LocalizationManager.Get("mascot_detail_lore_header");
                 }
             }
 
@@ -2377,11 +2382,11 @@ namespace BlockBlast
             {
                 if (breakthroughCost > 0)
                 {
-                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: <color=#2E86DE><b>{shards}</b></color> / {breakthroughCost}개 (돌파 재료)";
+                    detailShardsText.text = string.Format(LocalizationManager.Get("mascot_shards_breakthrough_fmt"), LocalizationManager.Get("mascot_detail_shards"), shards, breakthroughCost);
                 }
                 else
                 {
-                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: {shards}개 ({LocalizationManager.Get("mascot_max_breakthrough")})";
+                    detailShardsText.text = $"{LocalizationManager.Get("mascot_detail_shards")}: {shards} ({LocalizationManager.Get("mascot_max_breakthrough")})";
                 }
             }
 
@@ -2393,7 +2398,7 @@ namespace BlockBlast
                 if (txtDetailLevelUp != null)
                 {
                     if (!isOwned)
-                        txtDetailLevelUp.text = "미보유 (구매 필요)";
+                        txtDetailLevelUp.text = LocalizationManager.Get("mascot_status_locked");
                     else if (curLvl >= maxCap)
                         txtDetailLevelUp.text = LocalizationManager.Get("mascot_max_level");
                     else
@@ -2409,11 +2414,11 @@ namespace BlockBlast
                 if (txtDetailBreakthrough != null)
                 {
                     if (!isOwned)
-                        txtDetailBreakthrough.text = "미보유 (구매 필요)";
+                        txtDetailBreakthrough.text = LocalizationManager.Get("mascot_status_locked");
                     else if (stars >= 5)
                         txtDetailBreakthrough.text = LocalizationManager.Get("mascot_max_breakthrough");
                     else
-                        txtDetailBreakthrough.text = $"{LocalizationManager.Get("mascot_btn_breakthrough")}\n조각 {shards}/{breakthroughCost}";
+                        txtDetailBreakthrough.text = string.Format(LocalizationManager.Get("mascot_shards_progress_fmt"), LocalizationManager.Get("mascot_btn_breakthrough"), shards, breakthroughCost);
                 }
             }
 
@@ -2775,50 +2780,784 @@ namespace BlockBlast
         // RECOMMENDED PACKAGES (TAB 0) & PICKUP SUMMON (TAB 1)
         // ==========================================
 
+        private void ShowShopToast(string message)
+        {
+            if (AdManager.Instance != null)
+            {
+                AdManager.Instance.ShowRewardPopup("안내", message, null, "");
+            }
+        }
+
         public void BuyPackage(int packIdx)
         {
-            int[] packPricesDia = new int[] { 20, 50, 80 };
-            if (packIdx < 0 || packIdx >= packPricesDia.Length) return;
+            Transform dCard = shopModal != null ? shopModal.transform.Find("DialogCard") : null;
+            Sprite coinSpr = dCard?.Find("CoinBadge/Icon")?.GetComponent<Image>()?.sprite;
+            Sprite diaSpr = dCard?.Find("DiaBadge/Icon")?.GetComponent<Image>()?.sprite;
+            Sprite mintSpr = (mascotAvatars != null && mascotAvatars.Length > 1) ? mascotAvatars[1] : null;
 
-            int price = packPricesDia[packIdx];
-            if (_currentDiamonds >= price)
+            if (packIdx == 0)
             {
-                _currentDiamonds -= price;
-                PlayerPrefs.SetInt(KEY_DIAMONDS, _currentDiamonds);
-
-                if (packIdx == 0)
+                // 1. 일일 골드 (Daily Gold: Free once per day, +100 G)
+                string todayDate = DateTime.UtcNow.ToString("yyyyMMdd");
+                if (PlayerPrefs.GetString("Mallang_DailyGold_ClaimDate", "") == todayDate)
                 {
-                    AddCoins(1500);
-                }
-                else if (packIdx == 1)
-                {
-                    PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 1, 1);
-                    AddCoins(1000);
-                    RefreshMascotShopUI();
-                    RefreshMascotModalUI();
-                }
-                else if (packIdx == 2)
-                {
-                    AddCoins(5000);
+                    PlayClickSound();
+                    ShowShopToast(LocalizationManager.Get("shop_daily_gold_claimed_toast"));
+                    return;
                 }
 
+                PlayerPrefs.SetString("Mallang_DailyGold_ClaimDate", todayDate);
                 PlayerPrefs.Save();
-                RefreshCurrenciesUI();
+
+                AddCoins(100);
+                if (AdManager.Instance != null)
+                {
+                    AdManager.Instance.ShowRewardPopup(
+                        LocalizationManager.Get("reward_claim_title"),
+                        "+100 G",
+                        coinSpr,
+                        "일일 골드 100 G가 지급되었습니다!"
+                    );
+                }
+                if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
                 RefreshShopPackagesUI();
+            }
+            else if (packIdx == 1)
+            {
+                // 2. 일일 다이아 (Daily Diamonds: Watch Ad -> +30 Diamonds, once per day)
+                string todayDate = DateTime.UtcNow.ToString("yyyyMMdd");
+                if (PlayerPrefs.GetString("Mallang_DailyDiamond_ClaimDate", "") == todayDate)
+                {
+                    PlayClickSound();
+                    ShowShopToast(LocalizationManager.Get("shop_daily_diamond_claimed_toast"));
+                    return;
+                }
+
+                PlayClickSound();
+                if (AdManager.Instance != null)
+                {
+                    AdManager.Instance.ShowRewardedAd(
+                        onRewardEarned: () =>
+                        {
+                            PlayerPrefs.SetString("Mallang_DailyDiamond_ClaimDate", todayDate);
+                            PlayerPrefs.Save();
+                            AddDiamonds(30);
+                            if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+                            RefreshShopPackagesUI();
+                        },
+                        onAdFailed: (err) =>
+                        {
+                            Debug.LogWarning($"[LobbyManager] Ad failed: {err}");
+                        }
+                    );
+                }
+                else
+                {
+                    PlayerPrefs.SetString("Mallang_DailyDiamond_ClaimDate", todayDate);
+                    PlayerPrefs.Save();
+                    AddDiamonds(30);
+                    if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
+                    RefreshShopPackagesUI();
+                }
+            }
+            else if (packIdx == 2)
+            {
+                // 3. 웰컴 팩 (Welcome Pack: Mint Mascot + 1,000 G + 100 Diamonds, 1-time free per account)
+                if (PlayerPrefs.GetInt("Mallang_WelcomePack_Claimed", 0) == 1)
+                {
+                    PlayClickSound();
+                    ShowShopToast(LocalizationManager.Get("shop_welcome_pack_claimed_toast"));
+                    return;
+                }
+
+                PlayerPrefs.SetInt("Mallang_WelcomePack_Claimed", 1);
+                PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 1, 1);
+                AddCoins(1000);
+                AddDiamonds(100);
+                PlayerPrefs.Save();
+
+                RefreshMascotShopUI();
+                RefreshMascotModalUI();
+                RefreshShopPackagesUI();
+
+                if (AdManager.Instance != null)
+                {
+                    AdManager.Instance.ShowRewardPopup(
+                        "🎉 웰컴 팩 수령 완료!",
+                        "민트 말랑이 해금!\n+1,000 G   +100 다이아",
+                        mintSpr,
+                        "말랑 블라스트에 오신 것을 환영합니다!"
+                    );
+                }
 
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayBuy();
-            }
-            else
-            {
-                PlayClickSound();
-                if (shopDiamondsText != null) StartCoroutine(FlashDiamondsTextRed());
             }
         }
 
         public void RefreshShopPackagesUI()
         {
             RefreshCurrenciesUI();
+            PolishShopUIElements();
+
+            if (shopModal == null) return;
+            Transform recPanel = shopModal.transform.Find("DialogCard/ContentContainer/RecommendedPanel");
+
+            // Enforce Card Icons Dynamically (Card 0: Gold Coin, Card 1: Diamond Gem, Card 2: Mint Mascot)
+            if (recPanel != null)
+            {
+                Transform dCard = shopModal.transform.Find("DialogCard");
+                Sprite coinSpr = dCard?.Find("CoinBadge/Icon")?.GetComponent<Image>()?.sprite;
+                Sprite diaSpr = dCard?.Find("DiaBadge/Icon")?.GetComponent<Image>()?.sprite;
+                Sprite mintSpr = (mascotAvatars != null && mascotAvatars.Length > 1) ? mascotAvatars[1] : null;
+
+                var c0Icon = recPanel.Find("PackageCard_0/IconFrame/Icon")?.GetComponent<Image>();
+                if (c0Icon != null && coinSpr != null) c0Icon.sprite = coinSpr;
+
+                var c1Icon = recPanel.Find("PackageCard_1/IconFrame/Icon")?.GetComponent<Image>();
+                if (c1Icon != null && diaSpr != null) c1Icon.sprite = diaSpr;
+
+                var c2Icon = recPanel.Find("PackageCard_2/IconFrame/Icon")?.GetComponent<Image>();
+                if (c2Icon != null && mintSpr != null) c2Icon.sprite = mintSpr;
+            }
+
+            if (shopPackageButtons != null)
+            {
+                string todayDate = DateTime.UtcNow.ToString("yyyyMMdd");
+                bool goldClaimed = PlayerPrefs.GetString("Mallang_DailyGold_ClaimDate", "") == todayDate;
+                bool diamondClaimed = PlayerPrefs.GetString("Mallang_DailyDiamond_ClaimDate", "") == todayDate;
+                bool welcomeClaimed = PlayerPrefs.GetInt("Mallang_WelcomePack_Claimed", 0) == 1;
+
+                if (shopPackageButtons.Length > 0 && shopPackageButtons[0] != null)
+                {
+                    var txt = shopPackageButtons[0].GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = goldClaimed ? LocalizationManager.Get("shop_pack_claimed") : LocalizationManager.Get("shop_pack_0_price");
+                    shopPackageButtons[0].interactable = !goldClaimed;
+                    StylePackButton(shopPackageButtons[0], goldClaimed);
+                }
+                if (shopPackageButtons.Length > 1 && shopPackageButtons[1] != null)
+                {
+                    var txt = shopPackageButtons[1].GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = diamondClaimed ? LocalizationManager.Get("shop_pack_claimed") : LocalizationManager.Get("shop_pack_1_price");
+                    shopPackageButtons[1].interactable = !diamondClaimed;
+                    StylePackButton(shopPackageButtons[1], diamondClaimed);
+                }
+                if (shopPackageButtons.Length > 2 && shopPackageButtons[2] != null)
+                {
+                    var txt = shopPackageButtons[2].GetComponentInChildren<TMP_Text>();
+                    if (txt != null) txt.text = welcomeClaimed ? LocalizationManager.Get("shop_pack_claimed") : LocalizationManager.Get("shop_pack_2_price");
+                    shopPackageButtons[2].interactable = !welcomeClaimed;
+                    StylePackButton(shopPackageButtons[2], welcomeClaimed);
+                }
+            }
+        }
+
+        private void StylePackButton(Button btn, bool isClaimed)
+        {
+            if (btn == null) return;
+            var img = btn.GetComponent<Image>();
+            var txt = btn.GetComponentInChildren<TMP_Text>();
+            if (isClaimed)
+            {
+                if (img != null) img.color = new Color(0.72f, 0.68f, 0.78f, 0.75f);
+                if (txt != null) txt.color = new Color(0.38f, 0.32f, 0.44f, 1f);
+            }
+            else
+            {
+                if (img != null) img.color = Color.white;
+                if (txt != null) txt.color = Color.white;
+            }
+        }
+
+        public void PolishShopUIElements()
+        {
+            if (shopModal == null) return;
+            Transform dCard = shopModal.transform.Find("DialogCard");
+            if (dCard == null) return;
+
+            // 1. Diamond Currency Badge (High-Contrast Rich Dark Berry Container)
+            Transform diaBadge = dCard.Find("DiaBadge");
+            if (diaBadge != null)
+            {
+                RectTransform rt = diaBadge.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchoredPosition = new Vector2(-400, -50);
+                    rt.sizeDelta = new Vector2(195, 62);
+                }
+                Image bg = diaBadge.GetComponent<Image>();
+                if (bg != null) bg.color = new Color(0.18f, 0.12f, 0.32f, 0.95f);
+                if (shopDiamondsText != null)
+                {
+                    shopDiamondsText.color = new Color(0.35f, 0.92f, 1f); // Vibrant glowing cyan
+                    shopDiamondsText.fontStyle = FontStyles.Bold;
+                    shopDiamondsText.fontSize = 28;
+                }
+                Transform icon = diaBadge.Find("Icon");
+                if (icon != null)
+                {
+                    RectTransform irt = icon.GetComponent<RectTransform>();
+                    if (irt != null)
+                    {
+                        irt.anchoredPosition = new Vector2(28, 0);
+                        irt.sizeDelta = new Vector2(40, 40);
+                    }
+                }
+            }
+
+            // 2. Gold Currency Badge (High-Contrast Rich Dark Berry Container)
+            Transform coinBadge = dCard.Find("CoinBadge");
+            if (coinBadge != null)
+            {
+                RectTransform rt = coinBadge.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchoredPosition = new Vector2(-195, -50);
+                    rt.sizeDelta = new Vector2(195, 62);
+                }
+                Image bg = coinBadge.GetComponent<Image>();
+                if (bg != null) bg.color = new Color(0.18f, 0.12f, 0.32f, 0.95f);
+                if (shopCoinsText != null)
+                {
+                    shopCoinsText.color = new Color(1f, 0.88f, 0.35f); // Rich warm coin gold
+                    shopCoinsText.fontStyle = FontStyles.Bold;
+                    shopCoinsText.fontSize = 28;
+                }
+                Transform icon = coinBadge.Find("Icon");
+                if (icon != null)
+                {
+                    RectTransform irt = icon.GetComponent<RectTransform>();
+                    if (irt != null)
+                    {
+                        irt.anchoredPosition = new Vector2(28, 0);
+                        irt.sizeDelta = new Vector2(40, 40);
+                    }
+                }
+            }
+
+            // 3. Tab contrast polish
+            Transform tabTrack = dCard.Find("TabHeaderBar");
+            if (tabTrack != null)
+            {
+                for (int t = 0; t < 5; t++)
+                {
+                    var tabText = tabTrack.Find($"Tab_{t}")?.GetComponentInChildren<TMP_Text>();
+                    if (tabText != null && _currentShopTab != t)
+                    {
+                        tabText.color = new Color(0.42f, 0.30f, 0.58f, 1f); // Rich legible violet
+                        tabText.fontStyle = FontStyles.Bold;
+                    }
+                }
+            }
+
+            // 4. Recommended Panel section layout & text polish
+            Transform recPanel = dCard.Find("ContentContainer/RecommendedPanel");
+            if (recPanel != null)
+            {
+                // Top Ribbon for Recommended Panel
+                Transform recRibbon = recPanel.Find("TopRibbon");
+                if (recRibbon == null)
+                {
+                    GameObject ribbonObj = new GameObject("TopRibbon", typeof(RectTransform), typeof(Image));
+                    ribbonObj.transform.SetParent(recPanel, false);
+                    ribbonObj.transform.SetAsFirstSibling();
+                    recRibbon = ribbonObj.transform;
+
+                    RectTransform rrt = ribbonObj.GetComponent<RectTransform>();
+                    rrt.anchorMin = new Vector2(0.5f, 1f);
+                    rrt.anchorMax = new Vector2(0.5f, 1f);
+                    rrt.pivot = new Vector2(0.5f, 0.5f);
+                    rrt.anchoredPosition = new Vector2(0f, -42f);
+                    rrt.sizeDelta = new Vector2(880f, 60f);
+
+                    Image rImg = ribbonObj.GetComponent<Image>();
+                    Image cardImg = recPanel.Find("RecTipCard")?.GetComponent<Image>();
+                    if (cardImg != null && cardImg.sprite != null) rImg.sprite = cardImg.sprite;
+                    rImg.type = Image.Type.Sliced;
+                    rImg.color = new Color(0.18f, 0.11f, 0.32f, 0.95f);
+
+                    GameObject txtObj = new GameObject("RibbonTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
+                    txtObj.transform.SetParent(ribbonObj.transform, false);
+                    RectTransform trt = txtObj.GetComponent<RectTransform>();
+                    trt.anchorMin = Vector2.zero;
+                    trt.anchorMax = Vector2.one;
+                    trt.offsetMin = Vector2.zero;
+                    trt.offsetMax = Vector2.zero;
+
+                    TMP_Text rt = txtObj.GetComponent<TMP_Text>();
+                    rt.text = LocalizationManager.Get("rec_top_ribbon", "★ [데일리 혜택] 매일 무료 보상 & 스페셜 스타터 팩! ★");
+                    rt.alignment = TextAlignmentOptions.Center;
+                    rt.fontSize = 22;
+                    rt.fontStyle = FontStyles.Bold;
+                    rt.color = new Color(1f, 0.92f, 0.45f);
+                }
+                else
+                {
+                    RectTransform rrt = recRibbon.GetComponent<RectTransform>();
+                    if (rrt != null)
+                    {
+                        rrt.anchoredPosition = new Vector2(0f, -42f);
+                        rrt.sizeDelta = new Vector2(880f, 60f);
+                    }
+                    var rt = recRibbon.Find("RibbonTxt")?.GetComponent<TMP_Text>();
+                    if (rt != null) rt.text = LocalizationManager.Get("rec_top_ribbon", "★ [데일리 혜택] 매일 무료 보상 & 스페셜 스타터 팩! ★");
+                }
+
+                // New Mascot Banner (Shifted down towards center)
+                Transform newBanner = recPanel.Find("NewMascotBanner");
+                if (newBanner != null)
+                {
+                    RectTransform nbrt = newBanner.GetComponent<RectTransform>();
+                    if (nbrt != null)
+                    {
+                        nbrt.anchoredPosition = new Vector2(0f, -295f);
+                        nbrt.sizeDelta = new Vector2(880f, 420f);
+                    }
+                }
+
+                // Subtitle
+                Transform packSub = recPanel.Find("PackSubtitle");
+                if (packSub != null)
+                {
+                    RectTransform psrt = packSub.GetComponent<RectTransform>();
+                    if (psrt != null)
+                    {
+                        psrt.anchoredPosition = new Vector2(0f, -545f);
+                        psrt.sizeDelta = new Vector2(860f, 36f);
+                    }
+                    var subTxt = packSub.GetComponent<TMP_Text>();
+                    if (subTxt != null)
+                    {
+                        subTxt.color = new Color(0.24f, 0.12f, 0.38f);
+                        subTxt.fontStyle = FontStyles.Bold;
+                    }
+                }
+
+                // Cards typography and position polish
+                float[] packXOffsets = new float[] { -295f, 0f, 295f };
+                for (int p = 0; p < 3; p++)
+                {
+                    var pCard = recPanel.Find($"PackageCard_{p}");
+                    if (pCard != null)
+                    {
+                        RectTransform pcrt = pCard.GetComponent<RectTransform>();
+                        if (pcrt != null)
+                        {
+                            pcrt.anchoredPosition = new Vector2(packXOffsets[p], -780f);
+                            pcrt.sizeDelta = new Vector2(275f, 420f);
+                        }
+                        var title = pCard.Find("Title")?.GetComponent<TMP_Text>();
+                        if (title != null)
+                        {
+                            title.color = new Color(0.22f, 0.10f, 0.32f);
+                            title.fontStyle = FontStyles.Bold;
+                            title.fontSize = 26;
+                        }
+                        var rewards = pCard.Find("Rewards")?.GetComponent<TMP_Text>();
+                        if (rewards != null)
+                        {
+                            rewards.color = new Color(0.68f, 0.28f, 0.05f); // Rich caramel
+                            rewards.fontStyle = FontStyles.Bold;
+                            rewards.fontSize = 22;
+                        }
+                    }
+                }
+
+                var tipCard = recPanel.Find("RecTipCard");
+                if (tipCard != null)
+                {
+                    RectTransform tcrt = tipCard.GetComponent<RectTransform>();
+                    if (tcrt != null)
+                    {
+                        tcrt.anchoredPosition = new Vector2(0f, -1045f);
+                        tcrt.sizeDelta = new Vector2(880f, 95f);
+                    }
+                    var tipTxt = tipCard.Find("TipTxt")?.GetComponent<TMP_Text>();
+                    if (tipTxt != null)
+                    {
+                        tipTxt.color = new Color(0.25f, 0.15f, 0.38f);
+                        tipTxt.fontStyle = FontStyles.Normal;
+                    }
+                }
+            }
+
+            // 5. Pickup Panel Polish & Pity UI
+            EnsurePickupPityUI(dCard);
+        }
+
+        public void EnsurePickupPityUI(Transform dCard = null)
+        {
+            if (dCard == null && shopModal != null)
+            {
+                dCard = shopModal.transform.Find("DialogCard");
+            }
+            if (dCard == null) return;
+
+            Transform pickPanel = dCard.Find("ContentContainer/PickupPanel");
+            if (pickPanel == null) return;
+
+            // 1. Top Event Header Ribbon
+            Transform topRibbon = pickPanel.Find("TopRibbon");
+            Image refCardImg = pickPanel.Find("PickHintCard")?.GetComponent<Image>();
+            if (topRibbon == null)
+            {
+                GameObject ribbonObj = new GameObject("TopRibbon", typeof(RectTransform), typeof(Image));
+                ribbonObj.transform.SetParent(pickPanel, false);
+                ribbonObj.transform.SetAsFirstSibling();
+                topRibbon = ribbonObj.transform;
+
+                RectTransform rrt = ribbonObj.GetComponent<RectTransform>();
+                rrt.anchorMin = new Vector2(0.5f, 1f);
+                rrt.anchorMax = new Vector2(0.5f, 1f);
+                rrt.pivot = new Vector2(0.5f, 0.5f);
+                rrt.anchoredPosition = new Vector2(0f, -42f);
+                rrt.sizeDelta = new Vector2(880f, 60f);
+
+                Image rImg = ribbonObj.GetComponent<Image>();
+                if (refCardImg != null && refCardImg.sprite != null) rImg.sprite = refCardImg.sprite;
+                rImg.type = Image.Type.Sliced;
+                rImg.color = new Color(0.18f, 0.11f, 0.32f, 0.95f);
+
+                GameObject txtObj = new GameObject("RibbonTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
+                txtObj.transform.SetParent(ribbonObj.transform, false);
+                RectTransform trt = txtObj.GetComponent<RectTransform>();
+                trt.anchorMin = Vector2.zero;
+                trt.anchorMax = Vector2.one;
+                trt.offsetMin = Vector2.zero;
+                trt.offsetMax = Vector2.zero;
+
+                TMP_Text rt = txtObj.GetComponent<TMP_Text>();
+                rt.text = LocalizationManager.Get("pickup_top_ribbon", "★ [시즌 1] 천상의 천사 말랑이 스페셜 픽업 소환 ★");
+                rt.alignment = TextAlignmentOptions.Center;
+                rt.fontSize = 22;
+                rt.fontStyle = FontStyles.Bold;
+                rt.color = new Color(1f, 0.92f, 0.45f);
+            }
+            else
+            {
+                RectTransform rrt = topRibbon.GetComponent<RectTransform>();
+                if (rrt != null)
+                {
+                    rrt.anchoredPosition = new Vector2(0f, -42f);
+                    rrt.sizeDelta = new Vector2(880f, 60f);
+                }
+                var rt = topRibbon.Find("RibbonTxt")?.GetComponent<TMP_Text>();
+                if (rt != null) rt.text = LocalizationManager.Get("pickup_top_ribbon", "★ [시즌 1] 천상의 천사 말랑이 스페셜 픽업 소환 ★");
+            }
+
+            // 2. Pickup Banner (Shifted down towards center)
+            Transform banner = pickPanel.Find("PickupBanner");
+            if (banner != null)
+            {
+                RectTransform brt = banner.GetComponent<RectTransform>();
+                if (brt != null)
+                {
+                    brt.anchoredPosition = new Vector2(0f, -295f);
+                    brt.sizeDelta = new Vector2(880f, 415f);
+                }
+            }
+
+            // 3. Pity Gauge Card (Between Banner and Buttons)
+            Transform pityCard = pickPanel.Find("PityGaugeCard");
+            Sprite coinSpr = dCard.Find("CoinBadge/Icon")?.GetComponent<Image>()?.sprite;
+            Sprite specialSpr = (mascotAvatars != null && mascotAvatars.Length > 8) ? mascotAvatars[8] : null;
+
+            if (pityCard == null)
+            {
+                GameObject pCardObj = new GameObject("PityGaugeCard", typeof(RectTransform), typeof(Image));
+                pCardObj.transform.SetParent(pickPanel, false);
+                if (banner != null) pCardObj.transform.SetSiblingIndex(banner.GetSiblingIndex() + 1);
+                pityCard = pCardObj.transform;
+
+                RectTransform prt = pCardObj.GetComponent<RectTransform>();
+                prt.anchorMin = new Vector2(0.5f, 1f);
+                prt.anchorMax = new Vector2(0.5f, 1f);
+                prt.pivot = new Vector2(0.5f, 0.5f);
+                prt.anchoredPosition = new Vector2(0f, -565f);
+                prt.sizeDelta = new Vector2(880f, 108f);
+
+                Image pImg = pCardObj.GetComponent<Image>();
+                if (refCardImg != null && refCardImg.sprite != null) pImg.sprite = refCardImg.sprite;
+                pImg.type = Image.Type.Sliced;
+                pImg.color = new Color(0.14f, 0.09f, 0.25f, 0.96f);
+
+                // Header Row: Title & Counter
+                GameObject titleObj = new GameObject("TitleTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
+                titleObj.transform.SetParent(pCardObj.transform, false);
+                RectTransform titRt = titleObj.GetComponent<RectTransform>();
+                titRt.anchorMin = new Vector2(0f, 0.5f);
+                titRt.anchorMax = new Vector2(0.55f, 0.5f);
+                titRt.pivot = new Vector2(0f, 0.5f);
+                titRt.anchoredPosition = new Vector2(25f, 28f);
+                titRt.sizeDelta = new Vector2(400f, 32f);
+                TMP_Text titTxt = titleObj.GetComponent<TMP_Text>();
+                titTxt.text = LocalizationManager.Get("pickup_pity_title", "★ 60회 확정 소환 천장 게이지 ★");
+                titTxt.fontSize = 20;
+                titTxt.fontStyle = FontStyles.Bold;
+                titTxt.color = new Color(1f, 0.88f, 0.51f);
+
+                GameObject cntObj = new GameObject("CounterTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
+                cntObj.transform.SetParent(pCardObj.transform, false);
+                RectTransform cntRt = cntObj.GetComponent<RectTransform>();
+                cntRt.anchorMin = new Vector2(0.45f, 0.5f);
+                cntRt.anchorMax = new Vector2(1f, 0.5f);
+                cntRt.pivot = new Vector2(1f, 0.5f);
+                cntRt.anchoredPosition = new Vector2(-25f, 28f);
+                cntRt.sizeDelta = new Vector2(400f, 32f);
+                TMP_Text cntTxt = cntObj.GetComponent<TMP_Text>();
+                cntTxt.alignment = TextAlignmentOptions.Right;
+                cntTxt.fontSize = 18;
+                cntTxt.fontStyle = FontStyles.Bold;
+                cntTxt.color = new Color(0.50f, 0.85f, 1f);
+
+                // Rail Background
+                GameObject railObj = new GameObject("RailBg", typeof(RectTransform), typeof(Image));
+                railObj.transform.SetParent(pCardObj.transform, false);
+                RectTransform railRt = railObj.GetComponent<RectTransform>();
+                railRt.anchorMin = new Vector2(0.5f, 0.5f);
+                railRt.anchorMax = new Vector2(0.5f, 0.5f);
+                railRt.pivot = new Vector2(0.5f, 0.5f);
+                railRt.anchoredPosition = new Vector2(0f, -6f);
+                railRt.sizeDelta = new Vector2(740f, 16f);
+                Image railImg = railObj.GetComponent<Image>();
+                if (refCardImg != null && refCardImg.sprite != null) railImg.sprite = refCardImg.sprite;
+                railImg.type = Image.Type.Sliced;
+                railImg.color = new Color(0.06f, 0.03f, 0.12f, 0.95f);
+
+                // Fill Bar
+                GameObject fillObj = new GameObject("FillBar", typeof(RectTransform), typeof(Image));
+                fillObj.transform.SetParent(railObj.transform, false);
+                RectTransform fillRt = fillObj.GetComponent<RectTransform>();
+                fillRt.anchorMin = new Vector2(0f, 0f);
+                fillRt.anchorMax = new Vector2(0f, 1f);
+                fillRt.pivot = new Vector2(0f, 0.5f);
+                fillRt.offsetMin = Vector2.zero;
+                fillRt.offsetMax = Vector2.zero;
+                Image fillImg = fillObj.GetComponent<Image>();
+                if (refCardImg != null && refCardImg.sprite != null) fillImg.sprite = refCardImg.sprite;
+                fillImg.type = Image.Type.Sliced;
+                fillImg.color = new Color(1f, 0.82f, 0.35f, 1f);
+
+                // Nodes Container
+                GameObject nodesRoot = new GameObject("NodesRoot", typeof(RectTransform));
+                nodesRoot.transform.SetParent(pCardObj.transform, false);
+                RectTransform nRootRt = nodesRoot.GetComponent<RectTransform>();
+                nRootRt.anchorMin = new Vector2(0.5f, 0.5f);
+                nRootRt.anchorMax = new Vector2(0.5f, 0.5f);
+                nRootRt.pivot = new Vector2(0.5f, 0.5f);
+                nRootRt.anchoredPosition = new Vector2(0f, -6f);
+                nRootRt.sizeDelta = new Vector2(740f, 0f);
+
+                // 6 Milestones (10, 20, 30, 40, 50 = Gold coin, 60 = Angel mascot)
+                float totalWidth = 740f;
+                for (int m = 1; m <= 6; m++)
+                {
+                    float xPos = -370f + (m * totalWidth / 6f);
+                    bool isFinal = (m == 6);
+                    float discSize = isFinal ? 42f : 34f;
+
+                    GameObject nodeObj = new GameObject($"Node_{m}", typeof(RectTransform));
+                    nodeObj.transform.SetParent(nodesRoot.transform, false);
+                    RectTransform nrt = nodeObj.GetComponent<RectTransform>();
+                    nrt.anchorMin = new Vector2(0.5f, 0.5f);
+                    nrt.anchorMax = new Vector2(0.5f, 0.5f);
+                    nrt.pivot = new Vector2(0.5f, 0.5f);
+                    nrt.anchoredPosition = new Vector2(xPos, 0f);
+                    nrt.sizeDelta = new Vector2(discSize, discSize);
+
+                    // Disc Image
+                    GameObject discObj = new GameObject("Disc", typeof(RectTransform), typeof(Image));
+                    discObj.transform.SetParent(nodeObj.transform, false);
+                    RectTransform drt = discObj.GetComponent<RectTransform>();
+                    drt.anchorMin = Vector2.zero;
+                    drt.anchorMax = Vector2.one;
+                    drt.offsetMin = Vector2.zero;
+                    drt.offsetMax = Vector2.zero;
+                    Image dImg = discObj.GetComponent<Image>();
+                    if (refCardImg != null && refCardImg.sprite != null) dImg.sprite = refCardImg.sprite;
+                    dImg.type = Image.Type.Sliced;
+                    dImg.color = isFinal ? new Color(0.40f, 0.15f, 0.45f) : new Color(0.22f, 0.14f, 0.35f);
+
+                    // Icon
+                    GameObject iconObj = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+                    iconObj.transform.SetParent(discObj.transform, false);
+                    RectTransform irt = iconObj.GetComponent<RectTransform>();
+                    irt.anchorMin = new Vector2(0.5f, 0.5f);
+                    irt.anchorMax = new Vector2(0.5f, 0.5f);
+                    irt.pivot = new Vector2(0.5f, 0.5f);
+                    irt.anchoredPosition = Vector2.zero;
+                    irt.sizeDelta = isFinal ? new Vector2(32f, 32f) : new Vector2(24f, 24f);
+                    Image iImg = iconObj.GetComponent<Image>();
+                    iImg.preserveAspect = true;
+                    if (isFinal)
+                    {
+                        if (specialSpr != null) iImg.sprite = specialSpr;
+                    }
+                    else
+                    {
+                        if (coinSpr != null) iImg.sprite = coinSpr;
+                    }
+
+                    // Sublabel
+                    GameObject lblObj = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+                    lblObj.transform.SetParent(nodeObj.transform, false);
+                    RectTransform lrt = lblObj.GetComponent<RectTransform>();
+                    lrt.anchorMin = new Vector2(0.5f, 0.5f);
+                    lrt.anchorMax = new Vector2(0.5f, 0.5f);
+                    lrt.pivot = new Vector2(0.5f, 1f);
+                    lrt.anchoredPosition = new Vector2(0f, -24f);
+                    lrt.sizeDelta = new Vector2(110f, 32f);
+                    TMP_Text lTxt = lblObj.GetComponent<TMP_Text>();
+                    lTxt.alignment = TextAlignmentOptions.Top;
+                    lTxt.fontSize = isFinal ? 13 : 12;
+                    lTxt.fontStyle = FontStyles.Bold;
+                    if (isFinal)
+                    {
+                        lTxt.text = "<color=#FFE600>★ 60 확정</color>";
+                    }
+                    else
+                    {
+                        lTxt.text = $"<size=12>{m * 10}회</size>\n<color=#FFE082><size=11>+5천G</size></color>";
+                    }
+                }
+            }
+            else
+            {
+                RectTransform prt = pityCard.GetComponent<RectTransform>();
+                if (prt != null)
+                {
+                    prt.anchoredPosition = new Vector2(0f, -565f);
+                    prt.sizeDelta = new Vector2(880f, 108f);
+                }
+            }
+
+            // 4. Pickup Info / Control Row
+            Transform ctrlRow = pickPanel.Find("PickControlRow");
+            if (ctrlRow != null)
+            {
+                RectTransform crt = ctrlRow.GetComponent<RectTransform>();
+                if (crt != null)
+                {
+                    crt.anchoredPosition = new Vector2(0f, -650f);
+                    crt.sizeDelta = new Vector2(880f, 50f);
+                }
+            }
+
+            // 5. Summon Buttons (1x, 10x) - Moved down towards bottom
+            Transform s1 = pickPanel.Find("BtnSummon1");
+            if (s1 != null)
+            {
+                RectTransform s1Rt = s1.GetComponent<RectTransform>();
+                if (s1Rt != null)
+                {
+                    s1Rt.anchoredPosition = new Vector2(-225f, -755f);
+                    s1Rt.sizeDelta = new Vector2(415f, 115f);
+                }
+            }
+
+            Transform s10 = pickPanel.Find("BtnSummon10");
+            if (s10 != null)
+            {
+                RectTransform s10Rt = s10.GetComponent<RectTransform>();
+                if (s10Rt != null)
+                {
+                    s10Rt.anchoredPosition = new Vector2(225f, -755f);
+                    s10Rt.sizeDelta = new Vector2(415f, 115f);
+                }
+            }
+
+            // 6. Hint Card at bottom
+            Transform hintCard = pickPanel.Find("PickHintCard");
+            if (hintCard != null)
+            {
+                RectTransform hrt = hintCard.GetComponent<RectTransform>();
+                if (hrt != null)
+                {
+                    hrt.anchoredPosition = new Vector2(0f, -860f);
+                    hrt.sizeDelta = new Vector2(880f, 68f);
+                }
+                var hTxt = hintCard.Find("HintTxt")?.GetComponent<TMP_Text>();
+                if (hTxt != null)
+                {
+                    hTxt.text = LocalizationManager.Get("pickup_pity_hint_bottom", "★ 60회 소환 시 [천상의 천사 말랑이] 100% 확정! 10회 소환마다 5,000 골드 보너스! ★");
+                }
+            }
+
+            UpdatePickupPityGaugeUI();
+        }
+
+        public void UpdatePickupPityGaugeUI()
+        {
+            if (shopModal == null) return;
+            Transform dCard = shopModal.transform.Find("DialogCard");
+            if (dCard == null) return;
+            Transform pityCard = dCard.Find("ContentContainer/PickupPanel/PityGaugeCard");
+            if (pityCard == null) return;
+
+            int pity = PlayerPrefs.GetInt(KEY_PICKUP_PITY, 0);
+            pity = Mathf.Clamp(pity, 0, PICKUP_PITY_TARGET);
+
+            int nextTarget = ((pity / 10) + 1) * 10;
+            if (nextTarget > 60) nextTarget = 60;
+            int pullsToNext = nextTarget - pity;
+            if (pity >= 60) pullsToNext = 0;
+
+            var titTxt = pityCard.Find("TitleTxt")?.GetComponent<TMP_Text>();
+            if (titTxt != null) titTxt.text = LocalizationManager.Get("pickup_pity_title", "★ 60회 확정 소환 천장 게이지 ★");
+
+            var cntTxt = pityCard.Find("CounterTxt")?.GetComponent<TMP_Text>();
+            if (cntTxt != null)
+            {
+                cntTxt.text = string.Format(LocalizationManager.Get("pickup_pity_progress_fmt", "진행도: {0}/60 (다음 보상까지 {1}회)"), pity, pullsToNext);
+            }
+
+            var fillRt = pityCard.Find("RailBg/FillBar")?.GetComponent<RectTransform>();
+            if (fillRt != null)
+            {
+                fillRt.anchorMax = new Vector2(pity / 60.0f, 1f);
+            }
+
+            Transform nodesRoot = pityCard.Find("NodesRoot");
+            if (nodesRoot != null)
+            {
+                for (int m = 1; m <= 6; m++)
+                {
+                    Transform node = nodesRoot.Find($"Node_{m}");
+                    if (node == null) continue;
+                    int reqPulls = m * 10;
+                    bool reached = (pity >= reqPulls);
+                    bool isFinal = (m == 6);
+
+                    var discImg = node.Find("Disc")?.GetComponent<Image>();
+                    if (discImg != null)
+                    {
+                        if (isFinal)
+                        {
+                            discImg.color = reached ? new Color(1f, 0.85f, 0.20f) : new Color(0.40f, 0.15f, 0.45f);
+                        }
+                        else
+                        {
+                            discImg.color = reached ? new Color(1f, 0.80f, 0.25f) : new Color(0.22f, 0.14f, 0.35f);
+                        }
+                    }
+
+                    var lTxt = node.Find("Label")?.GetComponent<TMP_Text>();
+                    if (lTxt != null)
+                    {
+                        if (isFinal)
+                        {
+                            lTxt.text = reached ? "<color=#00E676><b>★ 확정 달성!</b></color>" : "<color=#FFE600>★ 60 확정</color>";
+                        }
+                        else
+                        {
+                            lTxt.text = reached ? $"<size=12>{reqPulls}회</size>\n<color=#00E676><size=11>✓ 지급완료</size></color>" : $"<size=12>{reqPulls}회</size>\n<color=#FFE082><size=11>+5천G</size></color>";
+                        }
+                    }
+                }
+            }
         }
 
         public void SummonPickup(int count)
@@ -2834,15 +3573,36 @@ namespace BlockBlast
                 int[] shardGains = new int[9]; // 0~3: Common, 4~7: Rare, 8: Special
                 List<GachaDropItem> dropsList = new List<GachaDropItem>();
 
+                int currentPity = PlayerPrefs.GetInt(KEY_PICKUP_PITY, 0);
+                int bonusGoldEarned = 0;
+                bool hitGuaranteedSpecial = false;
+
                 for (int c = 0; c < count; c++)
                 {
-                    float roll = Random.Range(0f, 100f);
-                    if (roll < 1.0f) // 1.0% chance for Special Mascot!
+                    currentPity++;
+                    bool isGuaranteed = false;
+                    if (currentPity >= PICKUP_PITY_TARGET)
                     {
+                        isGuaranteed = true;
+                        hitGuaranteedSpecial = true;
+                        currentPity = 0; // 60-pull pity reached, guaranteed drop and reset!
+                    }
+
+                    // Single-pull milestone gold bonus check (every 10 pulls gives 5,000 Gold)
+                    if (count == 1)
+                    {
+                        if (currentPity > 0 && currentPity % 10 == 0)
+                        {
+                            bonusGoldEarned += 5000;
+                        }
+                    }
+
+                    if (isGuaranteed)
+                    {
+                        // Guaranteed Special Mascot (천상의 천사 말랑이, Mascot 8)
                         bool alreadyOwned = PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + 8, 0) == 1;
                         if (alreadyOwned)
                         {
-                            // Duplicate: instantly convert to 60 Special Shards for instant breakthrough!
                             AddMascotShards(8, 60);
                             shardGains[8] += 60;
                             duplicateSpecialCount++;
@@ -2850,7 +3610,6 @@ namespace BlockBlast
                         }
                         else
                         {
-                            // First time unlock!
                             PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 8, 1);
                             specialCount++;
                             dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 8, shardCount = 0, isDuplicateSpecial = false });
@@ -2858,21 +3617,56 @@ namespace BlockBlast
                     }
                     else
                     {
-                        // 99.0% chance: Drops 1 or 5 Shards of Common (0~3) or Rare (4~7) mascot!
-                        int shardAmount = (Random.value < 0.5f) ? 1 : 5;
-                        int chosenIdx = Random.Range(0, 8); // 0..7
-                        AddMascotShards(chosenIdx, shardAmount);
-                        shardGains[chosenIdx] += shardAmount;
+                        float roll = Random.Range(0f, 100f);
+                        if (roll < 1.0f) // 1.0% chance for Special Mascot!
+                        {
+                            bool alreadyOwned = PlayerPrefs.GetInt(KEY_MASCOT_OWNED_PREFIX + 8, 0) == 1;
+                            if (alreadyOwned)
+                            {
+                                AddMascotShards(8, 60);
+                                shardGains[8] += 60;
+                                duplicateSpecialCount++;
+                                dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 8, shardCount = 60, isDuplicateSpecial = true });
+                            }
+                            else
+                            {
+                                PlayerPrefs.SetInt(KEY_MASCOT_OWNED_PREFIX + 8, 1);
+                                specialCount++;
+                                dropsList.Add(new GachaDropItem { isSpecial = true, mascotIndex = 8, shardCount = 0, isDuplicateSpecial = false });
+                            }
+                        }
+                        else
+                        {
+                            int shardAmount = (Random.value < 0.5f) ? 1 : 5;
+                            int chosenIdx = Random.Range(0, 8); // 0..7
+                            AddMascotShards(chosenIdx, shardAmount);
+                            shardGains[chosenIdx] += shardAmount;
 
-                        dropsList.Add(new GachaDropItem { isSpecial = false, mascotIndex = chosenIdx, shardCount = shardAmount, isDuplicateSpecial = false });
+                            dropsList.Add(new GachaDropItem { isSpecial = false, mascotIndex = chosenIdx, shardCount = shardAmount, isDuplicateSpecial = false });
+                        }
                     }
                 }
 
+                // 10-pull gives 5,000 Gold bonus!
+                if (count == 10)
+                {
+                    bonusGoldEarned += 5000;
+                }
+
+                if (bonusGoldEarned > 0)
+                {
+                    _currentCoins += bonusGoldEarned;
+                    PlayerPrefs.SetInt(KEY_COINS, _currentCoins);
+                }
+
+                PlayerPrefs.SetInt(KEY_PICKUP_PITY, currentPity);
                 PlayerPrefs.Save();
+
                 RefreshCurrenciesUI();
                 RefreshMascotShopUI();
                 RefreshMascotModalUI();
                 RefreshMascotCodexUI();
+                UpdatePickupPityGaugeUI();
 
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
                 if (BlockAudioManager.Instance != null)
@@ -2884,12 +3678,12 @@ namespace BlockBlast
                 {
                     GachaPresentationController.Instance.StartGachaSequence(dropsList, () =>
                     {
-                        ShowSummonResultModal(count, specialCount, duplicateSpecialCount, shardGains);
+                        ShowSummonResultModal(count, specialCount, duplicateSpecialCount, shardGains, bonusGoldEarned, hitGuaranteedSpecial);
                     });
                 }
                 else
                 {
-                    ShowSummonResultModal(count, specialCount, duplicateSpecialCount, shardGains);
+                    ShowSummonResultModal(count, specialCount, duplicateSpecialCount, shardGains, bonusGoldEarned, hitGuaranteedSpecial);
                 }
             }
             else
@@ -2921,7 +3715,7 @@ namespace BlockBlast
             if (summonResultModal != null) summonResultModal.SetActive(false);
         }
 
-        public void ShowSummonResultModal(int count, int specialCount, int duplicateSpecialCount, int[] shardGains)
+        public void ShowSummonResultModal(int count, int specialCount, int duplicateSpecialCount, int[] shardGains, int bonusGold = 0, bool isPityGuaranteed = false)
         {
             if (summonResultModal == null) return;
 
@@ -2932,7 +3726,11 @@ namespace BlockBlast
 
             if (summonResultHighlightText != null)
             {
-                if (specialCount > 0)
+                if (isPityGuaranteed)
+                {
+                    summonResultHighlightText.text = $"<color=#FFE600>★ [60회 천장 확정!] {GetLocalizedMascotName(8)} 소환 완료! ★</color>\n<size=20><color=#554B64>{LocalizationManager.Get("summon_result_unlocked_desc")}</color></size>";
+                }
+                else if (specialCount > 0)
                 {
                     summonResultHighlightText.text = $"<color=#FFE600>★ [{GetLocalizedMascotName(8)}] {LocalizationManager.Get("summon_result_unlocked")} ★</color>\n<size=20><color=#554B64>{LocalizationManager.Get("summon_result_unlocked_desc")}</color></size>";
                 }
@@ -2971,15 +3769,22 @@ namespace BlockBlast
                 }
             }
 
-            if (summonResultShardsText != null && shardGains != null)
+            if (summonResultShardsText != null)
             {
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                for (int i = 0; i < shardGains.Length; i++)
+                if (bonusGold > 0)
                 {
-                    if (shardGains[i] > 0)
+                    sb.AppendLine($"<color=#FFD32A>★ 10회 소환 보너스: +{bonusGold:N0} 골드 획득! ★</color>");
+                }
+                if (shardGains != null)
+                {
+                    for (int i = 0; i < shardGains.Length; i++)
                     {
-                        string colTag = (i == 8) ? "#E056FD" : (i >= 4) ? "#3498DB" : "#FF6B8B";
-                        sb.AppendLine($"<color={colTag}>• {GetLocalizedMascotName(i)}: +{shardGains[i]}개 ({LocalizationManager.Get("mascot_owned_shards")}: {GetMascotShards(i)})</color>");
+                        if (shardGains[i] > 0)
+                        {
+                            string colTag = (i == 8) ? "#E056FD" : (i >= 4) ? "#3498DB" : "#FF6B8B";
+                            sb.AppendLine($"<color={colTag}>• {GetLocalizedMascotName(i)}: +{shardGains[i]}개 ({LocalizationManager.Get("mascot_owned_shards")}: {GetMascotShards(i)})</color>");
+                        }
                     }
                 }
                 summonResultShardsText.text = sb.ToString().TrimEnd();
@@ -3138,7 +3943,9 @@ namespace BlockBlast
             bool enabled = MobileDeviceManager.IsHapticEnabled;
             if (hapticToggleText != null)
             {
-                hapticToggleText.text = enabled ? "진동: 켜짐" : "진동: 꺼짐";
+                hapticToggleText.text = enabled
+                    ? LocalizationManager.Get("settings_haptic_on", "진동: 켜짐")
+                    : LocalizationManager.Get("settings_haptic_off", "진동: 꺼짐");
             }
         }
 
@@ -3822,13 +4629,20 @@ namespace BlockBlast
 
         public void UpdateScreenSettingsUI()
         {
+            bool isMobile = Application.isMobilePlatform;
+#if !UNITY_STANDALONE
+            isMobile = true;
+#endif
+
             if (settingsAspectTitleText != null)
             {
                 settingsAspectTitleText.text = LocalizationManager.Get("settings_aspect_ratio_title");
+                settingsAspectTitleText.gameObject.SetActive(!isMobile);
             }
             if (settingsWindowModeTitleText != null)
             {
                 settingsWindowModeTitleText.text = LocalizationManager.Get("settings_window_mode_title");
+                settingsWindowModeTitleText.gameObject.SetActive(!isMobile);
             }
 
             string[] aspectKeys = new string[] { "aspect_16_9", "aspect_16_10", "aspect_4_3", "aspect_9_16" };
@@ -3836,6 +4650,7 @@ namespace BlockBlast
             {
                 for (int i = 0; i < aspectButtons.Length && i < aspectKeys.Length; i++)
                 {
+                    if (aspectButtons[i] != null) aspectButtons[i].gameObject.SetActive(!isMobile);
                     bool isActive = (_currentAspectIdx == i);
                     if (aspectBgs[i] != null)
                     {
@@ -3863,6 +4678,7 @@ namespace BlockBlast
             {
                 for (int j = 0; j < windowModeButtons.Length && j < winModeKeys.Length; j++)
                 {
+                    if (windowModeButtons[j] != null) windowModeButtons[j].gameObject.SetActive(!isMobile);
                     bool isActive = (_currentWindowModeIdx == j);
                     if (windowModeBgs[j] != null)
                     {
@@ -4424,7 +5240,29 @@ namespace BlockBlast
             if (txtPickupBtnRates != null) txtPickupBtnRates.text = LocalizationManager.Get("pickup_btn_rates");
             if (txtPickupBtnDetail != null) txtPickupBtnDetail.text = LocalizationManager.Get("pickup_btn_skill_detail");
             if (txtPickupSummon1 != null) txtPickupSummon1.text = $"{LocalizationManager.Get("pickup_summon_1")}\n◆ 100";
-            if (txtPickupSummon10 != null) txtPickupSummon10.text = $"{LocalizationManager.Get("pickup_summon_10")}\n◆ 1,000";
+            if (txtPickupSummon10 != null) txtPickupSummon10.text = $"{LocalizationManager.Get("pickup_summon_10")}\n<size=18><color=#FFE600>[+5,000 G]</color></size> ◆ 1,000";
+
+            if (shopModal != null)
+            {
+                var pickPanel = shopModal.transform.Find("DialogCard/ContentContainer/PickupPanel");
+                if (pickPanel != null)
+                {
+                    var ribTxt = pickPanel.Find("TopRibbon/RibbonTxt")?.GetComponent<TMP_Text>();
+                    if (ribTxt != null) ribTxt.text = LocalizationManager.Get("pickup_top_ribbon");
+
+                    var hint = pickPanel.Find("PickHintCard/HintTxt")?.GetComponent<TMP_Text>();
+                    if (hint != null) hint.text = LocalizationManager.Get("pickup_pity_hint_bottom");
+                }
+
+                var recPanel = shopModal.transform.Find("DialogCard/ContentContainer/RecommendedPanel");
+                if (recPanel != null)
+                {
+                    var ribTxt = recPanel.Find("TopRibbon/RibbonTxt")?.GetComponent<TMP_Text>();
+                    if (ribTxt != null) ribTxt.text = LocalizationManager.Get("rec_top_ribbon");
+                }
+
+                UpdatePickupPityGaugeUI();
+            }
 
             // Update Pickup Skill Detail Modal Content
             if (pickupSkillDetailModal != null)
@@ -4448,6 +5286,82 @@ namespace BlockBlast
                 }
             }
 
+            // Update Shop Recommended Packages Content
+            if (shopModal != null)
+            {
+                var recPanel = shopModal.transform.Find("DialogCard/ContentContainer/RecommendedPanel");
+                if (recPanel != null)
+                {
+                    var packSub = recPanel.Find("PackSubtitle")?.GetComponent<TMP_Text>();
+                    if (packSub != null)
+                    {
+                        packSub.text = LocalizationManager.CurrentLanguage switch
+                        {
+                            GameLanguage.EN => "Special Limited Recommended Packages",
+                            GameLanguage.JA => "今月の特別限定おすすめパッケージ",
+                            GameLanguage.ZH => "本月特别限定推荐礼包",
+                            _ => "이달의 특별 한정 추천 패키지"
+                        };
+                    }
+
+                    for (int p = 0; p < 3; p++)
+                    {
+                        var pCard = recPanel.Find($"PackageCard_{p}");
+                        if (pCard != null)
+                        {
+                            var title = pCard.Find("Title")?.GetComponent<TMP_Text>();
+                            if (title != null) title.text = LocalizationManager.Get($"shop_pack_{p}_title");
+
+                            var rewards = pCard.Find("Rewards")?.GetComponent<TMP_Text>();
+                            if (rewards != null) rewards.text = LocalizationManager.Get($"shop_pack_{p}_reward");
+
+                            var btnBuyText = pCard.Find("BtnBuy")?.GetComponentInChildren<TMP_Text>();
+                            if (btnBuyText != null)
+                            {
+                                string todayDate = DateTime.UtcNow.ToString("yyyyMMdd");
+                                if (p == 0 && PlayerPrefs.GetString("Mallang_DailyGold_ClaimDate", "") == todayDate)
+                                    btnBuyText.text = LocalizationManager.Get("shop_pack_claimed");
+                                else if (p == 2 && PlayerPrefs.GetInt("Mallang_WelcomePack_Claimed", 0) == 1)
+                                    btnBuyText.text = LocalizationManager.Get("shop_pack_claimed");
+                                else
+                                    btnBuyText.text = LocalizationManager.Get($"shop_pack_{p}_price");
+                            }
+                        }
+                    }
+
+                    var tipTxt = recPanel.Find("RecTipCard/TipTxt")?.GetComponent<TMP_Text>();
+                    if (tipTxt != null) tipTxt.text = LocalizationManager.Get("shop_rec_tip");
+                }
+            }
+
+            // Update Mobile Settings Extra Controls
+            UpdateHapticUI();
+            if (btnPrivacyPolicy != null)
+            {
+                var pTxt = btnPrivacyPolicy.GetComponentInChildren<TMP_Text>();
+                if (pTxt != null) pTxt.text = LocalizationManager.Get("settings_privacy_policy");
+            }
+            if (settingsModal != null)
+            {
+                var setCard = settingsModal.transform.Find("DialogCard");
+                if (setCard != null)
+                {
+                    var mobileTitle = setCard.Find("MobileTitle")?.GetComponent<TMP_Text>();
+                    if (mobileTitle != null)
+                    {
+                        mobileTitle.text = LocalizationManager.CurrentLanguage switch
+                        {
+                            GameLanguage.EN => "Mobile Support & Extras",
+                            GameLanguage.JA => "モバイル＆便利機能",
+                            GameLanguage.ZH => "移动端便利功能",
+                            _ => "모바일 & 편의 기능 (Mobile Support)"
+                        };
+                    }
+                    var btnProbSetTxt = setCard.Find("BtnProbSet")?.GetComponentInChildren<TMP_Text>();
+                    if (btnProbSetTxt != null) btnProbSetTxt.text = LocalizationManager.Get("pickup_btn_rates");
+                }
+            }
+
             // Update Probability Modal Content
             if (probabilityModal != null)
             {
@@ -4456,6 +5370,85 @@ namespace BlockBlast
                 {
                     var pTitle = pCard.Find("Title")?.GetComponent<TMP_Text>();
                     if (pTitle != null) pTitle.text = LocalizationManager.Get("pickup_btn_rates");
+
+                    var lawTxt = pCard.Find("LawCard/LawTxt")?.GetComponent<TMP_Text>();
+                    if (lawTxt != null) lawTxt.text = LocalizationManager.Get("prob_law_notice");
+
+                    var thName = pCard.Find("TableHeader/ThName")?.GetComponent<TMP_Text>();
+                    if (thName != null) thName.text = LocalizationManager.Get("prob_th_item");
+
+                    var thType = pCard.Find("TableHeader/ThType")?.GetComponent<TMP_Text>();
+                    if (thType != null) thType.text = LocalizationManager.Get("prob_th_type");
+
+                    var thRate = pCard.Find("TableHeader/ThRate")?.GetComponent<TMP_Text>();
+                    if (thRate != null) thRate.text = LocalizationManager.Get("prob_th_rate");
+
+                    // Row 0: Special
+                    var row0 = pCard.Find("Row_0");
+                    if (row0 != null)
+                    {
+                        var r0Name = row0.Find("Name")?.GetComponent<TMP_Text>();
+                        if (r0Name != null) r0Name.text = LocalizationManager.Get("prob_row_0_name");
+                        var r0Type = row0.Find("Type")?.GetComponent<TMP_Text>();
+                        if (r0Type != null) r0Type.text = LocalizationManager.Get("prob_row_0_type");
+                    }
+                    // Row 1 & 2: Common
+                    var row1 = pCard.Find("Row_1");
+                    if (row1 != null)
+                    {
+                        var r1Name = row1.Find("Name")?.GetComponent<TMP_Text>();
+                        if (r1Name != null) r1Name.text = LocalizationManager.Get("prob_row_common");
+                        var r1Type = row1.Find("Type")?.GetComponent<TMP_Text>();
+                        if (r1Type != null) r1Type.text = LocalizationManager.Get("prob_type_shard_1");
+                    }
+                    var row2 = pCard.Find("Row_2");
+                    if (row2 != null)
+                    {
+                        var r2Name = row2.Find("Name")?.GetComponent<TMP_Text>();
+                        if (r2Name != null) r2Name.text = LocalizationManager.Get("prob_row_common");
+                        var r2Type = row2.Find("Type")?.GetComponent<TMP_Text>();
+                        if (r2Type != null) r2Type.text = LocalizationManager.Get("prob_type_shard_5");
+                    }
+                    // Row 3 & 4: Rare
+                    var row3 = pCard.Find("Row_3");
+                    if (row3 != null)
+                    {
+                        var r3Name = row3.Find("Name")?.GetComponent<TMP_Text>();
+                        if (r3Name != null) r3Name.text = LocalizationManager.Get("prob_row_rare");
+                        var r3Type = row3.Find("Type")?.GetComponent<TMP_Text>();
+                        if (r3Type != null) r3Type.text = LocalizationManager.Get("prob_type_shard_1");
+                    }
+                    var row4 = pCard.Find("Row_4");
+                    if (row4 != null)
+                    {
+                        var r4Name = row4.Find("Name")?.GetComponent<TMP_Text>();
+                        if (r4Name != null) r4Name.text = LocalizationManager.Get("prob_row_rare");
+                        var r4Type = row4.Find("Type")?.GetComponent<TMP_Text>();
+                        if (r4Type != null) r4Type.text = LocalizationManager.Get("prob_type_shard_5");
+                    }
+
+                    // Enable autosizing on row names so they fit all languages without overlapping adjacent columns
+                    for (int r = 0; r < 5; r++)
+                    {
+                        var rObj = pCard.Find($"Row_{r}");
+                        if (rObj != null)
+                        {
+                            var rName = rObj.Find("Name")?.GetComponent<TMP_Text>();
+                            if (rName != null)
+                            {
+                                rName.enableAutoSizing = true;
+                                rName.fontSizeMin = 13f;
+                                rName.fontSizeMax = (r == 0) ? 21f : 19f;
+                            }
+                        }
+                    }
+
+                    var totalLbl = pCard.Find("RowTotal/TotalLbl")?.GetComponent<TMP_Text>();
+                    if (totalLbl != null) totalLbl.text = LocalizationManager.Get("prob_row_total");
+
+                    var notesTxt = pCard.Find("NotesCard/NotesTxt")?.GetComponent<TMP_Text>();
+                    if (notesTxt != null) notesTxt.text = LocalizationManager.Get("prob_notes_text");
+
                     var pConfirm = pCard.Find("BtnConfirm")?.GetComponentInChildren<TMP_Text>();
                     if (pConfirm != null) pConfirm.text = LocalizationManager.Get("help_confirm");
                 }

@@ -403,7 +403,7 @@ namespace BlockBlast
             { "ingame_best", new[] { "BEST", "BEST", "ベスト", "最高" } },
             { "ingame_time", new[] { "TIME", "TIME", "TIME", "时间" } },
             { "ingame_tip", new[] { "한 줄을 채우면 블록이 팡팡!", "Clear lines to blast blocks!", "ラインを揃えてブロックを弾けさせよう！", "填满整行即可消除方块！" } },
-            { "ingame_resume", new[] { "계속하기 (Resume)", "Resume", "再開 (Resume)", "继续" } },
+            { "ingame_resume", new[] { "계속하기", "Resume", "再開", "继续" } },
             { "ingame_restart", new[] { "다시 시작", "Restart", "やり直す", "重新开始" } },
             { "ingame_lobby", new[] { "로비로", "To Lobby", "ロビーへ", "返回大厅" } },
             { "ingame_gameover", new[] { "게임 오버", "Game Over", "ゲームオーバー", "游戏结束" } },
@@ -418,7 +418,128 @@ namespace BlockBlast
             { "ingame_tip_3", new[] { "시간 내에 서둘러 블록을 놓으세요!", "Place blocks before time runs out!", "時間内に素早くブロックを配置！", "时间紧迫，快放置方块！" } },
             { "ingame_tip_4", new[] { "스킵 버튼으로 블록 교체!", "Use skip button to swap blocks!", "スキップボタンでブロック交換！", "使用跳过按钮更换方块！" } },
             { "ingame_tip_5", new[] { "놓을 자리가 없으면 스킵 활용!", "No moves? Use the skip button!", "置く場所がない時はスキップを活用！", "无处放置时请使用跳过按钮！" } },
-            { "ingame_tip_6", new[] { "긴 콤보로 최고 점수 도전!", "Aim for high scores with big combos!", "ロングコンボでハイスコアに挑戦！", "挑战超长连击刷新最高记录！" } }
+            { "ingame_tip_6", new[] { "긴 콤보로 최고 점수 도전!", "Aim for high scores with big combos!", "ロングコンボでハイスコアに挑戦！", "挑战超长连击刷新最高记录！" } },
+
+            // Ingame GameOver Revive & Continuation
+            { "ingame_continue_ad", new[] { "이어하기", "Continue", "コンティニュー", "继续游戏" } },
+            { "ingame_continue_reward_badge", new[] { "+30 다이아", "+30 Dia", "+30 ダイヤ", "+30 钻石" } },
+            { "ingame_revived_toast", new[] { "이어하기 성공! +30 다이아가 지급되었습니다!", "Revived! +30 Diamonds received!", "コンティニュー成功！30ダイヤ獲得！", "复活成功！获得30颗钻石！" } },
+
+            // Shop Packages & Recommendations
+            { "shop_pack_0_title", new[] { "일일 골드", "Daily Gold", "デイリーゴールド", "每日金币" } },
+            { "shop_pack_0_reward", new[] { "+100 G\n(매일 1회 무료)", "+100 G\n(Free 1/Day)", "+100 G\n(毎日1回無料)", "+100 G\n(每日免费1次)" } },
+            { "shop_pack_0_price", new[] { "무료 받기", "Claim Free", "無料受取", "免费领取" } },
+            { "shop_pack_1_title", new[] { "일일 다이아", "Daily Diamonds", "デイリーダイヤ", "每日钻石" } },
+            { "shop_pack_1_reward", new[] { "+30 다이아\n(광고 시청)", "+30 Diamonds\n(Watch Ad)", "+30 ダイヤ\n(広告視聴)", "+30 钻石\n(观看广告)" } },
+            { "shop_pack_1_price", new[] { "광고 보고 받기", "Watch Ad", "広告を見る", "观看广告" } },
+            { "shop_pack_2_title", new[] { "웰컴 팩", "Welcome Pack", "ウェルカムパック", "迎新礼包" } },
+            { "shop_pack_2_reward", new[] { "민트 말랑이\n+1,000 G +100 다이아", "Mint Mallang\n+1,000 G +100 Dia", "ミントマラン\n+1,000 G +100 ダイヤ", "薄荷团子\n+1,000 G +100 钻石" } },
+            { "shop_pack_2_price", new[] { "무료 받기", "Claim Free", "無料受取", "免费领取" } },
+            { "shop_pack_claimed", new[] { "수령 완료", "Claimed", "受取完了", "已领取" } },
+            { "shop_daily_gold_claimed_toast", new[] { "오늘의 일일 골드를 이미 받았습니다! 내일 다시 만나요~", "Daily gold already claimed today! See you tomorrow!", "本日のデイリーゴールドは受取済です！また明日！", "今日每日金币已领取！明天再来吧~" } },
+            { "shop_daily_diamond_claimed_toast", new[] { "오늘의 일일 다이아를 이미 받았습니다! 내일 다시 만나요~", "Daily diamonds already claimed today! See you tomorrow!", "本日のデイリーダイヤは受取済です！また明日！", "今日每日钻石已领取！明天再来吧~" } },
+            { "shop_welcome_pack_claimed_toast", new[] { "웰컴 팩을 이미 수령하셨습니다!", "Welcome pack already claimed!", "ウェルカムパックは既に受取済です！", "迎新礼包已领取！" } },
+            { "shop_ad_diamond_toast", new[] { "광고 시청 완료! +30 다이아가 지급되었습니다!", "Ad watched! +30 Diamonds received!", "広告視聴完了！30ダイヤ獲得！", "广告观看完毕！获得30颗钻石！" } },
+            { "reward_claim_title", new[] { "보상 획득 완료!", "Reward Claimed!", "報酬獲得完了！", "奖励领取成功！" } },
+            { "reward_claim_btn", new[] { "확인", "Confirm", "確認", "确认" } },
+            { "shop_rec_tip", new[] { "TIP: 다이아몬드는 매일 퀘스트 및 업적 달성 시에도 무료로 획득할 수 있습니다!\n스페셜 말랑이 픽업 소환으로 판을 시원하게 쓸어담아 보세요!", "TIP: Diamonds can be earned for free through daily quests and achievements!\nSummon Special Angel to clear the board with ease!", "TIP: ダイヤはデイリークエストや実績達成で無料獲得できます！\nスペシャルマランのピックアップ召喚で盤面を一掃しましょう！", "提示: 每日任务与成就奖励均可免费获取钻石！\n参与特选精选召唤，体验全屏清盘的神奇魔法！" } },
+            { "shop_buy_price_format", new[] { "{0:N0} G 구매", "Buy ({0:N0} G)", "{0:N0} Gで購入", "{0:N0} G购买" } },
+
+            // Mobile Settings (Haptics, Privacy Policy, Rates)
+            { "settings_haptic_on", new[] { "진동: 켜짐", "Haptics: ON", "振動: ON", "振动: 开启" } },
+            { "settings_haptic_off", new[] { "진동: 꺼짐", "Haptics: OFF", "振動: OFF", "振动: 关闭" } },
+            { "settings_privacy_policy", new[] { "개인정보방침", "Privacy Policy", "プライバシーポリシー", "隐私政策" } },
+
+            // Probability Modal Full Localization & Updated Breakthrough Notice
+            { "prob_law_notice", new[] {
+                "본 게임은 대한민국 게임산업진흥에 관한 법률 제33조에 따라\n확률형 아이템의 소환 확률 정보를 100% 투명하게 공개하고 있습니다.",
+                "In compliance with transparent gaming regulations,\nall summon drop rates are 100% publicly disclosed.",
+                "透明性のある運営方針に基づき、\n召喚アイテムの排出確率情報を100%公開しています。",
+                "本游戏遵循透明运营准则，\n召唤抽卡所有概率信息均100%公开透明。"
+            } },
+            { "prob_th_item", new[] { "등장 항목 / 구성품", "Item / Reward", "登場アイテム / 構成品", "获得内容 / 道具" } },
+            { "prob_th_type", new[] { "구분", "Type", "区分", "类别" } },
+            { "prob_th_rate", new[] { "소환 확률", "Drop Rate", "召喚確率", "召唤概率" } },
+            { "prob_row_0_name", new[] { "★ [올 클리어 엔젤] 스페셜 말랑이", "★ [All Clear Angel] Special Angel", "★ [オールクリア] スペシャルマラン", "★ [全清天使] 特选团子" } },
+            { "prob_row_0_type", new[] { "스페셜 완제", "Full Mascot", "スペシャル完品", "特选整卡" } },
+            { "prob_row_common", new[] { "일반 말랑이 4종 (핑크/민트/골드/퍼플)", "Common 4 Types (Pink/Mint/Gold/Purple)", "ノーマル4種 (ピンク/ミント/金/パープル)", "普通伙伴4种 (粉萌/薄荷/黄金/紫晶)" } },
+            { "prob_row_rare", new[] { "희귀 말랑이 4종 (블루/베리/레몬/클라우드)", "Rare 4 Types (Blue/Berry/Lemon/Cloud)", "レア4種 (ブルー/ベリー/レモン/雲)", "稀有伙伴4种 (碧蓝/莓果/柠檬/云朵)" } },
+            { "prob_type_shard_1", new[] { "조각 1개 (80%)", "1 Shard (80%)", "欠片1個 (80%)", "碎片1个 (80%)" } },
+            { "prob_type_shard_5", new[] { "조각 5개 (20%)", "5 Shards (20%)", "欠片5個 (20%)", "碎片5个 (20%)" } },
+            { "prob_row_total", new[] { "합계 (Total Probability)", "Total Probability", "合計確率 (Total)", "总计概率 (Total)" } },
+            { "prob_notes_text", new[] {
+                "<b>[안내 사항]</b>\n• 스페셜 말랑이 소환 확률이 <b>1.0%</b>로 대폭 증가 적용되었습니다.\n• 스페셜 말랑이를 중복 획득 시 <b>스페셜 조각 60개</b>로 지급되어 즉시 1회 돌파가 가능합니다.\n• 획득한 일반/희귀 조각은 <b>말랑이 성급 돌파(육성) 전용 재료</b>로 사용됩니다.\n• 소환 확률은 독립 시행으로 적용되며, 구매 전 확률 정보를 상시 확인할 수 있습니다.",
+                "<b>[Important Notice]</b>\n• Special Angel drop rate is significantly boosted to <b>1.0%</b>.\n• Duplicate Special Angels convert to <b>60 Special Shards</b> for instant breakthrough.\n• Acquired shards are strictly used as <b>Star Breakthrough Materials</b>.\n• Drop rates apply independently per summon and can be checked anytime.",
+                "<b>[ご案内]</b>\n• スペシャルマランの排出確率が<b>1.0%</b>に大幅アップ中！\n• スペシャル重複獲得時は<b>スペシャル欠片60個</b>支給ですぐに突破可能。\n• 獲得した欠片は<b>マランの限界突破（育成）専用素材</b>として使用されます。\n• 召喚確率は独立試行で適用され、常時ご確認いただけます。",
+                "<b>[温馨提示]</b>\n• 特选天使团子召唤概率大幅提升至 <b>1.0%</b>！\n• 重复获得特选角色将直接转化为 <b>60个特选碎片</b>，可立即进行1次突破。\n• 获得的伙伴碎片专用于<b>伙伴星级突破与进阶养成</b>。\n• 召唤概率均为独立计算，购买前可随时查看。"
+            } },
+
+            // Pickup Hint & Mascot Detail Modal Localization
+            { "pickup_hint_bottom", new[] {
+                "★ [1.0% 확률 UP!] 픽업 소환으로 스페셜 말랑이 & 일반/희귀 조각을 획득하세요! ★",
+                "★ [1.0% Rate UP!] Get Special Mascot & Shards through Pickup Summon! ★",
+                "★ [1.0% 確率UP!] ピックアップ召喚でスペシャルマラン＆育成欠片を獲得！ ★",
+                "★ [1.0% 概率UP!] 通过限定招募获取特别软萌与养成碎片！ ★"
+            } },
+            { "mascot_shards_owned", new[] { "보유 조각: {0}개", "Shards: {0}", "所持欠片: {0}個", "持有碎片: {0}个" } },
+            { "mascot_section_concept", new[] { "[캐릭터 컨셉]", "[Character Concept]", "[キャラクターコンセプト]", "[角色设定]" } },
+            { "mascot_section_story", new[] { "[말랑이 스토리]", "[Mallang Lore]", "[マランストーリー]", "[软萌背景故事]" } },
+            { "mascot_section_skill", new[] { "[고유 스킬]", "[Unique Skill]", "[固有スキル]", "[专属技能]" } },
+            { "mascot_detail_lore_header", new[] { "★ 말랑이 정보 & 스토리", "★ Mascot Info & Lore", "★ マラン情報 & ストーリー", "★ 伙伴情报与背景故事" } },
+            { "mascot_shards_breakthrough_fmt", new[] {
+                "{0}: <color=#2E86DE><b>{1}</b></color> / {2}개 (돌파 재료)",
+                "{0}: <color=#2E86DE><b>{1}</b></color> / {2} (Breakthrough Material)",
+                "{0}: <color=#2E86DE><b>{1}</b></color> / {2}個 (限界突破素材)",
+                "{0}: <color=#2E86DE><b>{1}</b></color> / {2}个 (突破升星材料)"
+            } },
+            { "mascot_status_locked", new[] { "미보유 (구매 필요)", "Locked (Purchase Req.)", "未所持 (要購入)", "未拥有 (需购买)" } },
+            { "mascot_shards_progress_fmt", new[] { "{0}\n조각 {1}/{2}", "{0}\nShards {1}/{2}", "{0}\n欠片 {1}/{2}", "{0}\n碎片 {1}/{2}" } },
+
+            // Gacha Presentation Interactive Texts
+            { "gacha_touch_to_open", new[] { "가챠볼을 터치하여 열어보세요!", "Tap the capsule to open!", "カプセルをタップして開けよう！", "点击扭蛋开启！" } },
+            { "gacha_touch_to_open_fmt", new[] { "가챠볼을 터치하여 열어보세요! ({0}/{1})", "Tap the capsule to open! ({0}/{1})", "カプセルをタップして開けよう！ ({0}/{1})", "点击扭蛋开启！ ({0}/{1})" } },
+            { "gacha_touch_to_continue", new[] { "화면을 터치하여 계속하기", "Tap screen to continue", "タップして次へ進む", "点击屏幕继续" } },
+            { "gacha_touch_for_next_fmt", new[] { "화면을 터치하여 다음으로 ({0}/{1})", "Tap screen for next ({0}/{1})", "タップして次へ ({0}/{1})", "点击屏幕查看下一个 ({0}/{1})" } },
+            { "gacha_special_descended", new[] { "★ 스페셜 강림! ★", "★ SPECIAL MASCOT! ★", "★ スペシャル降臨！ ★", "★ 特选天使降临！ ★" } },
+            { "gacha_shards_gained_fmt", new[] { "+{0} 조각 획득!", "+{0} Shards Acquired!", "+{0}個の欠片獲得！", "+{0} 碎片获得！" } },
+            { "gacha_climax_title", new[] {
+                "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>스페셜 말랑이 강림!</color></size>",
+                "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>Special Angel Descended!</color></size>",
+                "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>スペシャルマラン降臨！</color></size>",
+                "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>特选天使团子降临！</color></size>"
+            } },
+
+            // Pity System & Shop Ribbon Localizations
+            { "pickup_top_ribbon", new[] {
+                "★ [시즌 1] 천상의 천사 말랑이 스페셜 픽업 소환 ★",
+                "★ [Season 1] Celestial Angel Mascot Special Pickup ★",
+                "★ [シーズン1] 天使マラン スペシャルピックアップ召喚 ★",
+                "★ [第1赛季] 天使团子 特别限定招募 ★"
+            } },
+            { "rec_top_ribbon", new[] {
+                "★ [데일리 혜택] 매일 무료 보상 & 스페셜 스타터 팩! ★",
+                "★ [Daily Benefit] Free Daily Rewards & Special Starter Pack! ★",
+                "★ [デイリー特典] 毎日無料報酬＆特別スターターパック！ ★",
+                "★ [每日福利] 免费每日奖励与特惠新手礼包！ ★"
+            } },
+            { "pickup_pity_title", new[] {
+                "★ 60회 확정 소환 천장 게이지 ★",
+                "★ 60-Pull Guaranteed Pity Gauge ★",
+                "★ 60連確定天井ゲージ ★",
+                "★ 60抽保底召唤量表 ★"
+            } },
+            { "pickup_pity_progress_fmt", new[] {
+                "진행도: {0}/60 (다음 보상까지 {1}회)",
+                "Progress: {0}/60 ({1} pulls to next reward)",
+                "進行度: {0}/60 (次回報酬まであと{1}回)",
+                "当前进度: {0}/60 (距离下一奖励还差{1}抽)"
+            } },
+            { "pickup_pity_hint_bottom", new[] {
+                "★ 60회 소환 시 [천상의 천사 말랑이] 100% 확정! 10회 소환마다 5,000 골드 보너스! ★",
+                "★ Guaranteed [Celestial Angel] at 60 pulls! +5,000 Gold bonus per 10 pulls! ★",
+                "★ 60連で[天使マラン]100%確定！10連ごとに5,000ゴールドボーナス！ ★",
+                "★ 60抽必得[特选天使团子]！每进行10抽额外赠送5,000金币！ ★"
+            } }
         };
 
         public static string Get(string key, string fallback = "")

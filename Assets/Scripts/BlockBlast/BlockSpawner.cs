@@ -125,6 +125,11 @@ namespace BlockBlast
             SpawnNewHand();
         }
 
+        public void RerollHand()
+        {
+            SpawnNewHand();
+        }
+
         private IEnumerator CheckGameOverDeferred()
         {
             // Wait for line clear animations and board updates to settle

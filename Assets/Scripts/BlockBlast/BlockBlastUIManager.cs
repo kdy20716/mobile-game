@@ -58,6 +58,9 @@ namespace BlockBlast
         [SerializeField] private TMP_Text modalGoldRewardText;
         [SerializeField] private Button btnRestart;
         [SerializeField] private Button btnGameOverLobby;
+        [SerializeField] private Button btnReviveAd;
+        [SerializeField] private TMP_Text reviveAdText;
+        [SerializeField] private TMP_Text reviveAdRewardText;
 
         [Header("Pause Modal")]
         [SerializeField] private GameObject pauseModal;
@@ -283,6 +286,11 @@ namespace BlockBlast
                     var txt = btnGameOverLobby.GetComponentInChildren<TMP_Text>();
                     if (txt != null) txt.text = LocalizationManager.Get("ingame_lobby");
                 }
+                if (btnReviveAd != null)
+                {
+                    if (reviveAdText != null) reviveAdText.text = LocalizationManager.Get("ingame_continue_ad");
+                    if (reviveAdRewardText != null) reviveAdRewardText.text = LocalizationManager.Get("ingame_continue_reward_badge");
+                }
             }
             if (btnPause != null)
             {
@@ -424,6 +432,15 @@ namespace BlockBlast
                     {
                         LobbyManager.Instance.ReturnToLobby();
                     }
+                });
+            }
+
+            if (btnReviveAd != null)
+            {
+                btnReviveAd.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ExecuteReviveAd();
                 });
             }
 
@@ -1036,6 +1053,7 @@ namespace BlockBlast
             if (gameOverModal != null)
             {
                 gameOverModal.SetActive(true);
+                EnsureReviveAdButton();
                 UpdatePauseModalTexts();
                 if (modalFinalScoreText != null) modalFinalScoreText.text = _score.ToString("N0");
                 if (modalBestScoreText != null)
@@ -1047,7 +1065,239 @@ namespace BlockBlast
                 {
                     modalGoldRewardText.text = $"+{earnedGold:N0} G";
                 }
+                if (btnReviveAd != null)
+                {
+                    btnReviveAd.interactable = true;
+                }
             }
+        }
+
+        private void EnsureReviveAdButton()
+        {
+            if (gameOverModal == null) return;
+
+            Transform dialog = gameOverModal.transform.Find("Dialog");
+            if (dialog == null) return;
+
+            Transform existing = dialog.Find("BtnReviveAd");
+            if (existing != null)
+            {
+                if (btnReviveAd == null)
+                {
+                    btnReviveAd = existing.GetComponent<Button>();
+                    if (btnReviveAd != null)
+                    {
+                        btnReviveAd.onClick.RemoveAllListeners();
+                        btnReviveAd.onClick.AddListener(() =>
+                        {
+                            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                            ExecuteReviveAd();
+                        });
+                    }
+                }
+                if (reviveAdText == null)
+                {
+                    var t = existing.Find("ReviveText");
+                    if (t != null) reviveAdText = t.GetComponent<TMP_Text>();
+                }
+                if (reviveAdRewardText == null)
+                {
+                    var rt = existing.Find("RewardPill/RewardTxt");
+                    if (rt != null) reviveAdRewardText = rt.GetComponent<TMP_Text>();
+                }
+                return;
+            }
+
+            // Fallback: Dynamically generate BtnReviveAd if not baked into scene asset
+            if (btnRestart != null)
+            {
+                GameObject clone = Instantiate(btnRestart.gameObject, dialog);
+                clone.name = "BtnReviveAd";
+                RectTransform rt = clone.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchoredPosition = new Vector2(0, -155);
+                    rt.sizeDelta = new Vector2(530, 92);
+                }
+
+                // Adjust restart and lobby buttons down to maintain balanced spacing
+                RectTransform restartRt = btnRestart.GetComponent<RectTransform>();
+                if (restartRt != null) restartRt.anchoredPosition = new Vector2(0, -265);
+
+                if (btnGameOverLobby != null)
+                {
+                    RectTransform lobbyRt = btnGameOverLobby.GetComponent<RectTransform>();
+                    if (lobbyRt != null) lobbyRt.anchoredPosition = new Vector2(0, -368);
+                }
+
+                Image img = clone.GetComponent<Image>();
+                if (img != null)
+                {
+                    img.color = new Color(0.18f, 0.82f, 0.65f, 1f);
+                }
+
+                btnReviveAd = clone.GetComponent<Button>();
+                btnReviveAd.onClick.RemoveAllListeners();
+                btnReviveAd.onClick.AddListener(() =>
+                {
+                    if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
+                    ExecuteReviveAd();
+                });
+
+                // Main Center Text: "이어하기"
+                TMP_Text mainTxt = clone.GetComponentInChildren<TMP_Text>();
+                if (mainTxt != null)
+                {
+                    mainTxt.gameObject.name = "ReviveText";
+                    mainTxt.text = LocalizationManager.Get("ingame_continue_ad");
+                    mainTxt.fontSize = 32;
+                    mainTxt.color = Color.white;
+                    reviveAdText = mainTxt;
+                    RectTransform mrt = mainTxt.GetComponent<RectTransform>();
+                    if (mrt != null) mrt.anchoredPosition = new Vector2(10, 0);
+                }
+
+                // Left Ad Badge: "[🎬 AD]"
+                GameObject adBadge = new GameObject("AdBadge", typeof(RectTransform), typeof(Image));
+                adBadge.transform.SetParent(clone.transform, false);
+                RectTransform adRt = adBadge.GetComponent<RectTransform>();
+                adRt.anchorMin = new Vector2(0, 0.5f);
+                adRt.anchorMax = new Vector2(0, 0.5f);
+                adRt.anchoredPosition = new Vector2(62, 0);
+                adRt.sizeDelta = new Vector2(85, 46);
+                Image adImg = adBadge.GetComponent<Image>();
+                adImg.color = new Color(0.10f, 0.35f, 0.28f, 0.85f);
+                if (img != null && img.sprite != null) { adImg.sprite = img.sprite; adImg.type = Image.Type.Sliced; }
+
+                GameObject adTxtObj = new GameObject("BadgeTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
+                adTxtObj.transform.SetParent(adBadge.transform, false);
+                TextMeshProUGUI adTmp = adTxtObj.GetComponent<TextMeshProUGUI>();
+                adTmp.text = "AD";
+                adTmp.fontSize = 22;
+                adTmp.fontStyle = FontStyles.Bold;
+                adTmp.alignment = TextAlignmentOptions.Center;
+                adTmp.color = Color.white;
+                if (mainTxt != null) adTmp.font = mainTxt.font;
+                RectTransform adTxtRt = adTxtObj.GetComponent<RectTransform>();
+                adTxtRt.anchorMin = Vector2.zero;
+                adTxtRt.anchorMax = Vector2.one;
+                adTxtRt.sizeDelta = Vector2.zero;
+                adTxtRt.anchoredPosition = Vector2.zero;
+
+                // Right Reward Pill: "+30 다이아"
+                GameObject rewPill = new GameObject("RewardPill", typeof(RectTransform), typeof(Image));
+                rewPill.transform.SetParent(clone.transform, false);
+                RectTransform rewRt = rewPill.GetComponent<RectTransform>();
+                rewRt.anchorMin = new Vector2(1f, 0.5f);
+                rewRt.anchorMax = new Vector2(1f, 0.5f);
+                rewRt.anchoredPosition = new Vector2(-75, 0);
+                rewRt.sizeDelta = new Vector2(120, 46);
+                Image rewImg = rewPill.GetComponent<Image>();
+                rewImg.color = new Color(1f, 0.92f, 0.35f, 0.95f);
+                if (img != null && img.sprite != null) { rewImg.sprite = img.sprite; rewImg.type = Image.Type.Sliced; }
+
+                GameObject rewTxtObj = new GameObject("RewardTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
+                rewTxtObj.transform.SetParent(rewPill.transform, false);
+                TextMeshProUGUI rewTmp = rewTxtObj.GetComponent<TextMeshProUGUI>();
+                rewTmp.text = LocalizationManager.Get("ingame_continue_reward_badge");
+                rewTmp.fontSize = 22;
+                rewTmp.fontStyle = FontStyles.Bold;
+                rewTmp.alignment = TextAlignmentOptions.Center;
+                rewTmp.color = new Color(0.45f, 0.25f, 0.05f);
+                if (mainTxt != null) rewTmp.font = mainTxt.font;
+                RectTransform rewTxtRt = rewTxtObj.GetComponent<RectTransform>();
+                rewTxtRt.anchorMin = Vector2.zero;
+                rewTxtRt.anchorMax = Vector2.one;
+                rewTxtRt.sizeDelta = Vector2.zero;
+                rewTxtRt.anchoredPosition = Vector2.zero;
+                reviveAdRewardText = rewTmp;
+            }
+        }
+
+        public void ExecuteReviveAd()
+        {
+            if (btnReviveAd != null) btnReviveAd.interactable = false;
+
+            if (AdManager.Instance != null)
+            {
+                AdManager.Instance.ShowRewardedAd(
+                    onRewardEarned: () =>
+                    {
+                        // Grant 30 diamonds as requested
+                        if (LobbyManager.Instance != null)
+                        {
+                            LobbyManager.Instance.AddDiamonds(30);
+                        }
+                        else
+                        {
+                            int cur = PlayerPrefs.GetInt("Mallang_Diamonds", 0);
+                            PlayerPrefs.SetInt("Mallang_Diamonds", cur + 30);
+                            PlayerPrefs.Save();
+                        }
+
+                        ReviveGame();
+                    },
+                    onAdClosed: () =>
+                    {
+                        if (btnReviveAd != null) btnReviveAd.interactable = true;
+                    },
+                    onAdFailed: (err) =>
+                    {
+                        Debug.LogWarning($"[BlockBlastUIManager] Ad failed: {err}");
+                        if (btnReviveAd != null) btnReviveAd.interactable = true;
+                    }
+                );
+            }
+            else
+            {
+                // Fallback if AdManager isn't running
+                if (LobbyManager.Instance != null)
+                {
+                    LobbyManager.Instance.AddDiamonds(30);
+                }
+                else
+                {
+                    int cur = PlayerPrefs.GetInt("Mallang_Diamonds", 0);
+                    PlayerPrefs.SetInt("Mallang_Diamonds", cur + 30);
+                    PlayerPrefs.Save();
+                }
+                ReviveGame();
+            }
+        }
+
+        public void ReviveGame()
+        {
+            if (gameOverModal != null) gameOverModal.SetActive(false);
+            Time.timeScale = 1f;
+
+            // 1. Reset timer and activate
+            ResetTurnTimer();
+
+            // 2. Clear cluttered board with fireworks explosion
+            if (BlockGridManager.Instance != null)
+            {
+                BlockGridManager.Instance.ClearAllBlocksWithExplosion();
+            }
+
+            // 3. Reroll hand for fresh moves
+            if (BlockSpawner.Instance != null)
+            {
+                BlockSpawner.Instance.RerollHand();
+            }
+
+            // 4. Visual celebration
+            if (FairyScreenTransition.Instance != null)
+            {
+                FairyScreenTransition.Instance.EmitCornerSparkles();
+            }
+            if (BlockAudioManager.Instance != null)
+            {
+                BlockAudioManager.Instance.PlayLevelUp();
+            }
+
+            // 5. Update UI
+            UpdateScoreUI();
+            UpdateSkipUI();
         }
 
         public void RestartGame()
@@ -1411,7 +1661,7 @@ namespace BlockBlast
             }
         }
 
-        public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null, Button gameOverLobby = null, TMP_Text goldRewardText = null)
+        public void SetupReferences(TMP_Text score, TMP_Text best, Image tFill, TMP_Text tText, Image vignette, Button skip, TMP_Text sBadge, Button rotate, TMP_Text combo, RectTransform bContainer, GameObject modal, TMP_Text finalS, TMP_Text mBestS, Button restart, GameObject inGameR = null, Button gameOverLobby = null, TMP_Text goldRewardText = null, Button reviveBtn = null, TMP_Text reviveTxt = null, TMP_Text reviveRewardTxt = null)
         {
             scoreText = score;
             bestScoreText = best;
@@ -1430,6 +1680,9 @@ namespace BlockBlast
             btnRestart = restart;
             inGameRoot = inGameR;
             btnGameOverLobby = gameOverLobby;
+            btnReviveAd = reviveBtn;
+            reviveAdText = reviveTxt;
+            reviveAdRewardText = reviveRewardTxt;
         }
 
         public void SetupGuideTip(TMP_Text tip, CanvasGroup group = null)

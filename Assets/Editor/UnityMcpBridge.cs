@@ -14,9 +14,8 @@ namespace MobileRacing.Editor
     {
         private static HttpListener _listener;
         private static Thread _listenerThread;
-        private const int Port = 8089;
+        public static int ActivePort { get; private set; } = 8089;
         private static bool _isRunning = false;
-
         private static volatile bool _isPlaying = false;
         private static volatile bool _isCompiling = false;
         private static volatile string _lastBuildStatus = "idle";
@@ -24,8 +23,9 @@ namespace MobileRacing.Editor
         static UnityMcpBridge()
         {
             if (UnityEditorInternal.InternalEditorUtility.inBatchMode || Environment.CommandLine.Contains("-batchmode")) return;
-            StartServer();
+            AssemblyReloadEvents.beforeAssemblyReload += StopServer;
             EditorApplication.quitting += StopServer;
+            StartServer();
             EditorApplication.update += OnEditorUpdate;
         }
 
@@ -40,23 +40,36 @@ namespace MobileRacing.Editor
         {
             StopServer();
 
-            try
+            int[] candidatePorts = new int[] { 8089, 8090, 8091, 8092, 8093 };
+            foreach (int p in candidatePorts)
             {
-                _listener = new HttpListener();
-                _listener.Prefixes.Add($"http://localhost:{Port}/");
-                _listener.Start();
-                _isRunning = true;
+                try
+                {
+                    _listener = new HttpListener();
+                    _listener.Prefixes.Add($"http://localhost:{p}/");
+                    _listener.Prefixes.Add($"http://127.0.0.1:{p}/");
+                    _listener.Start();
+                    _isRunning = true;
+                    ActivePort = p;
 
-                _listenerThread = new Thread(ListenLoop);
-                _listenerThread.IsBackground = true;
-                _listenerThread.Start();
+                    _listenerThread = new Thread(ListenLoop);
+                    _listenerThread.IsBackground = true;
+                    _listenerThread.Start();
 
-                Debug.Log($"<color=cyan><b>[Unity MCP Bridge]</b> 유니티 MCP 서버가 포트 {Port}에서 실행 중입니다.</color>");
+                    try { File.WriteAllText("Library/UnityMcpBridgePort.txt", p.ToString()); } catch { }
+                    Debug.Log($"<color=cyan><b>[Unity MCP Bridge]</b> 유니티 MCP 서버가 포트 {p}에서 실행 중입니다.</color>");
+                    return;
+                }
+                catch (Exception)
+                {
+                    if (_listener != null)
+                    {
+                        try { _listener.Close(); } catch { }
+                        _listener = null;
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Unity MCP Bridge] 시작 중 오류 (권한 또는 포트 점유): {ex.Message}");
-            }
+            Debug.LogWarning("[Unity MCP Bridge] 후보 포트를 모두 바인딩할 수 없습니다.");
         }
 
         [MenuItem("Racing Game/MCP Bridge/Stop MCP Server")]
