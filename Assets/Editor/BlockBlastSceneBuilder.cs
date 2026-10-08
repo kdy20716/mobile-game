@@ -58,7 +58,7 @@ namespace BlockBlast.Editor
             Sprite btnGoldSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonGoldSprite(true);
             Sprite btnCreamSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonCreamSprite(true);
             Sprite btnInactiveSprite = CuteBlockTextureGenerator.GetOrCreateJellyButtonInactiveSprite();
-            Sprite btnPauseCircleSprite = CuteBlockTextureGenerator.GetOrCreate3DRoundJellyButtonSprite("Jelly_Button_Circle_Pink", CuteBlockTextureGenerator.PastelPink);
+            Sprite btnPauseCircleSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/BlockBlastCute/UI_Btn_Circle_Pause.png") ?? CuteBlockTextureGenerator.GetOrCreate3DRoundJellyButtonSprite("Jelly_Button_Circle_Pink", CuteBlockTextureGenerator.PastelPink);
 
             Sprite circleFrameSprite = CuteBlockTextureGenerator.GetOrCreateCircleFrameSprite();
             Sprite tabPillSprite = CuteBlockTextureGenerator.GetOrCreateTabPillSprite();
@@ -307,28 +307,32 @@ namespace BlockBlast.Editor
             Sprite pauseBarsSprite = CuteBlockTextureGenerator.GetOrCreatePauseBarsSprite();
             GameObject pauseBtnObj = CreateButton(headerObj.transform, "BtnPause", "", cuteFont, new Vector2(0, 0.5f), new Vector2(58, 0), new Vector2(104, 104), btnPauseCircleSprite, 20);
             
-            // Icon: Pause Bars (||)
+            // Icon: Pause Bars (||) - hidden if 3D button already has glossy pause bars embossed
             GameObject pIcon = CreateImage(pauseBtnObj.transform, "PauseBarsIcon", pauseBarsSprite, new Vector2(0.5f, 0.5f), new Vector2(0, 12), new Vector2(36, 36));
             pIcon.GetComponent<Image>().raycastTarget = false;
+            if (btnPauseCircleSprite != null && btnPauseCircleSprite.name.Contains("Pause"))
+            {
+                pIcon.SetActive(false);
+            }
             
             // Label: "일시정지" (Clean Korean text, 100% supported by Jua SDF font, perfectly fitted)
-            GameObject pLabel = CreateText(pauseBtnObj.transform, "PauseLabel", "일시정지", 17, TextAlignmentOptions.Center, cuteFont, Color.white, true, new Color(0.78f, 0.28f, 0.44f, 0.85f));
-            SetRect(pLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -22), new Vector2(96, 26));
+            GameObject pLabel = CreateText(pauseBtnObj.transform, "PauseLabel", "일시정지", 16, TextAlignmentOptions.Center, cuteFont, Color.white, true, new Color(0.78f, 0.28f, 0.44f, 0.85f));
+            SetRect(pLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -28), new Vector2(96, 26));
             pLabel.GetComponent<TMP_Text>().raycastTarget = false;
 
             // Current Score (Left-Center)
             GameObject scoreBox = new GameObject("ScoreBox", typeof(RectTransform), typeof(Image));
             scoreBox.transform.SetParent(headerObj.transform, false);
-            SetRect(scoreBox, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(195, 0), new Vector2(160, 110));
+            SetRect(scoreBox, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(195, 0), new Vector2(160, 114));
             Image sBoxImg = scoreBox.GetComponent<Image>();
             sBoxImg.sprite = scoreBoxSprite;
             sBoxImg.type = Image.Type.Sliced;
 
-            GameObject scoreLabel = CreateText(scoreBox.transform, "Label", "SCORE", 20, TextAlignmentOptions.Center, cuteFont, new Color(0.32f, 0.18f, 0.52f));
-            SetRect(scoreLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(140, 26));
+            GameObject scoreLabel = CreateText(scoreBox.transform, "Label", "SCORE", 19, TextAlignmentOptions.Center, cuteFont, new Color(0.32f, 0.18f, 0.52f));
+            SetRect(scoreLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 20), new Vector2(140, 26));
 
-            GameObject scoreVal = CreateText(scoreBox.transform, "Value", "0", 44, TextAlignmentOptions.Center, cuteFont, new Color(0.92f, 0.40f, 0.02f)); // Warm Golden Honey
-            SetRect(scoreVal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -16), new Vector2(140, 48));
+            GameObject scoreVal = CreateText(scoreBox.transform, "Value", "0", 42, TextAlignmentOptions.Center, cuteFont, new Color(0.92f, 0.40f, 0.02f)); // Warm Golden Honey
+            SetRect(scoreVal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(140, 48));
 
             // Center Title (3D Jelly Mallang Logo Banner) - Doubled 2x size as requested!
             GameObject titleBox = new GameObject("TitleBox", typeof(RectTransform), typeof(Image));
@@ -343,16 +347,16 @@ namespace BlockBlast.Editor
             // Best Score (Right)
             GameObject bestBox = new GameObject("BestBox", typeof(RectTransform), typeof(Image));
             bestBox.transform.SetParent(headerObj.transform, false);
-            SetRect(bestBox, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-95, 0), new Vector2(160, 110));
+            SetRect(bestBox, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-95, 0), new Vector2(160, 114));
             Image bBoxImg = bestBox.GetComponent<Image>();
             bBoxImg.sprite = bestBoxSprite;
             bBoxImg.type = Image.Type.Sliced;
 
-            GameObject bestLabel = CreateText(bestBox.transform, "Label", "BEST", 20, TextAlignmentOptions.Center, cuteFont, new Color(0.55f, 0.32f, 0.05f));
-            SetRect(bestLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(140, 26));
+            GameObject bestLabel = CreateText(bestBox.transform, "Label", "BEST", 19, TextAlignmentOptions.Center, cuteFont, new Color(0.55f, 0.32f, 0.05f));
+            SetRect(bestLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 16), new Vector2(140, 26));
 
-            GameObject bestVal = CreateText(bestBox.transform, "Value", "0", 44, TextAlignmentOptions.Center, cuteFont, new Color(0.88f, 0.30f, 0.02f));
-            SetRect(bestVal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -16), new Vector2(140, 48));
+            GameObject bestVal = CreateText(bestBox.transform, "Value", "0", 42, TextAlignmentOptions.Center, cuteFont, new Color(0.88f, 0.30f, 0.02f));
+            SetRect(bestVal, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -22), new Vector2(140, 48));
 
             // --- B. Skills Bar (Below Header - Shifted Down) ---
             GameObject skillsBar = new GameObject("SkillsBar", typeof(RectTransform), typeof(Image));
@@ -2194,7 +2198,7 @@ namespace BlockBlast.Editor
             Button dDarkBgBtn = dDarkBg.AddComponent<Button>();
             dDarkBgBtn.transition = Selectable.Transition.None;
 
-            GameObject dCard = CreateImage(detailModalObj.transform, "DialogCard", luxuryShopCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(880, 1160));
+            GameObject dCard = CreateImage(detailModalObj.transform, "DialogCard", luxuryShopCardSprite, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(900, 1260));
             dCard.GetComponent<Image>().type = Image.Type.Sliced;
 
             GameObject dCloseBtn = CreateButton(dCard.transform, "BtnClose", "", cuteFont, new Vector2(1, 1), new Vector2(-46, -46), new Vector2(62, 62), luxuryCloseBtnSprite, 30);
@@ -2207,7 +2211,7 @@ namespace BlockBlast.Editor
             SetRect(dTitle, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -48), new Vector2(600, 48));
 
             // Top Showcase Card (Avatar, Name, Title, Stars, Rarity)
-            GameObject dShowcase = CreateImage(dCard.transform, "ShowcaseBox", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, -200), new Vector2(800, 220));
+            GameObject dShowcase = CreateImage(dCard.transform, "ShowcaseBox", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, -195), new Vector2(820, 220));
             dShowcase.GetComponent<Image>().type = Image.Type.Sliced;
             dShowcase.GetComponent<Image>().color = Color.white;
 
@@ -2236,7 +2240,7 @@ namespace BlockBlast.Editor
             SetRect(dStarsObj, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(220, -56), new Vector2(500, 32), new Vector2(0, 0.5f));
 
             // Growth Progress Card (Level Bar & Shard Count)
-            GameObject dGrowthBox = CreateImage(dCard.transform, "GrowthBox", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, -425), new Vector2(800, 180));
+            GameObject dGrowthBox = CreateImage(dCard.transform, "GrowthBox", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, -420), new Vector2(820, 180));
             dGrowthBox.GetComponent<Image>().type = Image.Type.Sliced;
             dGrowthBox.GetComponent<Image>().color = Color.white;
 
@@ -2246,7 +2250,7 @@ namespace BlockBlast.Editor
             SetRect(dLvlTxtObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -32), new Vector2(400, 32), new Vector2(0, 0.5f));
 
             // Level Bar Track & Fill
-            GameObject dLvlTrack = CreateImage(dGrowthBox.transform, "LvlTrack", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -78), new Vector2(720, 32));
+            GameObject dLvlTrack = CreateImage(dGrowthBox.transform, "LvlTrack", tabPillSprite, new Vector2(0.5f, 1), new Vector2(0, -78), new Vector2(740, 32));
             dLvlTrack.GetComponent<Image>().type = Image.Type.Sliced;
             dLvlTrack.GetComponent<Image>().color = new Color(0.92f, 0.88f, 0.98f, 1f);
 
@@ -2258,19 +2262,22 @@ namespace BlockBlast.Editor
 
             // Shards Text
             GameObject dShardsTxtObj = CreateText(dGrowthBox.transform, "ShardsTxt", $"{LocalizationManager.Get("mascot_detail_shards")}: 0 / 30개", 22, TextAlignmentOptions.Left, cuteFont, new Color(0.30f, 0.45f, 0.85f));
-            SetRect(dShardsTxtObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -132), new Vector2(720, 32), new Vector2(0, 0.5f));
+            SetRect(dShardsTxtObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -132), new Vector2(740, 32), new Vector2(0, 0.5f));
 
-            // Ability Lore Card
-            GameObject dAbilityBox = CreateImage(dCard.transform, "AbilityBox", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, -680), new Vector2(800, 270));
+            // Ability & Lore Card (컨셉, 스토리, 고유능력 통합 카드)
+            GameObject dAbilityBox = CreateImage(dCard.transform, "AbilityBox", luxuryItemCardSprite, new Vector2(0.5f, 1), new Vector2(0, -720), new Vector2(820, 390));
             dAbilityBox.GetComponent<Image>().type = Image.Type.Sliced;
             dAbilityBox.GetComponent<Image>().color = Color.white;
 
-            GameObject dAbilHeader = CreateText(dAbilityBox.transform, "AbilHeader", LocalizationManager.Get("mascot_detail_ability_header"), 24, TextAlignmentOptions.Left, cuteFont, new Color(0.85f, 0.45f, 0.15f));
+            GameObject dAbilHeader = CreateText(dAbilityBox.transform, "AbilHeader", "★ 말랑이 정보 & 스토리 (Concept & Lore)", 24, TextAlignmentOptions.Left, cuteFont, new Color(0.85f, 0.45f, 0.15f));
             dAbilHeader.GetComponent<TMP_Text>().fontStyle = FontStyles.Bold;
-            SetRect(dAbilHeader, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -32), new Vector2(720, 32), new Vector2(0, 0.5f));
+            SetRect(dAbilHeader, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -32), new Vector2(740, 32), new Vector2(0, 0.5f));
 
-            GameObject dAbilDescObj = CreateText(dAbilityBox.transform, "AbilDesc", LobbyManager.MascotAbilities[0], 21, TextAlignmentOptions.Left, cuteFont, new Color(0.28f, 0.18f, 0.38f));
-            SetRect(dAbilDescObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -80), new Vector2(720, 160), new Vector2(0, 1f));
+            GameObject dAbilDescObj = CreateText(dAbilityBox.transform, "AbilDesc", LobbyManager.MascotAbilities[0], 20, TextAlignmentOptions.Left, cuteFont, new Color(0.28f, 0.18f, 0.38f));
+            TMP_Text tmpDesc = dAbilDescObj.GetComponent<TMP_Text>();
+            tmpDesc.enableWordWrapping = true;
+            tmpDesc.lineSpacing = 1.25f;
+            SetRect(dAbilDescObj, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -74), new Vector2(740, 290), new Vector2(0, 1f));
 
             // 3 Bottom Action Buttons
             // [강화 / Level Up]

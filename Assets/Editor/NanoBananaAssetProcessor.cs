@@ -78,6 +78,248 @@ namespace BlockBlast.Editor
             Debug.Log("<color=#FF7AA2><b>[NanoBanana]</b> All assets processed and reimported successfully!</color>");
         }
 
+        [MenuItem("Block Blast/Process 8 New UI Assets")]
+        public static void Process8NewUIAssets()
+        {
+            string brainDir = @"C:\Users\VR26\.gemini\antigravity\brain\00b16722-8bad-4c41-b4f3-b93dc7eb50e4";
+            string targetDir = @"Assets/Textures/BlockBlastCute";
+
+            if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+
+            // 1. UI_Ingame_Score_Box (3D Pastel Pink Marshmallow Score Frame)
+            string scoreJpg = Path.Combine(brainDir, "ui_score_box_1791441213352.jpg");
+            if (File.Exists(scoreJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(scoreJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Ingame_Score_Box.png"), data);
+                File.WriteAllBytes(Path.Combine(targetDir, "Jelly_Score_Box.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Ingame_Score_Box!</color>");
+            }
+
+            // 2. UI_Ingame_Best_Box (3D Golden Honey Best Score Frame with Crown)
+            string bestJpg = Path.Combine(brainDir, "ui_best_box_1791441236081.jpg");
+            if (File.Exists(bestJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(bestJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Ingame_Best_Box.png"), data);
+                File.WriteAllBytes(Path.Combine(targetDir, "Jelly_Best_Box.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Ingame_Best_Box!</color>");
+            }
+
+            // 3. Jelly_Coin_Gold (3D Glossy Honey Gold Coin with Star)
+            string coinJpg = Path.Combine(brainDir, "ui_gold_coin_1791441254906.jpg");
+            if (File.Exists(coinJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(coinJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "Jelly_Coin_Gold.png"), data);
+                File.WriteAllBytes(Path.Combine(targetDir, "Gacha_Coin_Gold.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed Jelly_Coin_Gold!</color>");
+            }
+
+            // 4. UI_Lobby_Coin_Box (3D Lavender & Glass Currency Capsule Badge)
+            string coinBoxJpg = Path.Combine(brainDir, "ui_coin_badge_1791441277985.jpg");
+            if (File.Exists(coinBoxJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(coinBoxJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Lobby_Coin_Box.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Lobby_Coin_Box!</color>");
+            }
+
+            // 5. UI_Btn_Circle_Pause (3D Strawberry Pink Button with White Pause Bars)
+            string pauseJpg = Path.Combine(brainDir, "ui_btn_pause_1791441309755.jpg");
+            if (File.Exists(pauseJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(pauseJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Btn_Circle_Pause.png"), data);
+                File.WriteAllBytes(Path.Combine(targetDir, "Jelly_Button_Circle_Pink.png"), data);
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Icon_Pause_Bars.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Btn_Circle_Pause!</color>");
+            }
+
+            // 6. UI_Star_Active (3D Puffy Golden Honey Jelly Star)
+            string starActJpg = Path.Combine(brainDir, "ui_star_active_1791441334197.jpg");
+            if (File.Exists(starActJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(starActJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Star_Active.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Star_Active!</color>");
+            }
+
+            // 7. UI_Star_Empty (3D Frosted Periwinkle Jelly Empty Star Slot)
+            string starEmpJpg = Path.Combine(brainDir, "ui_star_empty_1791441354134.jpg");
+            if (File.Exists(starEmpJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(starEmpJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Star_Empty.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Star_Empty!</color>");
+            }
+
+            // 8. UI_Slider_Knob (3D Candy Marshmallow Swirl Slider Handle)
+            string knobJpg = Path.Combine(brainDir, "ui_slider_knob_1791441378009.jpg");
+            if (File.Exists(knobJpg))
+            {
+                Texture2D cutout = ProcessWhiteBgCutoutWithShadowRemoval(knobJpg);
+                byte[] data = cutout.EncodeToPNG();
+                File.WriteAllBytes(Path.Combine(targetDir, "UI_Slider_Knob.png"), data);
+                Debug.Log("<color=cyan>[NanoBanana] Processed UI_Slider_Knob!</color>");
+            }
+
+            AssetDatabase.Refresh();
+
+            // Configure Sprites & 9-Slice Borders
+            ConfigureSprite(Path.Combine(targetDir, "UI_Ingame_Score_Box.png"), new Vector4(240, 240, 240, 240));
+            ConfigureSprite(Path.Combine(targetDir, "Jelly_Score_Box.png"), new Vector4(240, 240, 240, 240));
+            ConfigureSprite(Path.Combine(targetDir, "UI_Ingame_Best_Box.png"), new Vector4(240, 240, 240, 320));
+            ConfigureSprite(Path.Combine(targetDir, "Jelly_Best_Box.png"), new Vector4(240, 240, 240, 320));
+            ConfigureSprite(Path.Combine(targetDir, "Jelly_Coin_Gold.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "Gacha_Coin_Gold.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "UI_Lobby_Coin_Box.png"), new Vector4(300, 200, 300, 200));
+            ConfigureSprite(Path.Combine(targetDir, "UI_Btn_Circle_Pause.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "Jelly_Button_Circle_Pink.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "UI_Icon_Pause_Bars.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "UI_Star_Active.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "UI_Star_Empty.png"), Vector4.zero);
+            ConfigureSprite(Path.Combine(targetDir, "UI_Slider_Knob.png"), Vector4.zero);
+
+            Debug.Log("<color=#FF7AA2><b>[NanoBanana]</b> All 8 UI assets processed, borders configured, and reimported!</color>");
+        }
+
+        private static Texture2D ProcessWhiteBgCutoutWithShadowRemoval(string filePath)
+        {
+            byte[] bytes = File.ReadAllBytes(filePath);
+            Texture2D src = new Texture2D(2, 2);
+            src.LoadImage(bytes);
+
+            int w = src.width;
+            int h = src.height;
+            Color[] pixels = src.GetPixels();
+            bool[] isBg = new bool[w * h];
+            Queue<int> q = new Queue<int>();
+
+            bool IsBgPixel(Color c)
+            {
+                float max = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+                float min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+                float diff = max - min;
+                // Pure white / off-white background
+                if (min >= 0.92f && diff <= 0.05f) return true;
+                // Soft neutral ground shadow on white studio background (grayish without color tint)
+                if (min >= 0.75f && diff <= 0.035f) return true;
+                return false;
+            }
+
+            void TryEnqueue(int x, int y)
+            {
+                int idx = y * w + x;
+                if (!isBg[idx])
+                {
+                    if (IsBgPixel(pixels[idx]))
+                    {
+                        isBg[idx] = true;
+                        q.Enqueue(idx);
+                    }
+                }
+            }
+
+            for (int x = 0; x < w; x++)
+            {
+                TryEnqueue(x, 0);
+                TryEnqueue(x, h - 1);
+            }
+            for (int y = 0; y < h; y++)
+            {
+                TryEnqueue(0, y);
+                TryEnqueue(w - 1, y);
+            }
+
+            int[] dx = { 0, 0, 1, -1 };
+            int[] dy = { 1, -1, 0, 0 };
+
+            while (q.Count > 0)
+            {
+                int curr = q.Dequeue();
+                int cx = curr % w;
+                int cy = curr / w;
+
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = cx + dx[k];
+                    int ny = cy + dy[k];
+                    if (nx >= 0 && nx < w && ny >= 0 && ny < h)
+                    {
+                        int nidx = ny * w + nx;
+                        if (!isBg[nidx])
+                        {
+                            if (IsBgPixel(pixels[nidx]))
+                            {
+                                isBg[nidx] = true;
+                                q.Enqueue(nidx);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Texture2D outTex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            Color[] outPixels = new Color[w * h];
+
+            for (int i = 0; i < w * h; i++)
+            {
+                if (isBg[i])
+                {
+                    outPixels[i] = Color.clear;
+                }
+                else
+                {
+                    Color c = pixels[i];
+                    int cx = i % w;
+                    int cy = i / w;
+
+                    bool adjacentBg = false;
+                    for (int k = 0; k < 4; k++)
+                    {
+                        int nx = cx + dx[k];
+                        int ny = cy + dy[k];
+                        if (nx >= 0 && nx < w && ny >= 0 && ny < h && isBg[ny * w + nx])
+                        {
+                            adjacentBg = true;
+                            break;
+                        }
+                    }
+
+                    if (adjacentBg)
+                    {
+                        float brightness = (c.r + c.g + c.b) / 3f;
+                        if (brightness > 0.90f)
+                        {
+                            c.a = Mathf.Clamp01((1f - brightness) / 0.10f);
+                            c.a = Mathf.Max(0.12f, c.a);
+                        }
+                        else
+                        {
+                            c.a = 1f;
+                        }
+                    }
+                    else
+                    {
+                        c.a = 1f;
+                    }
+                    outPixels[i] = c;
+                }
+            }
+
+            outTex.SetPixels(outPixels);
+            outTex.Apply();
+            return outTex;
+        }
+
         private static Texture2D ProcessWhiteBgCutout(string filePath, float threshold = 0.92f)
         {
             byte[] bytes = File.ReadAllBytes(filePath);

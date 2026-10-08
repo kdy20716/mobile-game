@@ -144,6 +144,16 @@ namespace BlockBlast
             return LocalizationManager.Get($"mascot_{idx}_desc", GetMascotAbilityDescription(idx, GetMascotLevel(idx)));
         }
 
+        public static string GetLocalizedMascotConcept(int idx)
+        {
+            return LocalizationManager.Get($"mascot_{idx}_concept", "");
+        }
+
+        public static string GetLocalizedMascotStory(int idx)
+        {
+            return LocalizationManager.Get($"mascot_{idx}_story", "");
+        }
+
         public static string GetMascotAbilityDescription(int idx, int level)
         {
             level = Mathf.Max(1, level);
@@ -1098,7 +1108,8 @@ namespace BlockBlast
                         lBtn.transition = Selectable.Transition.None;
                         lBtn.onClick.AddListener(() =>
                         {
-                            SelectMenu(idx, true);
+                            SelectMenu(idx, false);
+                            ExecuteSelectedMenuAction();
                         });
                     }
                 }
@@ -2302,7 +2313,27 @@ namespace BlockBlast
             }
             if (detailMascotName != null) detailMascotName.text = GetLocalizedMascotName(idx);
             if (detailMascotTitle != null) detailMascotTitle.text = $"[{GetLocalizedMascotTitle(idx)}]";
-            if (detailAbilityDesc != null) detailAbilityDesc.text = GetLocalizedMascotDesc(idx);
+
+            // 상세 창 설명 구성 (컨셉 + 스토리 + 고유능력)
+            if (detailAbilityDesc != null)
+            {
+                string concept = GetLocalizedMascotConcept(idx);
+                string story = GetLocalizedMascotStory(idx);
+                string ability = GetLocalizedMascotDesc(idx);
+
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                if (!string.IsNullOrEmpty(concept))
+                {
+                    sb.AppendLine($"<color=#E84393><b>[캐릭터 컨셉]</b></color>\n{concept}\n");
+                }
+                if (!string.IsNullOrEmpty(story))
+                {
+                    sb.AppendLine($"<color=#6C5CE7><b>[말랑이 스토리]</b></color>\n{story}\n");
+                }
+                sb.AppendLine($"<color=#0984E3><b>[고유 스킬]</b></color>\n{ability}");
+
+                detailAbilityDesc.text = sb.ToString();
+            }
 
             if (mascotDetailModal != null)
             {
@@ -2312,7 +2343,7 @@ namespace BlockBlast
                     var t = card.Find("Title")?.GetComponent<TMP_Text>();
                     if (t != null) t.text = LocalizationManager.Get("mascot_detail_title");
                     var hdr = card.Find("AbilityBox/AbilHeader")?.GetComponent<TMP_Text>();
-                    if (hdr != null) hdr.text = LocalizationManager.Get("mascot_detail_ability_header");
+                    if (hdr != null) hdr.text = "★ 말랑이 정보 & 스토리 (Concept & Lore)";
                 }
             }
 

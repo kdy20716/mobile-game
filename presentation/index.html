@@ -229,34 +229,34 @@
             일반
             <small>Common</small>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="pink">
             <img src="assets/mascots/pink.png" alt="핑크">
             <div class="t">
-              <b>핑크 말랑이</b>
+              <b>핑크 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[기본 말랑이]</span>
               <p>추가 시간 보너스로 턴 제한 시간이 넉넉해집니다.</p>
             </div>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="mint">
             <img src="assets/mascots/mint.png" alt="민트">
             <div class="t">
-              <b>민트 말랑이</b>
+              <b>민트 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[스킵 마스터]</span>
               <p>시작 스킵 2개 / 최대 4개 보유로 위기 탈출 능력 강화</p>
             </div>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="gold">
             <img src="assets/mascots/gold.png" alt="골드">
             <div class="t">
-              <b>골드 말랑이</b>
+              <b>골드 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[보물 사냥꾼]</span>
               <p>블록 라인 클리어 시 추가 골드 보너스 획득</p>
             </div>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="purple">
             <img src="assets/mascots/purple.png" alt="퍼플">
             <div class="t">
-              <b>퍼플 말랑이</b>
+              <b>퍼플 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[매직 큐브]</span>
               <p>확률적으로 보라 2×2 매직 블록 소환</p>
             </div>
@@ -269,34 +269,34 @@
             희귀
             <small>Rare</small>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="blue">
             <img src="assets/mascots/blue.png" alt="블루">
             <div class="t">
-              <b>블루 말랑이</b>
+              <b>블루 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[아쿠아 쉴드]</span>
               <p>게임오버 위기 시 1회 즉시 부활 및 블록 재배치</p>
             </div>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="berry">
             <img src="assets/mascots/berry.png" alt="베리">
             <div class="t">
-              <b>베리 말랑이</b>
+              <b>베리 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[슈가 버스트]</span>
               <p>콤보 달성 시 주변 블록 추가 폭파 & +15% 점수</p>
             </div>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="lemon">
             <img src="assets/mascots/lemon.png" alt="레몬">
             <div class="t">
-              <b>레몬 말랑이</b>
+              <b>레몬 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[번개 팡]</span>
               <p>3연속 콤보 시 가로 한 줄 즉시 전기 폭파</p>
             </div>
           </div>
-          <div class="m-card">
+          <div class="m-card clickable-mascot" data-id="cloud">
             <img src="assets/mascots/cloud.png" alt="클라우드">
             <div class="t">
-              <b>클라우드 말랑이</b>
+              <b>클라우드 말랑이 <span class="click-badge">클릭</span></b>
               <span class="ttl">[푹신 구름]</span>
               <p>시간 감소 속도 20% 완화 & 몽글 피버 지속</p>
             </div>
@@ -309,11 +309,11 @@
             스페셜
             <small>Special</small>
           </div>
-          <div class="m-card special-card">
+          <div class="m-card special-card clickable-mascot" data-id="special">
             <img src="assets/mascots/special.png" alt="스페셜">
             <div class="t" style="flex: 1;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <b>스페셜 말랑이 (Special Mallang)</b>
+                <b>스페셜 말랑이 (Special Mallang) <span class="click-badge">상세 정보 열기</span></b>
                 <span class="chip gold">★ 1.0% 한정 픽업 강림</span>
                 <span class="chip pink">천사 날개 & 무지개 홀로그램 오라</span>
               </div>
@@ -742,11 +742,111 @@
         </div>
       </div>
 
-      <div class="brand-mini"><img src="assets/mascots/pink.png" alt=""> 말랑 블라스트 (Mallang Blast)</div>
-      <div class="page-no">10 / 10</div>
-    </section>
+  <!-- ==========================================
+       말랑이 상세 정보 & 육성/돌파 팝업 모달
+       ========================================== -->
+  <div id="mascotModal" class="mascot-modal-backdrop no-print" style="display: none;">
+    <div class="mascot-modal-card">
+      <button class="modal-close-btn" id="modalCloseBtn" title="닫기">✕</button>
+      
+      <div class="m-modal-grid">
+        <!-- 좌측: 비주얼 & 현재 스펙 -->
+        <div class="m-modal-visual">
+          <div class="m-avatar-wrap" id="modalTierWrap">
+            <div class="m-aura" id="modalAura"></div>
+            <img id="modalImg" src="assets/mascots/pink.png" alt="말랑이">
+            <span class="m-tier-badge" id="modalTierBadge">일반</span>
+          </div>
 
-  </main>
+          <div class="m-stars-row" id="modalStars">
+            <!-- ★ 렌더링 -->
+          </div>
 
+          <div class="m-level-badge">
+            <span>LEVEL</span>
+            <b id="modalLevel">Lv. 1</b>
+            <small id="modalMaxLevel">/ 50</small>
+          </div>
+
+          <div class="m-stat-box">
+            <div class="m-stat-item">
+              <span class="lbl">기본 점수 보너스</span>
+              <b class="val" id="modalStatScore">+3.0%</b>
+            </div>
+            <div class="m-stat-item">
+              <span class="lbl">고유 스킬 위력</span>
+              <b class="val" id="modalStatPower">기본 100%</b>
+            </div>
+            <div class="m-stat-item">
+              <span class="lbl">보유 조각 현황</span>
+              <b class="val" id="modalShards">45 / 30개</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- 우측: 정보, 스토리, 육성/돌파 액션 -->
+        <div class="m-modal-info">
+          <div class="m-info-head">
+            <div class="m-sub-title" id="modalTitle">[기본 말랑이]</div>
+            <h2 class="m-main-name" id="modalName">핑크 말랑이</h2>
+          </div>
+
+          <!-- 컨셉 & 고유 시너지 -->
+          <div class="m-block-section">
+            <div class="sec-label">🎨 캐릭터 컨셉 & 디자인 모티브</div>
+            <p class="sec-desc" id="modalConcept">딸기 젤리에서 태어난 통통 튀는 사랑스러운 말랑월드의 공식 마스코트입니다. 폭신한 반투명 텍스처와 발그레한 볼터치가 매력적입니다.</p>
+          </div>
+
+          <!-- 스토리 -->
+          <div class="m-block-section story-box">
+            <div class="sec-label">📖 말랑이 스토리</div>
+            <p class="sec-desc" id="modalStory">퍼즐 숲에서 가장 처음 눈을 뜬 젤리로, 블록이 가득 차도 언제나 긍정적인 웃음을 잃지 않습니다. 손길이 닿으면 보드 전체에 달콤한 딸기 향기와 함께 소중한 여유 시간을 불어넣어 줍니다.</p>
+          </div>
+
+          <!-- 스킬 -->
+          <div class="m-block-section skill-box">
+            <div class="sec-label">⚡ 고유 특수 능력 (Special Skill)</div>
+            <div class="skill-row">
+              <b id="modalSkillName">여유로운 한 모금</b>
+              <span id="modalSkillDesc">턴 제한 시간을 영구적으로 +5초 연장하여 퍼즐 배치 생각 시간을 확보합니다.</span>
+            </div>
+          </div>
+
+          <!-- 인터랙션: 레벨업 & 한계 돌파 버튼 -->
+          <div class="m-action-footer">
+            <div class="action-btn-group">
+              <!-- 레벨업 버튼 -->
+              <button class="m-jelly-btn btn-upgrade" id="btnUpgrade">
+                <div class="btn-top">
+                  <span class="btn-icon">⬆️</span>
+                  <b>레벨 업그레이드</b>
+                </div>
+                <div class="btn-sub">
+                  <span id="btnUpgradeCost">골드 150 소모</span> · <span id="btnUpgradeEffect">+0.5% 점수</span>
+                </div>
+              </button>
+
+              <!-- 한계 돌파 버튼 -->
+              <button class="m-jelly-btn btn-breakthrough" id="btnBreakthrough">
+                <div class="btn-top">
+                  <span class="btn-icon">🌟</span>
+                  <b>한계 돌파 (승급)</b>
+                </div>
+                <div class="btn-sub">
+                  <span id="btnBreakthroughReq">조각 30개 필요</span> · <span id="btnBreakthroughStar">★2성 개방</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- 피드백 메시지 토스트 -->
+            <div class="m-action-feedback" id="actionFeedback" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script src="js/main.js"></script>
 </body>
 </html>
