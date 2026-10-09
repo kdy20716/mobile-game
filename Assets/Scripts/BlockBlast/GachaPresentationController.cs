@@ -799,7 +799,7 @@ namespace BlockBlast
 
             if (climaxTitleText != null)
             {
-                climaxTitleText.text = LocalizationManager.Get("gacha_climax_title", "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>스페셜 말랑이 강림!</color></size>");
+                climaxTitleText.text = LocalizationManager.Get("gacha_climax_title", "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>엔젤 말랑이 강림!</color></size>");
             }
 
             if (climaxSubText != null)

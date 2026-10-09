@@ -10,6 +10,9 @@ namespace BlockBlast
         public Color blockColor;
         public bool isBomb;
         public string shapeName;
+        public bool isSpecial = false;
+        public int mascotIndex = -1;
+        public bool isOneByOne = false;
 
         public int Rows => matrix.GetLength(0);
         public int Cols => matrix.GetLength(1);
@@ -20,6 +23,20 @@ namespace BlockBlast
             blockColor = col;
             isBomb = bomb;
             shapeName = name;
+            isSpecial = false;
+            mascotIndex = -1;
+            isOneByOne = false;
+        }
+
+        public BlockShape(int[,] m, Color col, bool bomb, string name, bool special, int mascotIdx = -1, bool oneByOne = false)
+        {
+            matrix = m;
+            blockColor = col;
+            isBomb = bomb;
+            shapeName = name;
+            isSpecial = special;
+            mascotIndex = mascotIdx;
+            isOneByOne = oneByOne;
         }
 
         public void Rotate90Clockwise()

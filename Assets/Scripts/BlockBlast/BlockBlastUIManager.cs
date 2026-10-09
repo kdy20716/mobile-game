@@ -696,6 +696,14 @@ namespace BlockBlast
             }
         }
 
+        public void AddBonusTime(float seconds)
+        {
+            if (!_isTimerActive) return;
+            _turnRemainingTime = Mathf.Clamp(_turnRemainingTime + seconds, 0f, _currentTurnMaxTime + 15f);
+            UpdateTimerUI();
+            if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayFairyMagic();
+        }
+
         private void UpdateTimerUI()
         {
             if (timeBarFill != null)

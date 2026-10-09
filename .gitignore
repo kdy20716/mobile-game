@@ -69,3 +69,7 @@ crashlytics-build.properties
 .Trashes
 ehthumbs.db
 [Tt]humbs.db
+
+tools/
+scratch/
+

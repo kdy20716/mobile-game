@@ -18,12 +18,15 @@ namespace BlockBlast.Editor
         public static readonly Color PastelLavender = new Color(0.79f, 0.68f, 0.98f, 1f);  // #C9ADFA Soft Sweet Lavender
         public static readonly Color PastelButter = new Color(1.0f, 0.86f, 0.52f, 1f);    // #FFDC85 Soft Honey Butter
 
-        public static TMP_FontAsset GetOrCreateJuaFontAsset()
+        public static TMP_FontAsset GetOrCreateJuaFontAsset(bool forceRecreate = false)
         {
             EnsureFolder();
             string assetPath = "Assets/Fonts/Jua-Regular SDF.asset";
             TMP_FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (fontAsset != null)
+            int targetAtlasSize = 8192;
+            if (SystemInfo.maxTextureSize < 8192) targetAtlasSize = 4096;
+
+            if (!forceRecreate && fontAsset != null && fontAsset.atlasWidth >= targetAtlasSize && fontAsset.material != null && fontAsset.material.shader != null && fontAsset.material.shader.name == "TextMeshPro/Distance Field")
             {
                 EnsureFallbackFont(fontAsset);
                 return fontAsset;
@@ -37,12 +40,42 @@ namespace BlockBlast.Editor
                 return TMP_Settings.defaultFontAsset;
             }
 
-            // Create high-resolution Dynamic SDF font asset with multi-atlas support for crystal clear Korean text
-            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+            if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath) != null)
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+            }
+
+            // Create Ultra High-Resolution 8192x8192 (or 4096 fallback) Dynamic SDF font asset with multi-atlas support
+            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 135, 14, GlyphRenderMode.SDFAA, targetAtlasSize, targetAtlasSize, AtlasPopulationMode.Dynamic, true);
+            if (fontAsset == null)
+            {
+                targetAtlasSize = 4096;
+                fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 110, 12, GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true);
+            }
             if (fontAsset == null)
             {
                 Debug.LogError("[말랑블라스트] SDF 폰트 에셋 생성 실패!");
                 return TMP_Settings.defaultFontAsset;
+            }
+
+            Shader fullDfShader = Shader.Find("TextMeshPro/Distance Field");
+            if (fullDfShader != null && fontAsset.material != null)
+            {
+                fontAsset.material.shader = fullDfShader;
+                fontAsset.material.SetFloat("_FaceDilate", 0.05f);
+                fontAsset.material.SetFloat("_OutlineSoftness", 0f);
+            }
+
+            if (fontAsset.atlasTextures != null)
+            {
+                for (int i = 0; i < fontAsset.atlasTextures.Length; i++)
+                {
+                    if (fontAsset.atlasTextures[i] != null)
+                    {
+                        fontAsset.atlasTextures[i].filterMode = FilterMode.Bilinear;
+                        fontAsset.atlasTextures[i].anisoLevel = 16;
+                    }
+                }
             }
 
             AssetDatabase.CreateAsset(fontAsset, assetPath);
@@ -57,17 +90,17 @@ namespace BlockBlast.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("<color=#55FFAA><b>[말랑블라스트]</b> 고해상도 벡터 SDF 폰트 에셋(Jua-Regular SDF)이 성공적으로 생성되었습니다!</color>");
+            Debug.Log($"<color=#55FFAA><b>[말랑블라스트]</b> 초고해상도 {targetAtlasSize}x{targetAtlasSize} 벡터 SDF 폰트 에셋(Jua-Regular SDF)이 성공적으로 생성되었습니다!</color>");
             EnsureFallbackFont(fontAsset);
             return fontAsset;
         }
 
-        public static TMP_FontAsset GetOrCreateMalgunFont()
+        public static TMP_FontAsset GetOrCreateMalgunFont(bool forceRecreate = false)
         {
             EnsureFolder();
             string assetPath = "Assets/Fonts/Malgun SDF.asset";
             TMP_FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (fontAsset != null && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
+            if (!forceRecreate && fontAsset != null && fontAsset.atlasWidth >= 4096 && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
                 return fontAsset;
             }
@@ -76,17 +109,27 @@ namespace BlockBlast.Editor
             Font sourceFont = AssetDatabase.LoadAssetAtPath<Font>(sourceFontPath);
             if (sourceFont == null) return null;
 
-            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 72, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
-            if (fontAsset == null) return null;
-
             if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath) != null)
             {
                 AssetDatabase.DeleteAsset(assetPath);
             }
 
+            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 100, 12, GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true);
+            if (fontAsset == null) return null;
+
+            Shader fullDfShader = Shader.Find("TextMeshPro/Distance Field");
+            if (fullDfShader != null && fontAsset.material != null)
+            {
+                fontAsset.material.shader = fullDfShader;
+                fontAsset.material.SetFloat("_FaceDilate", 0.05f);
+                fontAsset.material.SetFloat("_OutlineSoftness", 0f);
+            }
+
             AssetDatabase.CreateAsset(fontAsset, assetPath);
             if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
+                fontAsset.atlasTextures[0].filterMode = FilterMode.Bilinear;
+                fontAsset.atlasTextures[0].anisoLevel = 16;
                 AssetDatabase.AddObjectToAsset(fontAsset.atlasTextures[0], fontAsset);
             }
             if (fontAsset.material != null)
@@ -98,12 +141,12 @@ namespace BlockBlast.Editor
             return fontAsset;
         }
 
-        public static TMP_FontAsset GetOrCreateSimSunFont()
+        public static TMP_FontAsset GetOrCreateSimSunFont(bool forceRecreate = false)
         {
             EnsureFolder();
             string assetPath = "Assets/Fonts/SimSun SDF.asset";
             TMP_FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (fontAsset != null && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
+            if (!forceRecreate && fontAsset != null && fontAsset.atlasWidth >= 4096 && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
                 return fontAsset;
             }
@@ -112,17 +155,27 @@ namespace BlockBlast.Editor
             Font sourceFont = AssetDatabase.LoadAssetAtPath<Font>(sourceFontPath);
             if (sourceFont == null) return null;
 
-            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 72, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
-            if (fontAsset == null) return null;
-
             if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath) != null)
             {
                 AssetDatabase.DeleteAsset(assetPath);
             }
 
+            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 100, 12, GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true);
+            if (fontAsset == null) return null;
+
+            Shader fullDfShader = Shader.Find("TextMeshPro/Distance Field");
+            if (fullDfShader != null && fontAsset.material != null)
+            {
+                fontAsset.material.shader = fullDfShader;
+                fontAsset.material.SetFloat("_FaceDilate", 0.05f);
+                fontAsset.material.SetFloat("_OutlineSoftness", 0f);
+            }
+
             AssetDatabase.CreateAsset(fontAsset, assetPath);
             if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
+                fontAsset.atlasTextures[0].filterMode = FilterMode.Bilinear;
+                fontAsset.atlasTextures[0].anisoLevel = 16;
                 AssetDatabase.AddObjectToAsset(fontAsset.atlasTextures[0], fontAsset);
             }
             if (fontAsset.material != null)
@@ -134,12 +187,12 @@ namespace BlockBlast.Editor
             return fontAsset;
         }
 
-        public static TMP_FontAsset GetOrCreateMSGothicFont()
+        public static TMP_FontAsset GetOrCreateMSGothicFont(bool forceRecreate = false)
         {
             EnsureFolder();
             string assetPath = "Assets/Fonts/MSGothic SDF.asset";
             TMP_FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (fontAsset != null && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
+            if (!forceRecreate && fontAsset != null && fontAsset.atlasWidth >= 4096 && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
                 return fontAsset;
             }
@@ -148,17 +201,27 @@ namespace BlockBlast.Editor
             Font sourceFont = AssetDatabase.LoadAssetAtPath<Font>(sourceFontPath);
             if (sourceFont == null) return null;
 
-            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 72, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
-            if (fontAsset == null) return null;
-
             if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath) != null)
             {
                 AssetDatabase.DeleteAsset(assetPath);
             }
 
+            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 100, 12, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true);
+            if (fontAsset == null) return null;
+
+            Shader fullDfShader = Shader.Find("TextMeshPro/Distance Field");
+            if (fullDfShader != null && fontAsset.material != null)
+            {
+                fontAsset.material.shader = fullDfShader;
+                fontAsset.material.SetFloat("_FaceDilate", 0.05f);
+                fontAsset.material.SetFloat("_OutlineSoftness", 0f);
+            }
+
             AssetDatabase.CreateAsset(fontAsset, assetPath);
             if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
+                fontAsset.atlasTextures[0].filterMode = FilterMode.Bilinear;
+                fontAsset.atlasTextures[0].anisoLevel = 16;
                 AssetDatabase.AddObjectToAsset(fontAsset.atlasTextures[0], fontAsset);
             }
             if (fontAsset.material != null)
@@ -170,12 +233,12 @@ namespace BlockBlast.Editor
             return fontAsset;
         }
 
-        public static TMP_FontAsset GetOrCreateMSYaHeiFont()
+        public static TMP_FontAsset GetOrCreateMSYaHeiFont(bool forceRecreate = false)
         {
             EnsureFolder();
             string assetPath = "Assets/Fonts/MSYaHei SDF.asset";
             TMP_FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (fontAsset != null && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
+            if (!forceRecreate && fontAsset != null && fontAsset.atlasWidth >= 4096 && fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
                 return fontAsset;
             }
@@ -184,17 +247,27 @@ namespace BlockBlast.Editor
             Font sourceFont = AssetDatabase.LoadAssetAtPath<Font>(sourceFontPath);
             if (sourceFont == null) return null;
 
-            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 72, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
-            if (fontAsset == null) return null;
-
             if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath) != null)
             {
                 AssetDatabase.DeleteAsset(assetPath);
             }
 
+            fontAsset = TMP_FontAsset.CreateFontAsset(sourceFont, 100, 12, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true);
+            if (fontAsset == null) return null;
+
+            Shader fullDfShader = Shader.Find("TextMeshPro/Distance Field");
+            if (fullDfShader != null && fontAsset.material != null)
+            {
+                fontAsset.material.shader = fullDfShader;
+                fontAsset.material.SetFloat("_FaceDilate", 0.05f);
+                fontAsset.material.SetFloat("_OutlineSoftness", 0f);
+            }
+
             AssetDatabase.CreateAsset(fontAsset, assetPath);
             if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0 && fontAsset.atlasTextures[0] != null)
             {
+                fontAsset.atlasTextures[0].filterMode = FilterMode.Bilinear;
+                fontAsset.atlasTextures[0].anisoLevel = 16;
                 AssetDatabase.AddObjectToAsset(fontAsset.atlasTextures[0], fontAsset);
             }
             if (fontAsset.material != null)
@@ -211,7 +284,7 @@ namespace BlockBlast.Editor
             return GetOrCreateNanoBananaCandyCloseButtonSprite(false);
         }
 
-        private static void EnsureFallbackFont(TMP_FontAsset fontAsset)
+        public static void EnsureFallbackFont(TMP_FontAsset fontAsset)
         {
             if (fontAsset == null) return;
             if (fontAsset.fallbackFontAssetTable == null)
@@ -4375,6 +4448,24 @@ namespace BlockBlast.Editor
                 GetOrCreateHighResAvatarSprite("Avatar_Lemon", "Block_Lemon_Mascot.png", force),
                 GetOrCreateHighResAvatarSprite("Avatar_Cloud", "Block_Cloud_Mascot.png", force),
                 GetOrCreateHighResAvatarSprite("Avatar_Special", "Block_Special_Mascot.png", force)
+            };
+        }
+
+        public static Sprite[] GetOrCreateAllCutoutMascotSprites()
+        {
+            EnsureFolder();
+            EnsureSpecialMascotCutout();
+            return new Sprite[]
+            {
+                GetOrCreatePinkMascotSprite(),
+                GetOrCreateMintMascotSprite(),
+                GetOrCreateGoldMascotSprite(),
+                GetOrCreatePurpleMascotSprite(),
+                GetOrCreateBlueMascotSprite(),
+                GetOrCreateBerryMascotSprite(),
+                GetOrCreateLemonMascotSprite(),
+                GetOrCreateCloudMascotSprite(),
+                GetOrCreateSpecialMascotSprite()
             };
         }
 

@@ -272,7 +272,7 @@ namespace BlockBlast
 
                         if (_cells[gr, gc] != null)
                         {
-                            _cells[gr, gc].SetOccupied(Color.white, shape.isBomb, blockSp, null);
+                            _cells[gr, gc].SetOccupied(Color.white, shape.isBomb, blockSp, null, shape.isSpecial, shape.mascotIndex, shape.isOneByOne);
                             blockCount++;
                         }
                     }
@@ -281,6 +281,31 @@ namespace BlockBlast
 
             OnScoreAdded?.Invoke(blockCount * 10);
             OnShapePlaced?.Invoke();
+
+            // Special Block Activation upon Placement:
+            if (shape.isSpecial)
+            {
+                // 1. Angel Mascot (idx 8)
+                // Concept: "블록이 서로 닿으면 줄을 안채워도 줄이 터진다던가"
+                if (shape.mascotIndex == 8)
+                {
+                    if (shape.isOneByOne)
+                    {
+                        StartCoroutine(AngelSpecialAllClearBlast(startR, startC));
+                    }
+                    else
+                    {
+                        CheckAngelTouchExplosion(shape, startR, startC);
+                    }
+                }
+                // 2. Cloud Mascot (idx 7)
+                // Concept: 2돌파 무지개 롱바가 가로 1줄을 즉시 싹쓸이 관통
+                else if (shape.mascotIndex == 7 && !shape.isOneByOne)
+                {
+                    TriggerImmediateRowClear(startR);
+                }
+            }
+
             CheckLineClears();
             return true;
         }
@@ -369,6 +394,38 @@ namespace BlockBlast
                     }
                 }
 
+                // Special Mascot Block Effects on Clear:
+                foreach (var pos in cellsToClear)
+                {
+                    var cell = _cells[pos.x, pos.y];
+                    if (cell != null && cell.IsSpecial)
+                    {
+                        // 1. Mint Mascot (idx 1): Timer increase! "특수블록이 터지면 시간이 늘어 난다거나"
+                        if (cell.MascotIndex == 1)
+                        {
+                            float bonusSec = cell.IsOneByOne ? 10f : 5f;
+                            if (BlockBlastUIManager.Instance != null)
+                            {
+                                BlockBlastUIManager.Instance.AddBonusTime(bonusSec);
+                            }
+                        }
+                        // 2. Gold Mascot (idx 2): Gold bonus
+                        else if (cell.MascotIndex == 2)
+                        {
+                            int bonusGold = cell.IsOneByOne ? 1000 : 500;
+                            if (LobbyManager.Instance != null)
+                            {
+                                LobbyManager.Instance.AddCoins(bonusGold);
+                            }
+                        }
+                        // 3. Pink Mascot (idx 0): Heart pop score bonus
+                        else if (cell.MascotIndex == 0)
+                        {
+                            OnScoreAdded?.Invoke(cell.IsOneByOne ? 1500 : 800);
+                        }
+                    }
+                }
+
                 // Animate and clear
                 float delay = 0f;
                 foreach (var pos in cellsToClear)
@@ -451,6 +508,110 @@ namespace BlockBlast
             }
 
             onComplete?.Invoke();
+        }
+
+        private void CheckAngelTouchExplosion(BlockShape shape, int startR, int startC)
+        {
+            HashSet<int> rowsToBlast = new HashSet<int>();
+            HashSet<int> colsToBlast = new HashSet<int>();
+            bool touchedSpecial = false;
+
+            for (int r = 0; r < shape.Rows; r++)
+            {
+                for (int c = 0; c < shape.Cols; c++)
+                {
+                    if (shape.matrix[r, c] == 1)
+                    {
+                        int gr = startR + r;
+                        int gc = startC + c;
+
+                        int[] dr = new int[] { -1, 1, 0, 0 };
+                        int[] dc = new int[] { 0, 0, -1, 1 };
+
+                        for (int i = 0; i < 4; i++)
+                        {
+                            int nr = gr + dr[i];
+                            int nc = gc + dc[i];
+
+                            if (nr >= 0 && nr < GridSize && nc >= 0 && nc < GridSize)
+                            {
+                                bool isCurrentPlacement = (nr >= startR && nr < startR + shape.Rows && nc >= startC && nc < startC + shape.Cols && shape.matrix[nr - startR, nc - startC] == 1);
+                                if (!isCurrentPlacement && _cells[nr, nc] != null && _cells[nr, nc].IsOccupied && _cells[nr, nc].IsSpecial)
+                                {
+                                    touchedSpecial = true;
+                                    rowsToBlast.Add(gr);
+                                    rowsToBlast.Add(nr);
+                                    colsToBlast.Add(gc);
+                                    colsToBlast.Add(nc);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (touchedSpecial)
+            {
+                TriggerCustomLineClears(rowsToBlast, colsToBlast);
+            }
+        }
+
+        public void TriggerCustomLineClears(IEnumerable<int> rows, IEnumerable<int> cols)
+        {
+            HashSet<Vector2Int> cellsToClear = new HashSet<Vector2Int>();
+            int lines = 0;
+            foreach (int r in rows)
+            {
+                lines++;
+                for (int c = 0; c < GridSize; c++) cellsToClear.Add(new Vector2Int(r, c));
+            }
+            foreach (int c in cols)
+            {
+                lines++;
+                for (int r = 0; r < GridSize; r++) cellsToClear.Add(new Vector2Int(r, c));
+            }
+
+            if (cellsToClear.Count > 0)
+            {
+                CurrentCombo++;
+                float delay = 0f;
+                foreach (var pos in cellsToClear)
+                {
+                    if (_cells[pos.x, pos.y] != null && _cells[pos.x, pos.y].IsOccupied)
+                    {
+                        _cells[pos.x, pos.y].PlayClearAnim(delay);
+                        delay += 0.015f;
+                    }
+                }
+                if (BlockAudioManager.Instance != null)
+                {
+                    BlockAudioManager.Instance.PlayFairyMagic();
+                    BlockAudioManager.Instance.PlayClear(CurrentCombo);
+                }
+                if (FairyScreenTransition.Instance != null)
+                {
+                    FairyScreenTransition.Instance.EmitCornerSparkles();
+                }
+                OnScoreAdded?.Invoke(cellsToClear.Count * 50 * CurrentCombo);
+                OnLinesCleared?.Invoke(CurrentCombo, lines);
+                OnFeverAdded?.Invoke(lines * 35f);
+            }
+        }
+
+        public void TriggerImmediateRowClear(int row)
+        {
+            HashSet<int> rList = new HashSet<int>() { row };
+            TriggerCustomLineClears(rList, new int[0]);
+        }
+
+        private IEnumerator AngelSpecialAllClearBlast(int r, int c)
+        {
+            yield return new WaitForSeconds(0.1f);
+            HashSet<int> rList = new HashSet<int>() { r };
+            HashSet<int> cList = new HashSet<int>() { c };
+            TriggerCustomLineClears(rList, cList);
+            yield return new WaitForSeconds(0.2f);
+            ClearAllBlocksWithExplosion();
         }
 
         public void ResetBoard()

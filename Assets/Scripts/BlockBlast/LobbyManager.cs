@@ -53,7 +53,7 @@ namespace BlockBlast
         {
             "핑크 말랑이", "민트 말랑이", "골드 말랑이", "퍼플 말랑이",
             "블루 말랑이", "베리 말랑이", "레몬 말랑이", "클라우드 말랑이",
-            "스페셜 말랑이"
+            "엔젤 말랑이"
         };
         public static readonly string[] MascotTitles = new string[]
         {
@@ -71,8 +71,360 @@ namespace BlockBlast
             "고유능력: 슈가 버스트\n(콤보 달성 시 추가 폭파 & +15% 점수)",
             "고유능력: 번개 팡\n(3연속 콤보 시 가로 한 줄 즉시 폭파)",
             "고유능력: 푹신 구름\n(시간 감소 속도 20% 완화 & 몽글 피버)",
-            "고유능력: 보드 올 클리어\n(스킬 터치 시 모든 블록 폭파!)"
+            "고유능력: 엔젤 크로스 폭파 블록\n(스페셜 블록끼리 닿으면 가로·세로 줄 전부 폭파!)"
         };
+
+        public struct MascotStats
+        {
+            public string uniqueBlockName;
+            public string uniqueBlockShape;
+            public string uniqueBlockAbility;
+            public float extraTime;
+            public int skipCount;
+            public float bonusScore;
+            public float bonusExp;
+        }
+
+        [System.Serializable]
+        public struct MascotUniqueBlockInfo
+        {
+            public string blockName;
+            public string shapeDesc;
+            public string abilityDesc;
+            public int[,] shapeMatrix;
+            public Color blockColor;
+            public bool isSpecial;
+            public bool isOneByOne;
+        }
+
+        public static MascotUniqueBlockInfo GetMascotUniqueBlockInfo(int idx, int tier)
+        {
+            tier = Mathf.Clamp(tier, 0, 2);
+            MascotUniqueBlockInfo info = new MascotUniqueBlockInfo();
+            info.isSpecial = (tier >= 1);
+            info.isOneByOne = (tier == 2);
+
+            if (tier == 2)
+            {
+                // 5돌파 MAX: 1x1 초소형 단일 셀 특수 블록!
+                info.shapeMatrix = new int[,] { { 1 } };
+            }
+
+            switch (idx)
+            {
+                case 0: // 핑크 (사랑/하트)
+                    info.blockColor = (tier == 2) ? new Color(1.0f, 0.25f, 0.55f) : (tier == 1) ? new Color(1.0f, 0.35f, 0.60f) : new Color(1.0f, 0.48f, 0.64f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "러블리 하트 블록";
+                        info.shapeDesc = "♥ 하트 모양 (3x3 중심 하트형)";
+                        info.abilityDesc = "달콤한 딸기 시럽 가득한 3x3 중앙 특화 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 0 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "스위트 하트 특수 블록";
+                        info.shapeDesc = "♥ 하트 모양 (3x3 특수 블록화)";
+                        info.abilityDesc = "★ [하트 팝 폭파] 클리어 시 주변 3x3 영역 하트 폭죽 폭파 & 대량 추가 점수!";
+                        info.shapeMatrix = new int[,] { { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 0 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 하트 원더";
+                        info.shapeDesc = "♥ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [슈퍼 하트 버스트] 1x1 초소형! 터질 때 보드 위 랜덤 6개 블록 즉시 하트 팝 폭파!";
+                    }
+                    break;
+
+                case 1: // 민트 (시간/클로버)
+                    info.blockColor = (tier == 2) ? new Color(0.10f, 1.0f, 0.80f) : (tier == 1) ? new Color(0.20f, 0.95f, 0.75f) : new Color(0.31f, 0.88f, 0.71f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "행운 클로버 블록";
+                        info.shapeDesc = "♣ 4엽 클로버 모양 (3x3 十자형)";
+                        info.abilityDesc = "가로·세로 균형 잡힌 안정적인 십자 클리어 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 1, 0 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "타임 클로버 특수 블록";
+                        info.shapeDesc = "♣ 4엽 클로버 모양 (3x3 특수 블록화)";
+                        info.abilityDesc = "★ [시간 충전 젤리] 특수 블록이 터질 때마다 타이머 제한 시간 +5초 즉시 연장!";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 1, 0 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 클로버 원더";
+                        info.shapeDesc = "♣ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [영원한 시간의 클로버] 1x1 초소형! 터질 때마다 타이머 +10초 대량 연장 & 스킵 +1회 즉시 회복!";
+                    }
+                    break;
+
+                case 2: // 골드 (보물/다이아)
+                    info.blockColor = (tier == 2) ? new Color(1.0f, 0.88f, 0.05f) : (tier == 1) ? new Color(1.0f, 0.82f, 0.15f) : new Color(1.0f, 0.75f, 0.26f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "골든 다이아 블록";
+                        info.shapeDesc = "◆ 다이아몬드 마름모 모양 (3x3 마름모형)";
+                        info.abilityDesc = "콤보 연결에 유리한 황금빛 마름모형 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 0, 1 }, { 0, 1, 0 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "황금 다이아 특수 블록";
+                        info.shapeDesc = "◆ 다이아몬드 마름모 모양 (3x3 특수 블록화)";
+                        info.abilityDesc = "★ [골드 피버 블래스트] 클리어 시 +500 골드 즉시 획득 및 골드 파티클 폭풍 발생!";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 0, 1 }, { 0, 1, 0 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 골든 원더";
+                        info.shapeDesc = "◆ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [미다스의 황금 블록] 1x1 초소형! 터질 때마다 +1,000 골드 즉시 획득 & 가로 라인 전체 골드 폭파!";
+                    }
+                    break;
+
+                case 3: // 퍼플 (번개/Z자)
+                    info.blockColor = (tier == 2) ? new Color(0.85f, 0.30f, 1.0f) : (tier == 1) ? new Color(0.75f, 0.40f, 1.0f) : new Color(0.65f, 0.49f, 1.0f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "썬더 지그재그 블록";
+                        info.shapeDesc = "⚡ 번개 Z자 모양 (2x3 지그재그형)";
+                        info.abilityDesc = "테트리스 Z자형 틈새 공간 메꿈 특화 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 1, 1, 0 }, { 0, 1, 1 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "체인 썬더 특수 블록";
+                        info.shapeDesc = "⚡ 번개 Z자 모양 (2x3 특수 블록화)";
+                        info.abilityDesc = "★ [체인 라이트닝 전격] 클리어 시 같은 색상 블록들을 번개로 연쇄 감전 폭파!";
+                        info.shapeMatrix = new int[,] { { 1, 1, 0 }, { 0, 1, 1 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 썬더 원더";
+                        info.shapeDesc = "⚡ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [천둥번개 낙뢰] 1x1 초소형! 배치 즉시 닿은 가로·세로 교차점 전격 폭파!";
+                    }
+                    break;
+
+                case 4: // 블루 (워터/T자)
+                    info.blockColor = (tier == 2) ? new Color(0.10f, 0.65f, 1.0f) : (tier == 1) ? new Color(0.20f, 0.70f, 1.0f) : new Color(0.36f, 0.77f, 1.0f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "아쿠아 볼록 T자 블록";
+                        info.shapeDesc = "⚓ 볼록 T자 모양 (2x3 돌출형)";
+                        info.abilityDesc = "3열 라인과 1열 돌출을 한 번에 맞추는 볼록형 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 1, 1 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "쓰나미 T자 특수 블록";
+                        info.shapeDesc = "⚓ 볼록 T자 모양 (2x3 특수 블록화)";
+                        info.abilityDesc = "★ [해일 라인 관통] 클리어 시 강력한 쓰나미 파도가 가로 전체 1줄을 휩쓸어 자동 소거!";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 1, 1 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 아쿠아 원더";
+                        info.shapeDesc = "⚓ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [대양의 소용돌이] 1x1 초소형! 터질 때 보드 최하단 2개 라인을 깨끗이 씻어내어 공간 대량 확보!";
+                    }
+                    break;
+
+                case 5: // 베리 (부메랑/L자)
+                    info.blockColor = (tier == 2) ? new Color(1.0f, 0.05f, 0.25f) : (tier == 1) ? new Color(1.0f, 0.15f, 0.35f) : new Color(0.92f, 0.22f, 0.44f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "부메랑 코너 L자 블록";
+                        info.shapeDesc = "🪃 코너 L자 모양 (3x3 대형 꺾임형)";
+                        info.abilityDesc = "구석진 3x3 코너 라인을 시원하게 채워주는 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 1, 0, 0 }, { 1, 0, 0 }, { 1, 1, 1 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "체리 폭탄 L자 특수 블록";
+                        info.shapeDesc = "🪃 코너 L자 모양 (3x3 특수 블록화)";
+                        info.abilityDesc = "★ [크로스 메가 밤] 클리어 시 꺾인 코너 중심 반경 2칸 십자 폭탄 폭파!";
+                        info.shapeMatrix = new int[,] { { 1, 0, 0 }, { 1, 0, 0 }, { 1, 1, 1 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 베리 원더";
+                        info.shapeDesc = "🪃 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [초소형 핵폭탄 젤리] 1x1 초소형! 터질 때 반경 3x3(9칸) 전 영역 초토화 폭파!";
+                    }
+                    break;
+
+                case 6: // 레몬 (큐브/2x2)
+                    info.blockColor = (tier == 2) ? new Color(1.0f, 0.78f, 0.0f) : (tier == 1) ? new Color(1.0f, 0.82f, 0.10f) : new Color(1.0f, 0.88f, 0.20f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "스위트 큐브 블록";
+                        info.shapeDesc = "■ 2x2 정사각 큐브 모양 (2x2 큐브형)";
+                        info.abilityDesc = "보드 어디든 쏙 들어가는 고효율 2x2 정사각 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 1, 1 }, { 1, 1 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "비타민 큐브 특수 블록";
+                        info.shapeDesc = "■ 2x2 정사각 큐브 모양 (2x2 특수 블록화)";
+                        info.abilityDesc = "★ [비타민 부스터] 클리어 시 경험치 +50% 획득 및 다음 3턴간 모든 클리어 점수 2배!";
+                        info.shapeMatrix = new int[,] { { 1, 1 }, { 1, 1 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 레몬 원더";
+                        info.shapeDesc = "■ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [울트라 레몬 젤리] 1x1 초소형! 터질 때 빈 칸 8칸 자동 채움 후 즉시 콤보 연계 폭파!";
+                    }
+                    break;
+
+                case 7: // 클라우드 (롱바/1x4)
+                    info.blockColor = (tier == 2) ? new Color(0.40f, 0.75f, 1.0f) : (tier == 1) ? new Color(0.50f, 0.78f, 1.0f) : new Color(0.60f, 0.82f, 1.0f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "와이드 롱바 블록";
+                        info.shapeDesc = "━ 1x4 일자형 롱바 모양 (1x4 직사각 라인)";
+                        info.abilityDesc = "가로 4칸을 시원하게 관통하는 직사각형 롱바 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 1, 1, 1, 1 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "무지개 롱바 특수 블록";
+                        info.shapeDesc = "━ 1x4 일자형 롱바 모양 (1x4 특수 블록화)";
+                        info.abilityDesc = "★ [무지개 라인 관통] 줄을 다 채우지 않아도 놓이는 즉시 해당 가로 라인 전체 싹쓸이 관통!";
+                        info.shapeMatrix = new int[,] { { 1, 1, 1, 1 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 클라우드 원더";
+                        info.shapeDesc = "━ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [천공의 구름 쉴드] 1x1 초소형! 터질 때 게임오버 1회 방지 배리어 생성 & 콤보 유지!";
+                    }
+                    break;
+
+                case 8: // 엔젤 (스페셜/십자)
+                default:
+                    info.blockColor = (tier == 2) ? new Color(1.0f, 0.70f, 0.90f) : (tier == 1) ? new Color(1.0f, 0.78f, 0.92f) : new Color(1.0f, 0.85f, 0.95f);
+                    if (tier == 0)
+                    {
+                        info.blockName = "엔젤 크로스 블록";
+                        info.shapeDesc = "✝ 대형 십자 크로스 모양 (3x3 십자형)";
+                        info.abilityDesc = "성스러운 빛을 머금은 십자형 스페셜 블록 (일반)";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 1, 0 } };
+                    }
+                    else if (tier == 1)
+                    {
+                        info.blockName = "성스러운 십자 특수 블록";
+                        info.shapeDesc = "✝ 대형 십자 크로스 모양 (3x3 특수 블록화)";
+                        info.abilityDesc = "★ [스페셜 체인 공명] 특수 블록끼리 서로 맞닿으면 줄을 안 채워도 닿은 블록 기준 가로·세로 전 라인 일제 대폭파!";
+                        info.shapeMatrix = new int[,] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 1, 0 } };
+                    }
+                    else
+                    {
+                        info.blockName = "미니 엔젤 원더";
+                        info.shapeDesc = "✝ 1×1 초소형 단일 셀";
+                        info.abilityDesc = "★ [기적의 올 클리어 엔젤] 1x1 초소형! 어디든 놓는 즉시 닿은 가로·세로 전 라인 폭파 + 보드 전체 올 클리어 발동!";
+                    }
+                    break;
+            }
+
+            return info;
+        }
+
+        public static MascotStats GetMascotStats(int idx, int level)
+        {
+            level = Mathf.Max(1, level);
+            MascotStats stats = new MascotStats();
+
+            int stars = GetBreakthroughStars(idx);
+            int blockTier = (stars >= 5) ? 2 : (stars >= 2) ? 1 : 0;
+            var uInfo = GetMascotUniqueBlockInfo(idx, blockTier);
+            stats.uniqueBlockName = uInfo.blockName;
+            stats.uniqueBlockShape = uInfo.shapeDesc;
+            stats.uniqueBlockAbility = uInfo.abilityDesc;
+
+            if (idx == 8)
+            {
+                stats.extraTime = 5.0f + (level - 1) * 0.25f;
+                stats.skipCount = 4 + (level / 10);
+                stats.bonusScore = 15.0f + (level - 1) * 1.0f;
+                stats.bonusExp = 15.0f + (level - 1) * 1.0f;
+            }
+            else
+            {
+                switch (idx)
+                {
+                    case 0:
+                        stats.extraTime = 1.0f + (level - 1) * 0.05f;
+                        stats.skipCount = 1;
+                        stats.bonusScore = 8.0f + (level - 1) * 0.6f;
+                        stats.bonusExp = 8.0f + (level - 1) * 0.6f;
+                        break;
+                    case 1:
+                        stats.extraTime = 4.0f + (level - 1) * 0.20f;
+                        stats.skipCount = 1 + (level / 25);
+                        stats.bonusScore = 5.0f + (level - 1) * 0.4f;
+                        stats.bonusExp = 3.0f + (level - 1) * 0.2f;
+                        break;
+                    case 2:
+                        stats.extraTime = 1.0f;
+                        stats.skipCount = 2 + (level / 15);
+                        stats.bonusScore = 3.0f + (level - 1) * 0.3f;
+                        stats.bonusExp = 10.0f + (level - 1) * 0.8f;
+                        break;
+                    case 3:
+                        stats.extraTime = 3.5f + (level - 1) * 0.18f;
+                        stats.skipCount = 2 + (level / 15);
+                        stats.bonusScore = 4.0f + (level - 1) * 0.3f;
+                        stats.bonusExp = 4.0f + (level - 1) * 0.3f;
+                        break;
+                    case 4:
+                        stats.extraTime = 2.5f + (level - 1) * 0.15f;
+                        stats.skipCount = 3 + (level / 10);
+                        stats.bonusScore = 5.0f + (level - 1) * 0.3f;
+                        stats.bonusExp = 5.0f + (level - 1) * 0.3f;
+                        break;
+                    case 5:
+                        stats.extraTime = 1.5f + (level - 1) * 0.05f;
+                        stats.skipCount = 2 + (level / 20);
+                        stats.bonusScore = 10.0f + (level - 1) * 0.7f;
+                        stats.bonusExp = 4.0f + (level - 1) * 0.2f;
+                        break;
+                    case 6:
+                        stats.extraTime = 2.0f + (level - 1) * 0.08f;
+                        stats.skipCount = 2;
+                        stats.bonusScore = 9.0f + (level - 1) * 0.6f;
+                        stats.bonusExp = 9.0f + (level - 1) * 0.6f;
+                        break;
+                    case 7:
+                        stats.extraTime = 4.5f + (level - 1) * 0.22f;
+                        stats.skipCount = 1;
+                        stats.bonusScore = 4.0f + (level - 1) * 0.2f;
+                        stats.bonusExp = 12.0f + (level - 1) * 0.9f;
+                        break;
+                }
+            }
+            return stats;
+        }
+
+        public static string GetMascotGrowthFocusText(int idx)
+        {
+            switch (idx)
+            {
+                case 0: return "특화: 레벨업 시 추가 점수 & 추가 경험치 집중 상승!";
+                case 1: return "특화: 레벨업 시 추가 시간 & 추가 점수 집중 상승!";
+                case 2: return "특화: 레벨업 시 추가 경험치 & 스킵 갯수 집중 상승!";
+                case 3: return "특화: 레벨업 시 추가 시간 & 스킵 갯수 집중 상승!";
+                case 4: return "특화: 레벨업 시 스킵 갯수 & 추가 시간 집중 상승!";
+                case 5: return "특화: 레벨업 시 추가 점수 & 스킵 갯수 집중 상승!";
+                case 6: return "특화: 레벨업 시 추가 점수 & 추가 경험치 동시 상승!";
+                case 7: return "특화: 레벨업 시 추가 경험치 & 추가 시간 집중 상승!";
+                case 8: return "특화: 올라운드 전 스텟 강력 성장 (시간·스킵·점수·경험치)!";
+                default: return "";
+            }
+        }
         public static readonly int[] BreakthroughCostsNormal = new int[] { 30, 40, 50, 60, 77 }; // 5 breakthroughs
         public static readonly int[] BreakthroughCostsSpecial = new int[] { 60, 60, 60, 60, 60 }; // 60 shards each
         public static readonly int[] MascotPricesCoins = new int[] { 0, 1000, 2000, 3000, 5000, 5000, 5000, 5000, 10000 };
@@ -300,6 +652,28 @@ namespace BlockBlast
         [SerializeField] private TMP_Text txtDetailBreakthrough;
         [SerializeField] private Button btnDetailEquip;
         [SerializeField] private TMP_Text txtDetailEquip;
+        [Header("Mascot Detail Stat Gauges (일자 게이지 및 강화 수치 프리뷰)")]
+        [SerializeField] private TMP_Text detailStoryText;
+        [Header("Mascot Detail Unique Block Evolution (3단계 동시 표시 & 잠금 회색화)")]
+        [SerializeField] private RectTransform[] detailBlockContainers = new RectTransform[3]; // 0=기본, 1=2돌, 2=5돌
+        [SerializeField] private Image[] detailStageCardBgs = new Image[3];
+        [SerializeField] private TMP_Text[] detailStageBadges = new TMP_Text[3];
+        [SerializeField] private TMP_Text[] detailStageNames = new TMP_Text[3];
+        [SerializeField] private TMP_Text[] detailStageStatuses = new TMP_Text[3];
+        [SerializeField] private GameObject[] detailStageLocks = new GameObject[3];
+        [SerializeField] private Button[] detailStageButtons = new Button[3];
+        [SerializeField] private TMP_Text detailEvolutionOverview;
+        [SerializeField] private Sprite miniBlockTileSprite;
+        private int _selectedEvolutionPreviewTier = 0;
+        [SerializeField] private TMP_Text detailGrowthFocusText;
+        [SerializeField] private Image detailGaugeTimeFill;
+        [SerializeField] private TMP_Text detailStatTimeVal;
+        [SerializeField] private Image detailGaugeSkipFill;
+        [SerializeField] private TMP_Text detailStatSkipVal;
+        [SerializeField] private Image detailGaugeScoreFill;
+        [SerializeField] private TMP_Text detailStatScoreVal;
+        [SerializeField] private Image detailGaugeExpFill;
+        [SerializeField] private TMP_Text detailStatExpVal;
         private int _selectedDetailMascotIdx = 0;
 
         [Header("Pickup Skill Details Modal")]
@@ -404,6 +778,9 @@ namespace BlockBlast
         [Header("Party Stage Tip")]
         [SerializeField] private TMP_Text partyTipText;
 
+        [Header("Player Level Badge")]
+        [SerializeField] private TMP_Text playerLevelBadgeText;
+
         [Header("Quit Modal (PC)")]
         [SerializeField] private GameObject quitModal;
         [SerializeField] private Button btnQuitConfirmYes;
@@ -473,6 +850,16 @@ namespace BlockBlast
 
         private int _selectedMenuIdx = 0;
         private Coroutine _mascotBounceCoroutine;
+        private float[] _mascotPunchScale = new float[4] { 1f, 1f, 1f, 1f };
+        private float[] _mascotPunchY = new float[4] { 0f, 0f, 0f, 0f };
+        private Coroutine[] _mascotPunchCoroutines = new Coroutine[4];
+        private static readonly Vector2[] DefaultMascotPositions = new Vector2[]
+        {
+            new Vector2(-315f, -60f),
+            new Vector2(-105f, 10f),
+            new Vector2(105f, 10f),
+            new Vector2(315f, -60f)
+        };
         private float _ignoreEscUntil = 0f;
 
         // Button Colors & Texts matching mascots (Adorable Pastel Palette)
@@ -571,15 +958,35 @@ namespace BlockBlast
             ApplyScreenSettings();
             UpdateScreenSettingsUI();
 
-            if (_mascotBounceCoroutine != null) StopCoroutine(_mascotBounceCoroutine);
-            _mascotBounceCoroutine = StartCoroutine(MascotIdleBounceRoutine());
+            EnsureCodexCardButtonsBound();
+            RefreshCurrenciesUI();
 
             UpdateLanguageUI(LocalizationManager.CurrentLanguage);
+            StartMascotIdleBounce();
+        }
+
+        private void OnEnable()
+        {
+            StartMascotIdleBounce();
+        }
+
+        private void OnDisable()
+        {
+            if (_mascotBounceCoroutine != null)
+            {
+                StopCoroutine(_mascotBounceCoroutine);
+                _mascotBounceCoroutine = null;
+            }
         }
 
         private void OnDestroy()
         {
             LocalizationManager.OnLanguageChanged -= UpdateLanguageUI;
+            if (_mascotBounceCoroutine != null)
+            {
+                StopCoroutine(_mascotBounceCoroutine);
+                _mascotBounceCoroutine = null;
+            }
         }
 
         // ==========================================
@@ -1081,6 +1488,7 @@ namespace BlockBlast
                     btn.transition = Selectable.Transition.None;
                     btn.onClick.AddListener(() =>
                     {
+                        PlayClickSound();
                         SelectMenu(idx, true);
                     });
 
@@ -1093,6 +1501,7 @@ namespace BlockBlast
                             cBtn.transition = Selectable.Transition.None;
                             cBtn.onClick.AddListener(() =>
                             {
+                                PlayClickSound();
                                 SelectMenu(idx, true);
                             });
                         }
@@ -1112,6 +1521,7 @@ namespace BlockBlast
                         lBtn.transition = Selectable.Transition.None;
                         lBtn.onClick.AddListener(() =>
                         {
+                            PlayClickSound();
                             SelectMenu(idx, false);
                             ExecuteSelectedMenuAction();
                         });
@@ -1208,7 +1618,7 @@ namespace BlockBlast
             // Punch animation on chosen mascot
             if (partyMascots != null && index < partyMascots.Length && partyMascots[index] != null)
             {
-                StartCoroutine(PunchMascot(partyMascots[index]));
+                TriggerPunchMascot(index);
             }
         }
 
@@ -1344,6 +1754,7 @@ namespace BlockBlast
             if (lobbyDiamondsText != null) lobbyDiamondsText.text = diaStr;
             if (shopCoinsText != null) shopCoinsText.text = coinStr;
             if (shopDiamondsText != null) shopDiamondsText.text = diaStr;
+            if (playerLevelBadgeText != null) playerLevelBadgeText.text = $"{PlayerPrefs.GetInt("Mallang_Player_Level", 1)}";
         }
 
         public void SetNickEditMode(bool isEditing)
@@ -1868,9 +2279,10 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = $"{price:N0} C " + LocalizationManager.Get("shop_btn_buy");
-                            txt.color = canAfford ? Color.white : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.color = canAfford ? new Color(0.24f, 0.12f, 0.00f, 1f) : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.fontStyle = FontStyles.Bold;
                             txt.enableAutoSizing = true;
-                            txt.fontSizeMin = 13f;
+                            txt.fontSizeMin = 16f;
                         }
                         if (btnImg != null)
                         {
@@ -2053,6 +2465,7 @@ namespace BlockBlast
                 if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayWindow();
                 if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
                 if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
+                EnsureCodexCardButtonsBound();
                 RefreshMascotCodexUI();
                 WireModalAutoClose(mascotCodexModal, CloseMascotModal);
                 mascotCodexModal.transform.SetAsLastSibling();
@@ -2086,6 +2499,7 @@ namespace BlockBlast
         {
             if (idx < 0 || idx >= 9) return;
             _selectedDetailMascotIdx = idx;
+            if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(false);
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
             if (FairyScreenTransition.Instance != null) FairyScreenTransition.Instance.EmitCornerSparkles();
             RefreshMascotDetailUI();
@@ -2102,6 +2516,10 @@ namespace BlockBlast
             if (BlockAudioManager.Instance != null) BlockAudioManager.Instance.PlayUIClick();
             if (mascotDetailModal != null) mascotDetailModal.SetActive(false);
             RefreshMascotCodexUI();
+            if ((mascotCodexModal == null || !mascotCodexModal.activeSelf) && (mascotModal == null || !mascotModal.activeSelf))
+            {
+                if (btnPlayGame != null) btnPlayGame.gameObject.SetActive(true);
+            }
         }
 
         public void OnClickDetailLevelUp()
@@ -2169,12 +2587,12 @@ namespace BlockBlast
 
             if (!isOwned)
             {
-                // Unowned mascots: Navigate directly to Shop Mascot tab!
+                // Unowned mascots: Navigate to Pickup tab for Angel & Pickup mascots, else Shop Mascot tab!
                 PlayClickSound();
                 CloseMascotDetail();
                 CloseMascotModal();
                 OpenShopModal();
-                SelectShopTab(2);
+                SelectShopTab(idx >= 4 ? 1 : 2);
             }
             else
             {
@@ -2272,15 +2690,15 @@ namespace BlockBlast
                 {
                     if (selectedMascot == i)
                     {
-                        codexCardStatusBadges[i].text = $"<color=#00B894>● {LocalizationManager.Get("codex_equipped")}</color>";
+                        codexCardStatusBadges[i].text = $"<color=#00796B><b>● {LocalizationManager.Get("codex_equipped")}</b></color>";
                     }
                     else if (isOwned)
                     {
-                        codexCardStatusBadges[i].text = $"<color=#E84393><b>[ {LocalizationManager.Get("mascot_btn_equip")} ]</b></color>";
+                        codexCardStatusBadges[i].text = $"<color=#C2185B><b>[ {LocalizationManager.Get("mascot_btn_equip")} ]</b></color>";
                     }
                     else
                     {
-                        codexCardStatusBadges[i].text = $"<color=#74B9FF>{string.Format(LocalizationManager.Get("mascot_shards_owned"), shards)}</color>";
+                        codexCardStatusBadges[i].text = $"<color=#1E3A8A><b>{string.Format(LocalizationManager.Get("mascot_shards_owned"), shards)}</b></color>";
                     }
                 }
 
@@ -2294,7 +2712,7 @@ namespace BlockBlast
 
             if (codexCollectionCountText != null)
             {
-                codexCollectionCountText.text = $"{LocalizationManager.Get("codex_collected")}: <color=#FFAA00><b>{ownedCount}</b></color> / 9";
+                codexCollectionCountText.text = $"<color=#3A1C05>{LocalizationManager.Get("codex_collected")}:</color> <color=#C2185B><b>{ownedCount}</b></color> <color=#3A1C05>/ 9</color>";
             }
             if (codexTitleText != null) codexTitleText.text = LocalizationManager.Get("codex_title");
             if (codexSubtitleText != null) codexSubtitleText.text = LocalizationManager.Get("codex_subtitle");
@@ -2312,30 +2730,161 @@ namespace BlockBlast
             int breakthroughCost = GetBreakthroughCost(idx);
             int levelUpCost = GetLevelUpCoinCost(idx);
 
-            if (detailMascotAvatar != null && mascotAvatars != null && idx < mascotAvatars.Length)
+            if (detailMascotAvatar != null)
             {
-                detailMascotAvatar.sprite = mascotAvatars[idx];
+                if (mascotAvatars != null && idx < mascotAvatars.Length)
+                {
+                    detailMascotAvatar.sprite = mascotAvatars[idx];
+                }
+                var jelly = detailMascotAvatar.GetComponent<PuddingJellyTouchPhysics>();
+                if (jelly != null)
+                {
+                    jelly.CaptureCurrentAsOriginal();
+                    jelly.ResetToRested();
+                }
             }
             if (detailMascotName != null) detailMascotName.text = GetLocalizedMascotName(idx);
             if (detailMascotTitle != null) detailMascotTitle.text = $"[{GetLocalizedMascotTitle(idx)}]";
 
-            // 상세 창 설명 구성 (컨셉 + 스토리 + 고유능력)
+            // 상세 수치 및 다음 레벨 강화 프리뷰 계산
+            var curStats = GetMascotStats(idx, curLvl);
+            var nextStats = (curLvl < maxCap) ? GetMascotStats(idx, curLvl + 1) : curStats;
+            float diffTime = nextStats.extraTime - curStats.extraTime;
+            int diffSkip = nextStats.skipCount - curStats.skipCount;
+            float diffScore = nextStats.bonusScore - curStats.bonusScore;
+            float diffExp = nextStats.bonusExp - curStats.bonusExp;
+            string story = GetLocalizedMascotStory(idx);
+            string growthFocus = GetMascotGrowthFocusText(idx);
+
+            // 스토리 텍스트 갱신
+            if (detailStoryText != null)
+            {
+                detailStoryText.text = $"“{story}”";
+            }
+
+            // 고유 블록 3단 진화 비주얼 및 정보 갱신 (기본 / 2돌파 / 5돌파 동시 표시 및 잠금 회색화)
+            RefreshUniqueBlockEvolutionUI();
+
+            // 특화 성장 안내 문구
+            if (detailGrowthFocusText != null)
+            {
+                detailGrowthFocusText.text = $"※ {growthFocus}";
+            }
+
+            void SetGaugeFill(Image img, float fill)
+        {
+            if (img == null) return;
+            fill = Mathf.Clamp01(fill);
+            img.fillAmount = fill;
+            RectTransform rt = img.rectTransform;
+            if (rt != null)
+            {
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = new Vector2(fill, 1f);
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+            }
+            img.gameObject.SetActive(fill > 0.005f);
+        }
+
+        // 1. 추가 시간 게이지 & 강화 프리뷰
+        if (detailGaugeTimeFill != null)
+        {
+            SetGaugeFill(detailGaugeTimeFill, curStats.extraTime / 10.0f);
+        }
+        if (detailStatTimeVal != null)
+        {
+            if (curLvl < maxCap)
+            {
+                detailStatTimeVal.text = $"<b>+{curStats.extraTime:F1}초</b> <color=#00B894>➔ <b>+{nextStats.extraTime:F1}초</b></color> <color=#F39C12><b>(+{diffTime:F1}초 ▲)</b></color>";
+            }
+            else
+            {
+                detailStatTimeVal.text = $"<b>+{curStats.extraTime:F1}초</b> <color=#E17055><b>[MAX 레벨]</b></color>";
+            }
+        }
+
+        // 2. 스킵 횟수 게이지 & 강화 프리뷰
+        if (detailGaugeSkipFill != null)
+        {
+            SetGaugeFill(detailGaugeSkipFill, (float)curStats.skipCount / 6.0f);
+        }
+        if (detailStatSkipVal != null)
+        {
+            if (curLvl < maxCap)
+            {
+                if (diffSkip > 0)
+                    detailStatSkipVal.text = $"<b>+{curStats.skipCount}회</b> <color=#00B894>➔ <b>+{nextStats.skipCount}회</b></color> <color=#F39C12><b>(+{diffSkip}회 ▲)</b></color>";
+                else
+                    detailStatSkipVal.text = $"<b>+{curStats.skipCount}회</b> <color=#00B894>➔ <b>+{nextStats.skipCount}회</b></color> <color=#888888>(유지)</color>";
+            }
+            else
+            {
+                detailStatSkipVal.text = $"<b>+{curStats.skipCount}회</b> <color=#E17055><b>[MAX 레벨]</b></color>";
+            }
+        }
+
+        // 3. 추가 점수 게이지 & 강화 프리뷰
+        if (detailGaugeScoreFill != null)
+        {
+            SetGaugeFill(detailGaugeScoreFill, curStats.bonusScore / 60.0f);
+        }
+        if (detailStatScoreVal != null)
+        {
+            if (curLvl < maxCap)
+            {
+                detailStatScoreVal.text = $"<b>+{curStats.bonusScore:F1}%</b> <color=#00B894>➔ <b>+{nextStats.bonusScore:F1}%</b></color> <color=#F39C12><b>(+{diffScore:F1}% ▲)</b></color>";
+            }
+            else
+            {
+                detailStatScoreVal.text = $"<b>+{curStats.bonusScore:F1}%</b> <color=#E17055><b>[MAX 레벨]</b></color>";
+            }
+        }
+
+        // 4. 추가 경험치 게이지 & 강화 프리뷰
+        if (detailGaugeExpFill != null)
+        {
+            SetGaugeFill(detailGaugeExpFill, curStats.bonusExp / 60.0f);
+        }
+            if (detailStatExpVal != null)
+            {
+                if (curLvl < maxCap)
+                {
+                    detailStatExpVal.text = $"<b>+{curStats.bonusExp:F1}%</b> <color=#00B894>➔ <b>+{nextStats.bonusExp:F1}%</b></color> <color=#F39C12><b>(+{diffExp:F1}% ▲)</b></color>";
+                }
+                else
+                {
+                    detailStatExpVal.text = $"<b>+{curStats.bonusExp:F1}%</b> <color=#E17055><b>[MAX 레벨]</b></color>";
+                }
+            }
+
+            // 상세 창 통합 텍스트 설명 (기존 하위 호환)
             if (detailAbilityDesc != null)
             {
-                string concept = GetLocalizedMascotConcept(idx);
-                string story = GetLocalizedMascotStory(idx);
-                string ability = GetLocalizedMascotDesc(idx);
-
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                if (!string.IsNullOrEmpty(concept))
-                {
-                    sb.AppendLine($"<color=#E84393><b>{LocalizationManager.Get("mascot_section_concept")}</b></color>\n{concept}\n");
-                }
+
+                // 1. 스토리 (2줄 스토리)
                 if (!string.IsNullOrEmpty(story))
                 {
-                    sb.AppendLine($"<color=#6C5CE7><b>{LocalizationManager.Get("mascot_section_story")}</b></color>\n{story}\n");
+                    sb.AppendLine($"<color=#7C5295><b>[말랑이 스토리]</b></color>\n{story}\n");
                 }
-                sb.AppendLine($"<color=#0984E3><b>{LocalizationManager.Get("mascot_section_skill")}</b></color>\n{ability}");
+
+                // 2. 고유 블록 정보
+                sb.AppendLine($"<color=#D63031><b>[고유 블록]</b></color>");
+                sb.AppendLine($"• <b>{curStats.uniqueBlockName}</b>");
+                sb.AppendLine($"• 효과: {curStats.uniqueBlockAbility}\n");
+
+                // 3. 5대 스텟 및 특화 성장 정보
+                sb.AppendLine($"<color=#0984E3><b>[말랑이 강화 & 스텟 (Lv.{curLvl})]</b></color>");
+                sb.AppendLine($"• 추가 시간: +{curStats.extraTime:F1}초 ➔ +{nextStats.extraTime:F1}초 (+{diffTime:F1}초 ▲)");
+                sb.AppendLine($"• 스킵 횟수: +{curStats.skipCount}회 ➔ +{nextStats.skipCount}회");
+                sb.AppendLine($"• 추가 점수: +{curStats.bonusScore:F1}% ➔ +{nextStats.bonusScore:F1}% (+{diffScore:F1}% ▲)");
+                sb.AppendLine($"• 추가 경험치: +{curStats.bonusExp:F1}% ➔ +{nextStats.bonusExp:F1}% (+{diffExp:F1}% ▲)");
+
+                if (!string.IsNullOrEmpty(growthFocus))
+                {
+                    sb.AppendLine($"\n<color=#E67E22><b>※ {growthFocus}</b></color>");
+                }
 
                 detailAbilityDesc.text = sb.ToString();
             }
@@ -2347,8 +2896,8 @@ namespace BlockBlast
                 {
                     var t = card.Find("Title")?.GetComponent<TMP_Text>();
                     if (t != null) t.text = LocalizationManager.Get("mascot_detail_title");
-                    var hdr = card.Find("AbilityBox/AbilHeader")?.GetComponent<TMP_Text>();
-                    if (hdr != null) hdr.text = LocalizationManager.Get("mascot_detail_lore_header");
+                    var hdr = card.Find("AbilityBox/AbilHeader");
+                    if (hdr != null) hdr.gameObject.SetActive(false);
                 }
             }
 
@@ -2375,7 +2924,7 @@ namespace BlockBlast
             }
             if (detailLevelFill != null)
             {
-                detailLevelFill.fillAmount = Mathf.Clamp01((float)curLvl / maxCap);
+                SetGaugeFill(detailLevelFill, (float)curLvl / maxCap);
             }
 
             if (detailShardsText != null)
@@ -2430,7 +2979,7 @@ namespace BlockBlast
                     btnDetailEquip.interactable = true;
                     if (txtDetailEquip != null)
                     {
-                        txtDetailEquip.text = LocalizationManager.Get("mascot_btn_buy_in_shop");
+                        txtDetailEquip.text = (idx >= 4) ? LocalizationManager.Get("mascot_obtain_pickup") : LocalizationManager.Get("mascot_btn_buy_in_shop");
                     }
                 }
                 else
@@ -2472,6 +3021,11 @@ namespace BlockBlast
                 btnCloseMascotCodex.onClick.AddListener(CloseMascotModal);
             }
 
+            EnsureCodexCardButtonsBound();
+        }
+
+        public void EnsureCodexCardButtonsBound()
+        {
             if (codexCardButtons != null)
             {
                 for (int i = 0; i < codexCardButtons.Length; i++)
@@ -2483,6 +3037,16 @@ namespace BlockBlast
                         codexCardButtons[i].onClick.AddListener(() => OpenMascotDetail(idx));
                     }
                 }
+            }
+        }
+
+        public void SetupPlayerLevelBadge(TMP_Text lvlText)
+        {
+            playerLevelBadgeText = lvlText;
+            if (playerLevelBadgeText != null)
+            {
+                int pLvl = PlayerPrefs.GetInt("Mallang_Player_Level", 1);
+                playerLevelBadgeText.text = $"{pLvl}";
             }
         }
 
@@ -2535,6 +3099,259 @@ namespace BlockBlast
                 btnDetailEquip.onClick.RemoveAllListeners();
                 btnDetailEquip.onClick.AddListener(OnClickDetailEquipOrUnlock);
             }
+        }
+
+        public void SetupMascotDetailGauges(
+            TMP_Text storyTxt,
+            TMP_Text uniqueBlockTitle,
+            TMP_Text uniqueBlockDesc,
+            TMP_Text growthFocusTxt,
+            Image timeFill, TMP_Text timeVal,
+            Image skipFill, TMP_Text skipVal,
+            Image scoreFill, TMP_Text scoreVal,
+            Image expFill, TMP_Text expVal)
+        {
+            detailStoryText = storyTxt;
+            detailGrowthFocusText = growthFocusTxt;
+            detailGaugeTimeFill = timeFill;
+            detailStatTimeVal = timeVal;
+            detailGaugeSkipFill = skipFill;
+            detailStatSkipVal = skipVal;
+            detailGaugeScoreFill = scoreFill;
+            detailStatScoreVal = scoreVal;
+            detailGaugeExpFill = expFill;
+            detailStatExpVal = expVal;
+        }
+
+        public void SetupMascotDetailUniqueBlockEvolution(
+            RectTransform[] containers,
+            Image[] cardBgs,
+            TMP_Text[] badges,
+            TMP_Text[] names,
+            TMP_Text[] statuses,
+            GameObject[] locks,
+            Button[] buttons,
+            TMP_Text overviewTxt,
+            Sprite tileSprite)
+        {
+            detailBlockContainers = containers;
+            detailStageCardBgs = cardBgs;
+            detailStageBadges = badges;
+            detailStageNames = names;
+            detailStageStatuses = statuses;
+            detailStageLocks = locks;
+            detailStageButtons = buttons;
+            detailEvolutionOverview = overviewTxt;
+            miniBlockTileSprite = tileSprite;
+
+            for (int i = 0; i < 3; i++)
+            {
+                int tier = i;
+                if (detailStageButtons != null && i < detailStageButtons.Length && detailStageButtons[i] != null)
+                {
+                    detailStageButtons[i].onClick.RemoveAllListeners();
+                    detailStageButtons[i].onClick.AddListener(() => OnClickEvolutionStage(tier));
+                }
+            }
+        }
+
+        public void RefreshUniqueBlockEvolutionUI()
+        {
+            int mascotIdx = _selectedDetailMascotIdx;
+            int stars = GetBreakthroughStars(mascotIdx);
+
+            bool[] isUnlocked = new bool[3];
+            isUnlocked[0] = true;             // 기본: 상시 해금
+            isUnlocked[1] = (stars >= 2);     // ★2돌: 2돌파 이상 해금
+            isUnlocked[2] = (stars >= 5);     // ★5돌: 5돌파 이상 해금
+
+            int activeTier = (stars >= 5) ? 2 : (stars >= 2) ? 1 : 0;
+            _selectedEvolutionPreviewTier = activeTier;
+
+            for (int tier = 0; tier < 3; tier++)
+            {
+                var info = GetMascotUniqueBlockInfo(mascotIdx, tier);
+                bool unlocked = isUnlocked[tier];
+                bool isActive = (tier == activeTier);
+
+                // 1. Text & Badges
+                if (detailStageBadges != null && tier < detailStageBadges.Length && detailStageBadges[tier] != null)
+                {
+                    if (tier == 0)
+                        detailStageBadges[tier].text = "<color=#0984E3>[기본 고유]</color>";
+                    else if (tier == 1)
+                        detailStageBadges[tier].text = unlocked ? "<color=#E67E22>[★2돌 특수]</color>" : "<color=#888888>[★2돌 특수]</color>";
+                    else
+                        detailStageBadges[tier].text = unlocked ? "<color=#D63031>[★5돌 1×1]</color>" : "<color=#888888>[★5돌 1×1]</color>";
+                }
+
+                if (detailStageNames != null && tier < detailStageNames.Length && detailStageNames[tier] != null)
+                {
+                    detailStageNames[tier].text = unlocked ? $"<b>{info.blockName}</b>" : $"<color=#777777>{info.blockName}</color>";
+                }
+
+                if (detailStageStatuses != null && tier < detailStageStatuses.Length && detailStageStatuses[tier] != null)
+                {
+                    if (isActive)
+                        detailStageStatuses[tier].text = "<color=#00B894><b>● 현재 적용</b></color>";
+                    else if (unlocked)
+                        detailStageStatuses[tier].text = "<color=#0984E3><b>✓ 해금됨</b></color>";
+                    else
+                        detailStageStatuses[tier].text = (tier == 1) ? "<color=#888888><b>🔒 2돌파 잠김</b></color>" : "<color=#888888><b>🔒 5돌파 잠김</b></color>";
+                }
+
+                // 2. Lock Overlay
+                if (detailStageLocks != null && tier < detailStageLocks.Length && detailStageLocks[tier] != null)
+                {
+                    detailStageLocks[tier].SetActive(!unlocked);
+                }
+
+                // 3. Card Background Tint
+                if (detailStageCardBgs != null && tier < detailStageCardBgs.Length && detailStageCardBgs[tier] != null)
+                {
+                    if (isActive)
+                    {
+                        detailStageCardBgs[tier].color = (tier == 2) ? new Color(1f, 0.93f, 0.95f, 1f) :
+                                                         (tier == 1) ? new Color(1f, 0.96f, 0.91f, 1f) :
+                                                                       new Color(0.93f, 0.98f, 0.96f, 1f);
+                    }
+                    else if (unlocked)
+                    {
+                        detailStageCardBgs[tier].color = new Color(0.98f, 0.98f, 1f, 0.95f);
+                    }
+                    else
+                    {
+                        // Gray / muted stone tint for locked feel
+                        detailStageCardBgs[tier].color = new Color(0.90f, 0.88f, 0.93f, 0.65f);
+                    }
+                }
+
+                // 4. Render Mini Block (Vibrant Color for Unlocked, Stone Gray for Locked!)
+                if (detailBlockContainers != null && tier < detailBlockContainers.Length && detailBlockContainers[tier] != null)
+                {
+                    var container = detailBlockContainers[tier];
+                    for (int cIdx = container.childCount - 1; cIdx >= 0; cIdx--)
+                    {
+                        GameObject childGo = container.GetChild(cIdx).gameObject;
+                        if (Application.isPlaying) Destroy(childGo);
+                        else DestroyImmediate(childGo);
+                    }
+
+                    // Grayscale color if locked, character color if unlocked!
+                    Color cellColor = unlocked ? info.blockColor : new Color(0.55f, 0.53f, 0.60f, 0.80f);
+
+                    if (info.isOneByOne)
+                    {
+                        // 1x1 Single Jewel Cell
+                        GameObject cellObj = new GameObject("Cell_1x1", typeof(RectTransform), typeof(Image));
+                        cellObj.transform.SetParent(container, false);
+                        RectTransform rt = cellObj.GetComponent<RectTransform>();
+                        rt.anchorMin = new Vector2(0.5f, 0.5f);
+                        rt.anchorMax = new Vector2(0.5f, 0.5f);
+                        rt.pivot = new Vector2(0.5f, 0.5f);
+                        rt.sizeDelta = new Vector2(46f, 46f);
+                        rt.anchoredPosition = Vector2.zero;
+
+                        Image img = cellObj.GetComponent<Image>();
+                        if (miniBlockTileSprite != null) img.sprite = miniBlockTileSprite;
+                        img.type = Image.Type.Sliced;
+                        img.color = cellColor;
+
+                        // Star emblem
+                        GameObject starObj = new GameObject("Star", typeof(RectTransform), typeof(TextMeshProUGUI));
+                        starObj.transform.SetParent(cellObj.transform, false);
+                        RectTransform srt = starObj.GetComponent<RectTransform>();
+                        srt.anchorMin = Vector2.zero;
+                        srt.anchorMax = Vector2.one;
+                        srt.sizeDelta = Vector2.zero;
+                        TextMeshProUGUI stmp = starObj.GetComponent<TextMeshProUGUI>();
+                        stmp.text = "★";
+                        stmp.fontSize = 24;
+                        stmp.alignment = TextAlignmentOptions.Center;
+                        stmp.color = unlocked ? Color.white : new Color(0.38f, 0.38f, 0.44f, 0.85f);
+                    }
+                    else
+                    {
+                        int rows = info.shapeMatrix.GetLength(0);
+                        int cols = info.shapeMatrix.GetLength(1);
+                        float cellSize = (cols >= 4 || rows >= 4) ? 14f : 18f;
+                        float spacing = 2f;
+
+                        float totalW = cols * cellSize + (cols - 1) * spacing;
+                        float totalH = rows * cellSize + (rows - 1) * spacing;
+
+                        float startX = -totalW * 0.5f + cellSize * 0.5f;
+                        float startY = totalH * 0.5f - cellSize * 0.5f;
+
+                        for (int r = 0; r < rows; r++)
+                        {
+                            for (int c = 0; c < cols; c++)
+                            {
+                                if (info.shapeMatrix[r, c] == 1)
+                                {
+                                    GameObject cellObj = new GameObject($"Cell_{r}_{c}", typeof(RectTransform), typeof(Image));
+                                    cellObj.transform.SetParent(container, false);
+                                    RectTransform rt = cellObj.GetComponent<RectTransform>();
+                                    rt.anchorMin = new Vector2(0.5f, 0.5f);
+                                    rt.anchorMax = new Vector2(0.5f, 0.5f);
+                                    rt.pivot = new Vector2(0.5f, 0.5f);
+                                    rt.sizeDelta = new Vector2(cellSize, cellSize);
+                                    rt.anchoredPosition = new Vector2(startX + c * (cellSize + spacing), startY - r * (cellSize + spacing));
+
+                                    Image img = cellObj.GetComponent<Image>();
+                                    if (miniBlockTileSprite != null) img.sprite = miniBlockTileSprite;
+                                    img.type = Image.Type.Sliced;
+                                    img.color = cellColor;
+
+                                    if (info.isSpecial)
+                                    {
+                                        GameObject starObj = new GameObject("Star", typeof(RectTransform), typeof(TextMeshProUGUI));
+                                        starObj.transform.SetParent(cellObj.transform, false);
+                                        RectTransform srt = starObj.GetComponent<RectTransform>();
+                                        srt.anchorMin = Vector2.zero;
+                                        srt.anchorMax = Vector2.one;
+                                        srt.sizeDelta = Vector2.zero;
+                                        TextMeshProUGUI stmp = starObj.GetComponent<TextMeshProUGUI>();
+                                        stmp.text = "✦";
+                                        stmp.fontSize = (cellSize >= 18f) ? 11 : 9;
+                                        stmp.alignment = TextAlignmentOptions.Center;
+                                        stmp.color = unlocked ? Color.white : new Color(0.38f, 0.38f, 0.44f, 0.80f);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5. Update Overview Text
+            UpdateEvolutionOverviewText(mascotIdx, activeTier);
+        }
+
+        public void OnClickEvolutionStage(int tier)
+        {
+            PlayClickSound();
+            _selectedEvolutionPreviewTier = Mathf.Clamp(tier, 0, 2);
+            UpdateEvolutionOverviewText(_selectedDetailMascotIdx, _selectedEvolutionPreviewTier);
+        }
+
+        private void UpdateEvolutionOverviewText(int mascotIdx, int selectedTier)
+        {
+            if (detailEvolutionOverview == null) return;
+
+            int stars = GetBreakthroughStars(mascotIdx);
+            int activeTier = (stars >= 5) ? 2 : (stars >= 2) ? 1 : 0;
+            var viewInfo = GetMascotUniqueBlockInfo(mascotIdx, selectedTier);
+
+            bool isViewActive = (selectedTier == activeTier);
+            bool isViewUnlocked = (selectedTier == 0) || (selectedTier == 1 && stars >= 2) || (selectedTier == 2 && stars >= 5);
+
+            string headerTag = isViewActive ? "<color=#00B894><b>[● 현재 적용 능력]</b></color>" :
+                               isViewUnlocked ? "<color=#0984E3><b>[✓ 해금된 능력]</b></color>" :
+                               (selectedTier == 1) ? "<color=#E67E22><b>[🔒 ★2돌파 시 해금 미리보기]</b></color>" :
+                                                     "<color=#D63031><b>[🔒 ★5돌파 MAX 시 해금 미리보기]</b></color>";
+
+            detailEvolutionOverview.text = $"{headerTag} <b>{viewInfo.blockName}</b>: {viewInfo.abilityDesc}";
         }
 
         public void RefreshMascotModalUI()
@@ -2740,7 +3557,8 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = LocalizationManager.Get("shop_btn_owned");
-                            txt.color = new Color(0.65f, 0.60f, 0.75f, 1f);
+                            txt.color = new Color(0.38f, 0.30f, 0.50f, 1f);
+                            txt.fontStyle = FontStyles.Bold;
                         }
                         if (btnImg != null && shopCreamBtnSprite != null)
                         {
@@ -2756,7 +3574,10 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = $"{price:N0} G " + LocalizationManager.Get("shop_btn_buy");
-                            txt.color = canAfford ? Color.white : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.color = canAfford ? new Color(0.24f, 0.12f, 0.00f, 1f) : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.fontStyle = FontStyles.Bold;
+                            txt.enableAutoSizing = true;
+                            txt.fontSizeMin = 16f;
                         }
                         if (btnImg != null)
                         {
@@ -2978,23 +3799,23 @@ namespace BlockBlast
             Transform dCard = shopModal.transform.Find("DialogCard");
             if (dCard == null) return;
 
-            // 1. Diamond Currency Badge (High-Contrast Rich Dark Berry Container)
+            // 1. Diamond Currency Badge (Clean Marshmallow Pill)
             Transform diaBadge = dCard.Find("DiaBadge");
             if (diaBadge != null)
             {
                 RectTransform rt = diaBadge.GetComponent<RectTransform>();
                 if (rt != null)
                 {
-                    rt.anchoredPosition = new Vector2(-400, -50);
-                    rt.sizeDelta = new Vector2(195, 62);
+                    rt.anchoredPosition = new Vector2(-380, -48);
+                    rt.sizeDelta = new Vector2(180, 56);
                 }
                 Image bg = diaBadge.GetComponent<Image>();
-                if (bg != null) bg.color = new Color(0.18f, 0.12f, 0.32f, 0.95f);
+                if (bg != null) bg.color = new Color(0.95f, 0.92f, 1f, 0.95f);
                 if (shopDiamondsText != null)
                 {
-                    shopDiamondsText.color = new Color(0.35f, 0.92f, 1f); // Vibrant glowing cyan
+                    shopDiamondsText.color = new Color(0.18f, 0.08f, 0.26f, 1f); // Deep crisp purple
                     shopDiamondsText.fontStyle = FontStyles.Bold;
-                    shopDiamondsText.fontSize = 28;
+                    shopDiamondsText.fontSize = 24;
                 }
                 Transform icon = diaBadge.Find("Icon");
                 if (icon != null)
@@ -3002,29 +3823,29 @@ namespace BlockBlast
                     RectTransform irt = icon.GetComponent<RectTransform>();
                     if (irt != null)
                     {
-                        irt.anchoredPosition = new Vector2(28, 0);
-                        irt.sizeDelta = new Vector2(40, 40);
+                        irt.anchoredPosition = new Vector2(26, 0);
+                        irt.sizeDelta = new Vector2(38, 38);
                     }
                 }
             }
 
-            // 2. Gold Currency Badge (High-Contrast Rich Dark Berry Container)
+            // 2. Gold Currency Badge (Clean Marshmallow Pill)
             Transform coinBadge = dCard.Find("CoinBadge");
             if (coinBadge != null)
             {
                 RectTransform rt = coinBadge.GetComponent<RectTransform>();
                 if (rt != null)
                 {
-                    rt.anchoredPosition = new Vector2(-195, -50);
-                    rt.sizeDelta = new Vector2(195, 62);
+                    rt.anchoredPosition = new Vector2(-180, -48);
+                    rt.sizeDelta = new Vector2(180, 56);
                 }
                 Image bg = coinBadge.GetComponent<Image>();
-                if (bg != null) bg.color = new Color(0.18f, 0.12f, 0.32f, 0.95f);
+                if (bg != null) bg.color = new Color(0.95f, 0.92f, 1f, 0.95f);
                 if (shopCoinsText != null)
                 {
-                    shopCoinsText.color = new Color(1f, 0.88f, 0.35f); // Rich warm coin gold
+                    shopCoinsText.color = new Color(0.18f, 0.08f, 0.26f, 1f); // Deep crisp purple
                     shopCoinsText.fontStyle = FontStyles.Bold;
-                    shopCoinsText.fontSize = 28;
+                    shopCoinsText.fontSize = 24;
                 }
                 Transform icon = coinBadge.Find("Icon");
                 if (icon != null)
@@ -3032,8 +3853,8 @@ namespace BlockBlast
                     RectTransform irt = icon.GetComponent<RectTransform>();
                     if (irt != null)
                     {
-                        irt.anchoredPosition = new Vector2(28, 0);
-                        irt.sizeDelta = new Vector2(40, 40);
+                        irt.anchoredPosition = new Vector2(26, 0);
+                        irt.sizeDelta = new Vector2(38, 38);
                     }
                 }
             }
@@ -3277,7 +4098,7 @@ namespace BlockBlast
                 prt.anchorMax = new Vector2(0.5f, 1f);
                 prt.pivot = new Vector2(0.5f, 0.5f);
                 prt.anchoredPosition = new Vector2(0f, -565f);
-                prt.sizeDelta = new Vector2(880f, 108f);
+                prt.sizeDelta = new Vector2(880f, 125f);
 
                 Image pImg = pCardObj.GetComponent<Image>();
                 if (refCardImg != null && refCardImg.sprite != null) pImg.sprite = refCardImg.sprite;
@@ -3291,13 +4112,13 @@ namespace BlockBlast
                 titRt.anchorMin = new Vector2(0f, 0.5f);
                 titRt.anchorMax = new Vector2(0.55f, 0.5f);
                 titRt.pivot = new Vector2(0f, 0.5f);
-                titRt.anchoredPosition = new Vector2(25f, 28f);
+                titRt.anchoredPosition = new Vector2(25f, 34f);
                 titRt.sizeDelta = new Vector2(400f, 32f);
                 TMP_Text titTxt = titleObj.GetComponent<TMP_Text>();
                 titTxt.text = LocalizationManager.Get("pickup_pity_title", "★ 60회 확정 소환 천장 게이지 ★");
-                titTxt.fontSize = 20;
+                titTxt.fontSize = 22;
                 titTxt.fontStyle = FontStyles.Bold;
-                titTxt.color = new Color(1f, 0.88f, 0.51f);
+                titTxt.color = new Color(1f, 0.90f, 0.55f);
 
                 GameObject cntObj = new GameObject("CounterTxt", typeof(RectTransform), typeof(TextMeshProUGUI));
                 cntObj.transform.SetParent(pCardObj.transform, false);
@@ -3305,13 +4126,13 @@ namespace BlockBlast
                 cntRt.anchorMin = new Vector2(0.45f, 0.5f);
                 cntRt.anchorMax = new Vector2(1f, 0.5f);
                 cntRt.pivot = new Vector2(1f, 0.5f);
-                cntRt.anchoredPosition = new Vector2(-25f, 28f);
+                cntRt.anchoredPosition = new Vector2(-25f, 34f);
                 cntRt.sizeDelta = new Vector2(400f, 32f);
                 TMP_Text cntTxt = cntObj.GetComponent<TMP_Text>();
                 cntTxt.alignment = TextAlignmentOptions.Right;
-                cntTxt.fontSize = 18;
+                cntTxt.fontSize = 19;
                 cntTxt.fontStyle = FontStyles.Bold;
-                cntTxt.color = new Color(0.50f, 0.85f, 1f);
+                cntTxt.color = new Color(0.00f, 0.92f, 1f);
 
                 // Rail Background
                 GameObject railObj = new GameObject("RailBg", typeof(RectTransform), typeof(Image));
@@ -3357,7 +4178,7 @@ namespace BlockBlast
                 {
                     float xPos = -370f + (m * totalWidth / 6f);
                     bool isFinal = (m == 6);
-                    float discSize = isFinal ? 42f : 34f;
+                    float discSize = isFinal ? 46f : 36f;
 
                     GameObject nodeObj = new GameObject($"Node_{m}", typeof(RectTransform));
                     nodeObj.transform.SetParent(nodesRoot.transform, false);
@@ -3389,7 +4210,7 @@ namespace BlockBlast
                     irt.anchorMax = new Vector2(0.5f, 0.5f);
                     irt.pivot = new Vector2(0.5f, 0.5f);
                     irt.anchoredPosition = Vector2.zero;
-                    irt.sizeDelta = isFinal ? new Vector2(32f, 32f) : new Vector2(24f, 24f);
+                    irt.sizeDelta = isFinal ? new Vector2(34f, 34f) : new Vector2(26f, 26f);
                     Image iImg = iconObj.GetComponent<Image>();
                     iImg.preserveAspect = true;
                     if (isFinal)
@@ -3408,19 +4229,19 @@ namespace BlockBlast
                     lrt.anchorMin = new Vector2(0.5f, 0.5f);
                     lrt.anchorMax = new Vector2(0.5f, 0.5f);
                     lrt.pivot = new Vector2(0.5f, 1f);
-                    lrt.anchoredPosition = new Vector2(0f, -24f);
-                    lrt.sizeDelta = new Vector2(110f, 32f);
+                    lrt.anchoredPosition = new Vector2(0f, -28f);
+                    lrt.sizeDelta = new Vector2(120f, 36f);
                     TMP_Text lTxt = lblObj.GetComponent<TMP_Text>();
                     lTxt.alignment = TextAlignmentOptions.Top;
-                    lTxt.fontSize = isFinal ? 13 : 12;
+                    lTxt.fontSize = isFinal ? 16 : 15;
                     lTxt.fontStyle = FontStyles.Bold;
                     if (isFinal)
                     {
-                        lTxt.text = "<color=#FFE600>★ 60 확정</color>";
+                        lTxt.text = "<color=#FF80AB>★ 60 확정</color>";
                     }
                     else
                     {
-                        lTxt.text = $"<size=12>{m * 10}회</size>\n<color=#FFE082><size=11>+5천G</size></color>";
+                        lTxt.text = $"<size=15>{m * 10}회</size>\n<color=#FFE082><size=13>+5천G</size></color>";
                     }
                 }
             }
@@ -3430,7 +4251,7 @@ namespace BlockBlast
                 if (prt != null)
                 {
                     prt.anchoredPosition = new Vector2(0f, -565f);
-                    prt.sizeDelta = new Vector2(880f, 108f);
+                    prt.sizeDelta = new Vector2(880f, 125f);
                 }
             }
 
@@ -3547,13 +4368,15 @@ namespace BlockBlast
                     var lTxt = node.Find("Label")?.GetComponent<TMP_Text>();
                     if (lTxt != null)
                     {
+                        lTxt.fontSize = isFinal ? 16 : 15;
+                        lTxt.fontStyle = FontStyles.Bold;
                         if (isFinal)
                         {
-                            lTxt.text = reached ? "<color=#00E676><b>★ 확정 달성!</b></color>" : "<color=#FFE600>★ 60 확정</color>";
+                            lTxt.text = reached ? "<color=#00E676><b>★ 확정 달성!</b></color>" : "<color=#FF80AB><b>★ 60 확정</b></color>";
                         }
                         else
                         {
-                            lTxt.text = reached ? $"<size=12>{reqPulls}회</size>\n<color=#00E676><size=11>✓ 지급완료</size></color>" : $"<size=12>{reqPulls}회</size>\n<color=#FFE082><size=11>+5천G</size></color>";
+                            lTxt.text = reached ? $"<size=15>{reqPulls}회</size>\n<color=#00E676><size=13>✓ 지급완료</size></color>" : $"<size=15>{reqPulls}회</size>\n<color=#FFE082><size=13>+5천G</size></color>";
                         }
                     }
                 }
@@ -4098,9 +4921,10 @@ namespace BlockBlast
                         if (txt != null)
                         {
                             txt.text = $"{price:N0} C " + LocalizationManager.Get("shop_btn_buy");
-                            txt.color = canAfford ? Color.white : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.color = canAfford ? new Color(0.24f, 0.12f, 0.00f, 1f) : new Color(0.42f, 0.32f, 0.52f, 1f);
+                            txt.fontStyle = FontStyles.Bold;
                             txt.enableAutoSizing = true;
-                            txt.fontSizeMin = 13f;
+                            txt.fontSizeMin = 16f;
                         }
                         if (btnImg != null)
                         {
@@ -4414,7 +5238,11 @@ namespace BlockBlast
                 {
                     // Remove conflicting EventTrigger if present
                     EventTrigger et = b.GetComponent<EventTrigger>();
-                    if (et != null) Destroy(et);
+                    if (et != null)
+                    {
+                        if (Application.isPlaying) Destroy(et);
+                        else DestroyImmediate(et);
+                    }
 
                     // Ensure button is at front of its parent so it is never covered
                     b.transform.SetAsLastSibling();
@@ -4754,6 +5582,7 @@ namespace BlockBlast
             {
                 BlockBlastUIManager.Instance.ShowInGameUI(false);
             }
+            StartMascotIdleBounce();
         }
 
         public void StartGameFromLobby()
@@ -4837,6 +5666,19 @@ namespace BlockBlast
         // PARTY MASCOT IDLE ANIMATION
         // ==========================================
 
+        public void StartMascotIdleBounce()
+        {
+            if (_mascotBounceCoroutine != null)
+            {
+                StopCoroutine(_mascotBounceCoroutine);
+                _mascotBounceCoroutine = null;
+            }
+            if (gameObject.activeInHierarchy)
+            {
+                _mascotBounceCoroutine = StartCoroutine(MascotIdleBounceRoutine());
+            }
+        }
+
         private IEnumerator MascotIdleBounceRoutine()
         {
             if (partyMascots == null || partyMascots.Length == 0) yield break;
@@ -4844,39 +5686,104 @@ namespace BlockBlast
             Vector2[] origPositions = new Vector2[partyMascots.Length];
             for (int i = 0; i < partyMascots.Length; i++)
             {
-                if (partyMascots[i] != null) origPositions[i] = partyMascots[i].anchoredPosition;
+                if (partyMascots[i] != null)
+                {
+                    Vector2 pos = partyMascots[i].anchoredPosition;
+                    if (pos == Vector2.zero && i < DefaultMascotPositions.Length)
+                    {
+                        pos = DefaultMascotPositions[i];
+                    }
+                    origPositions[i] = pos;
+                }
+                else if (i < DefaultMascotPositions.Length)
+                {
+                    origPositions[i] = DefaultMascotPositions[i];
+                }
             }
 
             while (true)
             {
+                // Pause animation when lobby root is hidden (e.g. during in-game play)
+                if (lobbyRoot != null && !lobbyRoot.activeInHierarchy)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 float time = Time.time;
                 for (int i = 0; i < partyMascots.Length; i++)
                 {
                     if (partyMascots[i] != null)
                     {
-                        float offset = i * 0.72f;
-                        float bounceY = Mathf.Abs(Mathf.Sin(time * 3.2f + offset)) * 14f;
-                        float squashX = 1f + Mathf.Sin(time * 3.2f + offset) * 0.04f;
-                        float squashY = 1f - Mathf.Sin(time * 3.2f + offset) * 0.04f;
+                        // Staggered cute bounce rhythm with playful phase offset
+                        float offset = i * 0.78f;
+                        float bounceY = Mathf.Abs(Mathf.Sin(time * 3.0f + offset)) * 16f;
+                        float squashX = 1f + Mathf.Sin(time * 3.0f + offset) * 0.05f;
+                        float squashY = 1f - Mathf.Sin(time * 3.0f + offset) * 0.05f;
+                        float tiltZ = Mathf.Sin(time * 2.2f + offset) * 2.5f;
 
-                        partyMascots[i].anchoredPosition = origPositions[i] + new Vector2(0f, bounceY);
-                        partyMascots[i].localScale = new Vector3(squashX, squashY, 1f);
+                        float punchS = (i < _mascotPunchScale.Length) ? _mascotPunchScale[i] : 1f;
+                        float punchY = (i < _mascotPunchY.Length) ? _mascotPunchY[i] : 0f;
+
+                        partyMascots[i].anchoredPosition = origPositions[i] + new Vector2(0f, bounceY + punchY);
+                        partyMascots[i].localScale = new Vector3(squashX * punchS, squashY * punchS, 1f);
+                        partyMascots[i].localRotation = Quaternion.Euler(0f, 0f, tiltZ);
                     }
                 }
                 yield return null;
             }
         }
 
+        public void TriggerPunchMascot(int index)
+        {
+            if (index < 0 || index >= _mascotPunchScale.Length) return;
+            if (_mascotPunchCoroutines[index] != null) StopCoroutine(_mascotPunchCoroutines[index]);
+            _mascotPunchCoroutines[index] = StartCoroutine(PunchMascotIndexRoutine(index));
+        }
+
+        private IEnumerator PunchMascotIndexRoutine(int index)
+        {
+            float elapsed = 0f;
+            float duration = 0.35f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                // Elastic punch bounce curve (1.0 -> 1.30 -> 0.92 -> 1.05 -> 1.0)
+                float scaleBounce = 1f + Mathf.Sin(t * Mathf.PI * 1.5f) * Mathf.Exp(-t * 3.2f) * 0.32f;
+                float yHop = Mathf.Sin(t * Mathf.PI) * 22f;
+                _mascotPunchScale[index] = scaleBounce;
+                _mascotPunchY[index] = yHop;
+                yield return null;
+            }
+            _mascotPunchScale[index] = 1f;
+            _mascotPunchY[index] = 0f;
+            _mascotPunchCoroutines[index] = null;
+        }
+
         private IEnumerator PunchMascot(RectTransform mascotRT)
         {
             if (mascotRT == null) yield break;
+
+            if (partyMascots != null)
+            {
+                for (int i = 0; i < partyMascots.Length; i++)
+                {
+                    if (partyMascots[i] == mascotRT)
+                    {
+                        TriggerPunchMascot(i);
+                        yield break;
+                    }
+                }
+            }
+
             float elapsed = 0f;
             float duration = 0.28f;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
-                float scale = 1f + Mathf.Sin(t * Mathf.PI) * 0.3f;
+                float scale = 1f + Mathf.Sin(t * Mathf.PI) * 0.25f;
                 mascotRT.localScale = new Vector3(scale, scale, 1f);
                 yield return null;
             }
@@ -4961,6 +5868,11 @@ namespace BlockBlast
             if (partyTipText != null)
             {
                 partyTipText.text = LocalizationManager.Get("lobby_party_tip");
+            }
+
+            if (Application.isPlaying)
+            {
+                StartMascotIdleBounce();
             }
         }
 
@@ -5139,8 +6051,8 @@ namespace BlockBlast
                     }
                     if (languageButtonTexts != null && i < languageButtonTexts.Length && languageButtonTexts[i] != null)
                     {
-                        languageButtonTexts[i].color = isSelected ? Color.white : new Color(0.40f, 0.30f, 0.55f, 1f);
-                        languageButtonTexts[i].fontStyle = isSelected ? FontStyles.Bold : FontStyles.Normal;
+                        languageButtonTexts[i].color = isSelected ? Color.white : new Color(0.18f, 0.08f, 0.26f, 1f);
+                        languageButtonTexts[i].fontStyle = FontStyles.Bold;
                     }
                 }
             }

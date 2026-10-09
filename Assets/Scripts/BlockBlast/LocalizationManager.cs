@@ -240,7 +240,7 @@ namespace BlockBlast
             { "pickup_dia_100", new[] { "◆ 100 다이아", "◆ 100 Dia", "◆ 100 ダイヤ", "◆ 100 钻石" } },
             { "pickup_dia_1000", new[] { "◆ 1,000 다이아", "◆ 1,000 Dia", "◆ 1,000 ダイヤ", "◆ 1,000 钻石" } },
             { "pickup_modal_skill_title", new[] { "스페셜 픽업 상세 안내", "Special Pickup Details", "ピックアップ詳細案内", "特选精选详情说明" } },
-            { "pickup_modal_skill_headline", new[] { "★ [올 클리어 엔젤] 스페셜 말랑이 능력 미리보기 ★", "★ [All Clear Angel] Special Skill Preview ★", "★ [オールクリアエンジェル] 能力プレビュー ★", "★ [全清天使] 特选团子能力前瞻 ★" } },
+            { "pickup_modal_skill_headline", new[] { "★ [올 클리어 엔젤] 엔젤 말랑이 능력 미리보기 ★", "★ [All Clear Angel] Special Skill Preview ★", "★ [オールクリアエンジェル] 能力プレビュー ★", "★ [全清天使] 特选团子能力前瞻 ★" } },
             { "pickup_modal_skill_sub", new[] { "궁극기: [올 클리어 엔젤 폭파술] - 보드의 모든 블록을 한 번에 정화!", "Ultimate: [All Clear Angel Burst] - Clears all blocks on the board at once!", "アルティメット: [オールクリアエンジェル爆破術] - 盤面の全ブロックを一掃！", "大招: [全清天使引爆术] - 一键引爆清除棋盘上所有方块！" } },
             { "pickup_modal_feature_1", new[] { "• 30줄 클리어 시 스킬 게이지 100% 충전 (버튼 점등!)", "• Clears 30 lines to fully charge skill gauge!", "• 30ライン消去でスキルゲージ100%充電！", "• 累计消除30行即可蓄满100%大招能量！" } },
             { "pickup_modal_feature_2", new[] { "• 버튼 터치 시 화면의 모든 블록 폭파 + 뾰로롱 마법 연출!", "• Tap the skill button to clear all blocks on the board!", "• スキル発動で盤面の全ブロックが一掃爆破！", "• 点击技能按钮即可瞬间引爆消除棋盘所有方块！" } },
@@ -288,55 +288,55 @@ namespace BlockBlast
             { "mascot_0_title", new[] { "기본 말랑이", "Starter Mallang", "基本マラン", "初识团子" } },
             { "mascot_0_desc", new[] { "고유능력: 추가 시간 보너스\n(턴 제한 시간이 넉넉해집니다)", "Ability: Extra Turn Time\n(Gives you more time per turn)", "固有能力: 追加時間ボーナス\n(ターンの制限時間が延長されます)", "固有能力: 额外时间加成\n(每回合放置方块时间更从容)" } },
             { "mascot_0_concept", new[] { "달콤한 딸기 젤리에서 태어난 사랑스러운 말랑월드의 대표 마스코트입니다. 통통 튀는 탄력과 발그레한 볼터치가 매력적입니다.", "Born from sweet strawberry jelly, the lovely official mascot of Mallang World. Bouncy, cheerful, and full of positive energy.", "甘いイチゴゼリーから生まれたマランワールドの公式看板マスコット。ぷるぷる弾む愛らしい姿で癒やしを届けます。", "诞生自甜美草莓果冻的软萌世界招牌团子。Q弹软嫩，元气满满，治愈每一位旅人。" } },
-            { "mascot_0_story", new[] { "퍼즐 숲에서 가장 처음 눈을 뜬 젤리로, 블록이 가득 차도 언제나 긍정적인 미소를 잃지 않습니다. 손길이 닿으면 보드 전체에 달콤한 향기와 함께 넉넉한 여유 시간을 불어넣어 줍니다.", "The very first jelly to awaken in the puzzle forest. It never loses its smile, granting precious extra thinking time to help you overcome tricky board layouts.", "パズルの森で最初に目を覚ましたゼリー。盤面がピンチになっても笑顔を絶やさず、甘い香りと共にたっぷりの思考時間をもたらしてくれます。", "在谜题森林中最先苏醒的初生团子。无论棋盘多么紧张局促，始终微笑面对，并为玩家带来宝贵的深思熟虑时间。" } },
+            { "mascot_0_story", new[] { "달콤한 딸기 시럽이 가득한 솜사탕 동산에서 태어났어요.\n언제나 방긋 웃으며 친구들에게 사랑 가득한 긍정 에너지를 전해줘요.", "Born on a sweet strawberry cotton candy hill.\nAlways smiling bright to share loving positive energy with everyone.", "甘いイチゴシロップたっぷりの丘で生まれた元気印。\nいつもニッコリ笑顔で皆にポジティブな元気を届けます。", "在甜蜜草莓棉花糖山丘诞生的可爱团子。\n始终带着灿烂笑容，为所有人传递满满的正能量。" } },
 
             { "mascot_1_name", new[] { "민트 말랑이", "Mint Mallang", "ミントマラン", "薄荷团子" } },
             { "mascot_1_title", new[] { "스킵 마스터", "Skip Master", "スキップマスター", "跳过大师" } },
             { "mascot_1_desc", new[] { "고유능력: 스킵 스택 강화\n(시작 2개 / 최대 4개 보유 가능)", "Ability: Skip Stack Boost\n(Start with 2 / Hold up to 4 skips)", "固有能力: スキップスタック強化\n(開始2個 / 最大4個ストック可能)", "固有能力: 跳过次数强化\n(初始2次 / 最大可存4次跳过)" } },
             { "mascot_1_concept", new[] { "상쾌한 페퍼민트 허브 이슬을 머금은 장난꾸러기 요정 젤리입니다. 안테나처럼 솟은 뿔을 흔들며 신선한 바람을 일으킵니다.", "A mischievous fairy jelly infused with crisp peppermint dew. Waves its cute antennas to summon a refreshing gust of luck.", "爽やかなペパーミントの朝露を宿したイタズラ妖精ゼリー。触角を揺らして心地よい風を巻き起こします。", "凝聚清凉薄荷晨露的机灵小精灵团子。晃动着可爱触角，带来阵阵清爽与逆转机遇。" } },
-            { "mascot_1_story", new[] { "어려운 난관에 부딪히면 재빠르게 한 발 물러서서 더 좋은 기회를 노립니다. 원치 않는 블록 세트를 시원하게 건너뛰는 마법으로 언제나 위기를 슬기롭게 모면합니다.", "Whenever an awkward shape threatens the board, Mint Mallang quickly skips ahead to find the perfect block.", "置きづらいブロックに直面しても機転を利かせてスキップ！いつでも爽快にピンチを脱出させてくれる頼もしい相棒です。", "面对棘手困难的方块时，薄荷团子总能机智跳过，助你化险为夷，轻松重整旗鼓。" } },
+            { "mascot_1_story", new[] { "상쾌한 페퍼민트 바람이 솔솔 부는 신비한 이슬 숲의 요정이에요.\n시간을 늦추는 시원한 마법으로 여유롭게 퍼즐을 풀도록 도와줘요.", "A brisk fairy from the mysterious peppermint forest.\nSlows down the clock with refreshing breeze to help you think easily.", "ペパーミントの風薫る神秘の森の妖精さん。\n時間をゆったり遅らせる爽快マジックでピンチを救います。", "来自清凉薄荷森林的机灵小仙子。\n施展减缓时间的微风魔法，让你从容思考解开谜题。" } },
 
             { "mascot_2_name", new[] { "골드 말랑이", "Gold Mallang", "ゴールドマラン", "黄金团子" } },
             { "mascot_2_title", new[] { "보물 사냥꾼", "Treasure Hunter", "トレジャーハンター", "寻宝猎人" } },
             { "mascot_2_desc", new[] { "고유능력: 라인 추가 점수\n(클리어 줄마다 +100점 추가 보너스)", "Ability: Line Clear Score\n(+100 extra bonus pts per cleared line)", "固有能力: ライン追加スコア\n(消去列ごとに+100点ボーナス)", "固有能力: 消除整行额外加分\n(每消除一行额外加100分)" } },
             { "mascot_2_concept", new[] { "반짝이는 황금 왕관을 쓴 허니 골드 젤리입니다. 고귀한 왕가의 보물창고를 지키며 화려한 황금빛 광채를 뿜어냅니다.", "A royal honey jelly wearing a sparkling crown. Radiates golden luxury and blesses players with high-score treasures.", "キラリと輝く黄金の王冠を戴いたハニーゴールドゼリー。華やかな輝きでプレイヤーに財宝とハイスコアをもたらします。", "头戴耀眼王冠的蜜糖黄金小国王。浑身流淌华丽光芒，为每一次消行带来无尽财富与高分。" } },
-            { "mascot_2_story", new[] { "보석과 동전을 세상에서 가장 사랑하는 부자 젤리입니다. 완벽하게 완성된 퍼즐 라인을 보면 신나서 황금 보너스 코인을 마구 쏟아붓습니다.", "Loves coins and jewels more than anything. Every single completed line sends Gold Mallang into celebrations, showering the board with bonus points.", "コインと宝石が大好きなリッチなマスコット。美しいライン消去を見るたびに大喜びで黄金ボーナススコアを授けます。", "最喜欢金币与亮晶晶的宝物。每当看见完美的连消，就会欢呼雀跃并慷慨撒下高额额外加分。" } },
+            { "mascot_2_story", new[] { "황금빛 벌꿀이 흐르는 보석 신전에서 반짝이는 왕관을 쓰고 태어났어요.\n화려한 보물 탐험을 좋아해 대량의 경험치와 행운을 플레이어에게 안겨줘요.", "Crowned at birth in a glistening golden honey shrine.\nLoves hunting treasures and showers players with lucky EXP.", "黄金の蜜が流れる神殿で生まれた小さな王子様。\nお宝探検が大好きで、大量の経験値と幸運を届けてくれます。", "诞生于流淌金黄蜜糖的神殿小王子。\n热爱探索宝藏，慷慨地为旅人赠送丰厚经验与好运。" } },
 
             { "mascot_3_name", new[] { "퍼플 말랑이", "Purple Mallang", "パープルマラン", "紫晶团子" } },
             { "mascot_3_title", new[] { "매직 큐브", "Magic Cube", "マジックキューブ", "魔方使者" } },
             { "mascot_3_desc", new[] { "고유능력: 2×2 매직 블록\n(5% 확률로 2×2 보라 블록 3개 소환)", "Ability: 2x2 Magic Blocks\n(5% chance to spawn 3 2x2 purple blocks)", "固有能力: 2×2マジックブロック\n(5%の確率で2×2紫ブロック3個召喚)", "固有能力: 2×2魔方方块\n(5%概率召唤3个2×2紫色方块)" } },
             { "mascot_3_concept", new[] { "신비로운 우주 은하수의 별가루가 스며든 포도빛 글래스 젤리입니다. 차분하고 나긋나긋한 미소 뒤에 강력한 공간 마법을 감추고 있습니다.", "A grape glass jelly filled with stardust from cosmic nebulae. Hides powerful spatial magic behind its serene, cozy smile.", "神秘的な銀河の星屑を抱くグレープゼリー。穏やかな微笑みの裏に強力な空間操作魔法を秘めています。", "吸收了浩瀚星云星尘的葡萄紫晶团子。从容淡雅的笑靥下蕴藏着扭转空间的奇迹魔法。" } },
-            { "mascot_3_story", new[] { "밤하늘 별자리와 대화하며 차원을 비트는 비전 마법을 연구합니다. 위기의 순간, 완벽한 정사각형의 2×2 보라 마법 블록을 소환해 빈자리를 채워줍니다.", "Studies arcana that reshape puzzle dimensions. Occasionally conjures neat 2x2 purple magic blocks to fill board voids effortlessly.", "星々の囁きを聞きながら空間を織りなす魔法使い。ピンチの盤面にすっきりと収まる2×2紫魔法ブロックを召喚してくれます。", "静观夜空并掌控空间维度。在需要救场时，会奇迹般召唤三枚完美的2×2方块来填补空缺。" } },
+            { "mascot_3_story", new[] { "밤하늘의 은하수와 달콤한 블루베리를 섞어 빚어낸 꼬마 마법사예요.\n별빛 지팡이를 휘둘러 시간을 늘리고 곤란한 블록을 시원하게 스킵해 줘요.", "A mystic apprentice created from galaxy stardust and berries.\nWaves its stellar wand to grant extra time and clever skips.", "夜空の天の川とブルーベリーから生まれた魔法使い。\n星屑の杖を振って時間を延ばし、邪魔なブロックをスキップ！", "融合银河星光与蓝莓精华的小小魔法使。\n挥动星光魔杖延长时间，巧妙跳过棘手方块。" } },
 
             { "mascot_4_name", new[] { "블루 말랑이", "Blue Mallang", "ブルーマラン", "碧蓝团子" } },
             { "mascot_4_title", new[] { "아쿠아 쉴드", "Aqua Shield", "アクアシールド", "水波护盾" } },
             { "mascot_4_desc", new[] { "고유능력: 아쿠아 쉴드\n(게임오버 위기 시 1회 부활 & 블록 재배치)", "Ability: Aqua Shield\n(Revives once upon game over & reshuffles)", "固有能力: アクアシールド\n(ピンチ時1回復活＆ブロック再配置)", "固有能力: 水波护盾\n(陷入死局时触发1次复活重抽方块)" } },
             { "mascot_4_concept", new[] { "청명하고 시원한 소다 바다 거품에서 태어난 물방울 젤리입니다. 맑고 투명한 표면 아래로 생명의 파도를 품고 있습니다.", "A water droplet jelly born from ocean soda waves. Soft, serene, and radiating calm protective energy.", "澄んだソーダの海泡から生まれた水滴ゼリー。透明な体の奥に生命を守る優しい波音を宿しています。", "由清澈苏打海浪孕育而生的水滴团子。澄澈透明的身体中蕴含着守护一切的温柔潮汐。" } },
-            { "mascot_4_story", new[] { "더 이상 블록을 둘 곳이 없어 패배할 찰나, 시원한 물보라 보호막을 펼쳐 게임판을 씻어내고 다시 한번 새로운 블록을 쥐어주는 든든한 수호자입니다.", "When all hope seems lost and no moves remain, Blue Mallang summons an oceanic barrier to revive the run and reshuffle your blocks.", "もう置ける場所がない絶体絶命の瞬間、奇跡の波しぶきで盤面を清めてもう一度チャンスをくれる頼れる守護神です。", "当棋盘被填满即将绝望失败时，它会唤起波涛护盾，为你逆天改命重新抽选手牌方块。" } },
+            { "mascot_4_story", new[] { "톡 쏘는 청량 소다 호수에서 헤엄치며 장난치는 호기심 대장이에요.\n원치 않는 블록이 나오면 시원한 물보라로 순식간에 새 블록으로 바꿔줘요.", "A playful explorer swimming across refreshing soda springs.\nSurges crystal waves to swap away any awkward blocks in a flash.", "シュワっと弾けるソーダの湖で泳ぐ好奇心旺盛な子。\n苦手なブロックも爽快なしぶきでサッと新しい形にチェンジ！", "在清爽汽水湖泊中欢畅嬉戏的好奇宝宝。\n掀起清凉水波，瞬间将不称心的方块一键刷新换新！" } },
 
             { "mascot_5_name", new[] { "베리 말랑이", "Berry Mallang", "ベリーマラン", "莓果团子" } },
             { "mascot_5_title", new[] { "슈가 버스트", "Sugar Burst", "シュガーバースト", "糖爆甜心" } },
             { "mascot_5_desc", new[] { "고유능력: 슈가 버스트\n(콤보 달성 시 주변 블록 추가 폭파 & +15% 점수)", "Ability: Sugar Burst\n(Extra blast & +15% score on combos)", "固有能力: シュガーバースト\n(コンボ時周囲追加爆破＆スコア+15%)", "固有能力: 糖爆甜心\n(达成连击时额外爆破周围并提升15%分数)" } },
             { "mascot_5_concept", new[] { "새콤달콤한 산딸기와 체리 시럽이 듬뿍 들어간 활력 넘치는 젤리입니다. 톡톡 튀는 탄산 사탕을 머금어 폭발적인 에너지를 자랑합니다.", "Bursting with wild berries and sweet syrup. Playful, fiery, and loves explosive combo celebrations.", "甘酸っぱいベリーシロップが詰まった元気印ゼリー。パチパチ弾けるキャンディのような爆発的エネルギーを持っています。", "注入了野莓果酱与浓郁糖浆的活力团子。宛如跳跳糖般活泼好动，热爱狂热爆破连击。" } },
-            { "mascot_5_story", new[] { "퍼즐이 연속으로 팡팡 터질 때마다 흥분을 감추지 못하고 주변 블록까지 화끈하게 날려버립니다. 짜릿한 연속 콤보 플레이의 최고 파트너입니다.", "Gets thrilled by chaining combos! Automatically detonates surrounding cells with sparkling sugar bursts for massive score multipliers.", "コンボが続くたびに大興奮して周囲のブロックもまとめて吹き飛ばす！爽快連鎖プレイのベストパートナーです。", "每当出现连击消除时，它便会兴奋地引爆周围方块，并给予高达15%的超强连击分数加成。" } },
+            { "mascot_5_story", new[] { "아침 이슬을 머금은 라즈베리 과수원에서 자라난 활기찬 장난꾸러기에요.\n블록이 터질 때마다 달콤한 잼 폭죽을 터뜨려 엄청난 보너스 점수를 선사해요.", "A cheerful prankster grown in sunlit wild raspberry gardens.\nShoots sweet jam fireworks on every line clear for massive score spikes.", "朝日を浴びたラズベリー畑で育ったやんちゃっ子。\nブロックが消えるたびに甘いジャム花火で超ボーナスを連発！", "沐浴清晨阳光红艳覆盆子园成长的小顽童。\n每当方块消除便发射香甜果酱礼花，为你献上巨额连击分！" } },
 
             { "mascot_6_name", new[] { "레몬 말랑이", "Lemon Mallang", "レモンマラン", "柠檬团子" } },
             { "mascot_6_title", new[] { "번개 팡", "Lemon Spark", "レモンスパーク", "闪电爆破" } },
             { "mascot_6_desc", new[] { "고유능력: 번개 팡\n(3연속 콤보 시 가로 한 줄 번개 즉시 폭파)", "Ability: Lemon Spark\n(Instantly zaps and clears a row at 3 combos)", "固有能力: レモンスパーク\n(3連続コンボ時雷で横1列即座爆破)", "固有能力: 闪电爆破\n(达成3连击时触发闪电瞬间消灭整行)" } },
             { "mascot_6_concept", new[] { "비타민 가득한 레몬 전해질로 짜릿한 전류를 뿜어내는 젤리입니다. 동그란 볼에서 노란 스파크가 튀는 것이 특징입니다.", "Charged with zesty lemon electrolytes. Sparkles with yellow lightning and delivers electric satisfaction.", "ビタミンたっぷりのレモン果汁から電撃を放つゼリー。ほっぺから黄色いスパークを散らすのがトレードマークです。", "充满柠檬果汁电解质的雷电团子。双颊随时迸发出金黄电弧，充满势不可挡的穿透力。" } },
-            { "mascot_6_story", new[] { "3번 연속으로 라인을 터뜨리면 온몸의 정전기가 모여 번개 광선을 쏩니다. 가로 한 줄을 번쩍하고 태워버려 막힌 혈을 뚫어줍니다.", "When you hit a 3-chain combo, Lemon Spark unleashes an electric zap that vaporizes an entire horizontal row instantly.", "3連続でラインを消去すると全身に溜まった電気が炸裂！横一列を一瞬で雷光消去して窮地を切り拓きます。", "只要连续达成3次连消，积蓄的电能便会化作耀眼闪电，瞬间电光石火般横扫清除一整行。" } },
+            { "mascot_6_story", new[] { "햇살을 듬뿍 받은 상큼한 레몬 나무 꼭대기에서 갓 수확된 귀염둥이에요.\n짜릿한 비타민 번개를 찌릿 쏘아 올려 플레이어의 스코어와 성장을 쑥쑥 키워줘요.", "Plucked fresh from the sunniest branch of a lemon orchard.\nZaps exhilarating vitamin sparks to boost both score and rapid growth.", "太陽をたっぷり浴びたレモンの樹から生まれた元気娘。\nピリリと痺れるビタミン電撃でスコアも成長も急加速！", "自向阳柠檬树梢摘下的酸甜元气萌宝。\n迸发令人振奋的维他命电弧，助推分数与等级极速狂飙！" } },
 
             { "mascot_7_name", new[] { "클라우드 말랑이", "Cloud Mallang", "クラウドマラン", "云朵团子" } },
             { "mascot_7_title", new[] { "푹신 구름", "Fluffy Cloud", "ふわふわクラウド", "蓬松云朵" } },
             { "mascot_7_desc", new[] { "고유능력: 푹신 구름\n(시간 감소 속도 20% 완화 & 슬로우 피버)", "Ability: Fluffy Cloud\n(Slows time decay by 20% for cozy puzzle play)", "固有能力: ふわふわクラウド\n(時間減少速度20%緩和＆まったりプレイ)", "固有能力: 蓬松云朵\n(时间衰减速度减缓20%，更轻松畅快)" } },
             { "mascot_7_concept", new[] { "하늘 높은 곳의 몽실몽실한 솜사탕 구름에서 내려온 젤리입니다. 손을 대면 폭신하고 따스한 감촉에 모든 스트레스가 녹아내립니다.", "Drifted down from fluffy cotton candy clouds. Cozy, gentle, and melts away tension with its pillowy texture.", "空高くのわたあめ雲から舞い降りた極上ふんわりゼリー。触れるだけで日々の疲れが溶けていきます。", "自万米高空云端降落的蓬松棉花糖团子。抚摸它那软绵绵的云朵身躯，所有烦恼忧虑皆能烟消云散。" } },
-            { "mascot_7_story", new[] { "시간의 흐름마저 푹신한 구름 속으로 끌어들여 느리게 만듭니다. 초조하게 쫓기는 일 없이 편안하게 생각하며 퍼즐을 즐길 수 있게 돕습니다.", "Envelops the clock in cozy clouds, slowing time decay by 20% so you can relax and strategize without rush.", "時間の流れすら雲の中に包み込んでゆったり穏やかに。焦ることなくマイペースにパズルを楽しめるよう支えてくれます。", "用绵密柔软的云层包裹时光，使倒计时衰减放慢20%，让你不再手忙脚乱，悠然享受每一次布局。" } },
+            { "mascot_7_story", new[] { "무지개 너머 몽환적인 솜사탕 구름 속에서 낮잠을 자다 내려온 꿈의 정령이에요.\n포근하고 푹신한 구름 쿠션으로 시간을 넉넉하게 감싸주며 대량의 경험치를 줘요.", "A dreamy fairy floating down from rainbow pastel clouds.\nWraps the ticking clock in soft cotton cushions while giving huge EXP.", "虹の向こうのわたあめ雲でお昼寝していた夢の精霊。\nふわふわクッションで時間をまったり包み、大量の経験値を付与！", "自彩虹云端小憩醒来的梦之小精灵。\n用松软棉花云朵温暖包裹时光倒计时，赋予丰沛成长经验。" } },
 
-            { "mascot_8_name", new[] { "스페셜 말랑이", "Special Angel", "スペシャルマラン", "星天使团子" } },
+            { "mascot_8_name", new[] { "엔젤 말랑이", "Angel Mallang", "エンゼルマラン", "天使团子" } },
             { "mascot_8_title", new[] { "올 클리어 엔젤", "All Clear Angel", "オールクリアエンジェル", "全清天使" } },
-            { "mascot_8_desc", new[] { "고유능력: 보드 올 클리어\n(스킬 터치 시 보드의 모든 블록 전멸 폭파!)", "Ability: Board Wipe Magic\n(Tap skill button to blast all blocks away!)", "固有能力: オールクリア\n(スキルタップで全ブロック一掃爆破！)", "固有能力: 全屏清盘魔法\n(点击专属大招按钮瞬间清除全场方块！)" } },
+            { "mascot_8_desc", new[] { "고유능력: 엔젤 크로스 폭파 블록\n(스페셜 블록끼리 닿으면 가로·세로 줄 전부 폭파!)", "Ability: Angel Cross Blast\n(When special blocks touch, blasts entire row and column!)", "固有能力: エンゼルクロス爆破\n(スペシャルブロック同士が接触すると縦横全列を一斉爆破！)", "固有能力: 天使十字爆破\n(特殊方块彼此接触时，横坚全列瞬间引爆！)" } },
             { "mascot_8_concept", new[] { "말랑월드의 가장 높은 성소에서 강림한 1.0% 한정 전설의 천사 젤리입니다. 눈부신 천사 날개와 오로라 홀로그램 빛무리가 특징입니다.", "The 1.0% limited legendary angel jelly from the highest sanctuary. Flaunts radiant angel wings and a rainbow aura.", "マランワールド最奥の聖域より降臨した1.0%限定伝説の天使ゼリー。神々しい翼と虹色ホログラムのオーラを纏っています。", "自软萌世界最崇高圣所降临的1.0%特选限定神话天使团子。背生羽翼，环绕七彩极光神环。" } },
-            { "mascot_8_story", new[] { "라인을 지울 때마다 성스러운 기운을 차곡차곡 모아 스킬 버튼을 점등시킵니다. 터치하는 순간 천사의 성스러운 종소리와 함께 보드의 모든 블록을 한 번에 소멸시킵니다.", "Charges holy energy with every line clear. When full, tap the skill button to trigger an All Clear miracle, wiping every single block on the board!", "ラインを消去するたび聖なる祈りを蓄積。スキルボタンをタップした瞬間、盤面の全ブロックを跡形もなく一掃する奇跡を起こします！", "每一次消行都会汇聚纯净圣光。蓄满大招点击按钮的瞬间，将以全屏爆破神迹彻底净化8×8全场方块！" } },
+            { "mascot_8_story", new[] { "천상의 오로라 빛 축복을 가득 품고 지상에 내려온 전설의 무지개 천사예요.\n스페셜 크리스탈 블록이 서로 만나면 가로세로 줄을 일제히 대폭파하는 기적을 내려요.", "A legendary rainbow angel descending with celestial aurora blessings.\nWhen its sacred crystal blocks touch, triggers an omni-directional cross blast miracle.", "天上のオーロラの祝福を纏って舞い降りた奇跡の天使。\n聖なるクリスタルブロックが出会う時、縦横全列を一網打尽にする奇跡を授けます。", "满载天界极光祝福降临尘世的神话彩虹天使。\n当两枚特殊水晶方块相触碰时，将降下瞬间全清十字爆破的至高奇迹！" } },
 
             // In-Game Themes
             { "theme_game_0_name", new[] { "몽환의 밤", "Dreamy Night", "夢幻の夜", "梦幻之夜" } },
@@ -442,7 +442,7 @@ namespace BlockBlast
             { "shop_ad_diamond_toast", new[] { "광고 시청 완료! +30 다이아가 지급되었습니다!", "Ad watched! +30 Diamonds received!", "広告視聴完了！30ダイヤ獲得！", "广告观看完毕！获得30颗钻石！" } },
             { "reward_claim_title", new[] { "보상 획득 완료!", "Reward Claimed!", "報酬獲得完了！", "奖励领取成功！" } },
             { "reward_claim_btn", new[] { "확인", "Confirm", "確認", "确认" } },
-            { "shop_rec_tip", new[] { "TIP: 다이아몬드는 매일 퀘스트 및 업적 달성 시에도 무료로 획득할 수 있습니다!\n스페셜 말랑이 픽업 소환으로 판을 시원하게 쓸어담아 보세요!", "TIP: Diamonds can be earned for free through daily quests and achievements!\nSummon Special Angel to clear the board with ease!", "TIP: ダイヤはデイリークエストや実績達成で無料獲得できます！\nスペシャルマランのピックアップ召喚で盤面を一掃しましょう！", "提示: 每日任务与成就奖励均可免费获取钻石！\n参与特选精选召唤，体验全屏清盘的神奇魔法！" } },
+            { "shop_rec_tip", new[] { "TIP: 다이아몬드는 매일 퀘스트 및 업적 달성 시에도 무료로 획득할 수 있습니다!\n엔젤 말랑이 픽업 소환으로 판을 시원하게 쓸어담아 보세요!", "TIP: Diamonds can be earned for free through daily quests and achievements!\nSummon Special Angel to clear the board with ease!", "TIP: ダイヤはデイリークエストや実績達成で無料獲得できます！\nスペシャルマランのピックアップ召喚で盤面を一掃しましょう！", "提示: 每日任务与成就奖励均可免费获取钻石！\n参与特选精选召唤，体验全屏清盘的神奇魔法！" } },
             { "shop_buy_price_format", new[] { "{0:N0} G 구매", "Buy ({0:N0} G)", "{0:N0} Gで購入", "{0:N0} G购买" } },
 
             // Mobile Settings (Haptics, Privacy Policy, Rates)
@@ -460,7 +460,7 @@ namespace BlockBlast
             { "prob_th_item", new[] { "등장 항목 / 구성품", "Item / Reward", "登場アイテム / 構成品", "获得内容 / 道具" } },
             { "prob_th_type", new[] { "구분", "Type", "区分", "类别" } },
             { "prob_th_rate", new[] { "소환 확률", "Drop Rate", "召喚確率", "召唤概率" } },
-            { "prob_row_0_name", new[] { "★ [올 클리어 엔젤] 스페셜 말랑이", "★ [All Clear Angel] Special Angel", "★ [オールクリア] スペシャルマラン", "★ [全清天使] 特选团子" } },
+            { "prob_row_0_name", new[] { "★ [올 클리어 엔젤] 엔젤 말랑이", "★ [All Clear Angel] Special Angel", "★ [オールクリア] スペシャルマラン", "★ [全清天使] 特选团子" } },
             { "prob_row_0_type", new[] { "스페셜 완제", "Full Mascot", "スペシャル完品", "特选整卡" } },
             { "prob_row_common", new[] { "일반 말랑이 4종 (핑크/민트/골드/퍼플)", "Common 4 Types (Pink/Mint/Gold/Purple)", "ノーマル4種 (ピンク/ミント/金/パープル)", "普通伙伴4种 (粉萌/薄荷/黄金/紫晶)" } },
             { "prob_row_rare", new[] { "희귀 말랑이 4종 (블루/베리/레몬/클라우드)", "Rare 4 Types (Blue/Berry/Lemon/Cloud)", "レア4種 (ブルー/ベリー/レモン/雲)", "稀有伙伴4种 (碧蓝/莓果/柠檬/云朵)" } },
@@ -468,7 +468,7 @@ namespace BlockBlast
             { "prob_type_shard_5", new[] { "조각 5개 (20%)", "5 Shards (20%)", "欠片5個 (20%)", "碎片5个 (20%)" } },
             { "prob_row_total", new[] { "합계 (Total Probability)", "Total Probability", "合計確率 (Total)", "总计概率 (Total)" } },
             { "prob_notes_text", new[] {
-                "<b>[안내 사항]</b>\n• 스페셜 말랑이 소환 확률이 <b>1.0%</b>로 대폭 증가 적용되었습니다.\n• 스페셜 말랑이를 중복 획득 시 <b>스페셜 조각 60개</b>로 지급되어 즉시 1회 돌파가 가능합니다.\n• 획득한 일반/희귀 조각은 <b>말랑이 성급 돌파(육성) 전용 재료</b>로 사용됩니다.\n• 소환 확률은 독립 시행으로 적용되며, 구매 전 확률 정보를 상시 확인할 수 있습니다.",
+                "<b>[안내 사항]</b>\n• 엔젤 말랑이 소환 확률이 <b>1.0%</b>로 대폭 증가 적용되었습니다.\n• 엔젤 말랑이를 중복 획득 시 <b>스페셜 조각 60개</b>로 지급되어 즉시 1회 돌파가 가능합니다.\n• 획득한 일반/희귀 조각은 <b>말랑이 성급 돌파(육성) 전용 재료</b>로 사용됩니다.\n• 소환 확률은 독립 시행으로 적용되며, 구매 전 확률 정보를 상시 확인할 수 있습니다.",
                 "<b>[Important Notice]</b>\n• Special Angel drop rate is significantly boosted to <b>1.0%</b>.\n• Duplicate Special Angels convert to <b>60 Special Shards</b> for instant breakthrough.\n• Acquired shards are strictly used as <b>Star Breakthrough Materials</b>.\n• Drop rates apply independently per summon and can be checked anytime.",
                 "<b>[ご案内]</b>\n• スペシャルマランの排出確率が<b>1.0%</b>に大幅アップ中！\n• スペシャル重複獲得時は<b>スペシャル欠片60個</b>支給ですぐに突破可能。\n• 獲得した欠片は<b>マランの限界突破（育成）専用素材</b>として使用されます。\n• 召喚確率は独立試行で適用され、常時ご確認いただけます。",
                 "<b>[温馨提示]</b>\n• 特选天使团子召唤概率大幅提升至 <b>1.0%</b>！\n• 重复获得特选角色将直接转化为 <b>60个特选碎片</b>，可立即进行1次突破。\n• 获得的伙伴碎片专用于<b>伙伴星级突破与进阶养成</b>。\n• 召唤概率均为独立计算，购买前可随时查看。"
@@ -476,7 +476,7 @@ namespace BlockBlast
 
             // Pickup Hint & Mascot Detail Modal Localization
             { "pickup_hint_bottom", new[] {
-                "★ [1.0% 확률 UP!] 픽업 소환으로 스페셜 말랑이 & 일반/희귀 조각을 획득하세요! ★",
+                "★ [1.0% 확률 UP!] 픽업 소환으로 엔젤 말랑이 & 일반/희귀 조각을 획득하세요! ★",
                 "★ [1.0% Rate UP!] Get Special Mascot & Shards through Pickup Summon! ★",
                 "★ [1.0% 確率UP!] ピックアップ召喚でスペシャルマラン＆育成欠片を獲得！ ★",
                 "★ [1.0% 概率UP!] 通过限定招募获取特别软萌与养成碎片！ ★"
@@ -503,7 +503,7 @@ namespace BlockBlast
             { "gacha_special_descended", new[] { "★ 스페셜 강림! ★", "★ SPECIAL MASCOT! ★", "★ スペシャル降臨！ ★", "★ 特选天使降临！ ★" } },
             { "gacha_shards_gained_fmt", new[] { "+{0} 조각 획득!", "+{0} Shards Acquired!", "+{0}個の欠片獲得！", "+{0} 碎片获得！" } },
             { "gacha_climax_title", new[] {
-                "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>스페셜 말랑이 강림!</color></size>",
+                "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>엔젤 말랑이 강림!</color></size>",
                 "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>Special Angel Descended!</color></size>",
                 "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>スペシャルマラン降臨！</color></size>",
                 "<size=46><color=#FFE600>★ SPECIAL MASCOT! ★</color></size>\n<size=32><color=#FFFFFF>特选天使团子降临！</color></size>"

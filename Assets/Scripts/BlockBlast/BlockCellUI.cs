@@ -13,6 +13,9 @@ namespace BlockBlast
         public int Col => col;
         public bool IsOccupied { get; private set; } = false;
         public bool IsBomb { get; private set; } = false;
+        public bool IsSpecial { get; private set; } = false;
+        public int MascotIndex { get; private set; } = -1;
+        public bool IsOneByOne { get; private set; } = false;
 
         [Header("UI References")]
         [SerializeField] private Image bgImage;
@@ -52,10 +55,13 @@ namespace BlockBlast
             faceIcon = face;
         }
 
-        public void SetOccupied(Color col, bool bomb, Sprite tileSprite = null, Sprite faceSprite = null)
+        public void SetOccupied(Color col, bool bomb, Sprite tileSprite = null, Sprite faceSprite = null, bool special = false, int mascotIdx = -1, bool oneByOne = false)
         {
             IsOccupied = true;
             IsBomb = bomb;
+            IsSpecial = special;
+            MascotIndex = mascotIdx;
+            IsOneByOne = oneByOne;
 
             if (fillImage != null)
             {
@@ -91,6 +97,9 @@ namespace BlockBlast
         {
             IsOccupied = false;
             IsBomb = false;
+            IsSpecial = false;
+            MascotIndex = -1;
+            IsOneByOne = false;
 
             if (fillImage != null)
             {
